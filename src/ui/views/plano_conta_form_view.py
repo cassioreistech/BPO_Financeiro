@@ -24,6 +24,7 @@ from application.dto.plano_conta_dto import (
 from application.use_cases.plano_conta_use_cases import (
     CadastrarPlanoContaUseCase,
     EditarPlanoContaUseCase,
+    ListarPlanoContaUseCase,
 )
 from domain.enums.tipo_plano_conta import TipoPlanoConta
 
@@ -37,13 +38,16 @@ class PlanoContaFormView(QDialog):
         self,
         criar_use_case: CadastrarPlanoContaUseCase,
         editar_use_case: EditarPlanoContaUseCase,
+        listar_use_case: ListarPlanoContaUseCase,
         opcoes_escritorio: list[tuple[int, str]],
+        escritorio_id: int | None = None,
         parent: QWidget | None = None,
         plano: PlanoContaResponseDTO | None = None,
     ) -> None:
         super().__init__(parent)
         self._criar = criar_use_case
         self._editar = editar_use_case
+        self._listar = listar_use_case
         self._opcoes_escritorio = opcoes_escritorio
         self._plano = plano
         self._editando = plano is not None
@@ -51,6 +55,15 @@ class PlanoContaFormView(QDialog):
         self._configurar_janela()
         self._montar_formulario()
         self._preencher_se_edicao()
+        self._selecionar_escritorio_inicial(escritorio_id)
+        self._atualizar_opcoes_pai()
+
+    def _selecionar_escritorio_inicial(self, escritorio_id: int | None) -> None:
+        if escritorio_id is None:
+            return
+        idx = self._combo_escritorio.findData(escritorio_id)
+        if idx >= 0:
+            self._combo_escritorio.setCurrentIndex(idx)
 
     def _configurar_janela(self) -> None:
         titulo = "Editar Plano de Conta" if self._editando else "Nova Conta do Plano"
@@ -73,6 +86,9 @@ class PlanoContaFormView(QDialog):
         self._combo_escritorio = QComboBox()
         for eid, nome in self._opcoes_escritorio:
             self._combo_escritorio.addItem(nome, eid)
+        self._combo_escritorio.currentIndexChanged.connect(
+            self._atualizar_opcoes_pai
+        )
         form.addRow("Escritorio:", self._combo_escritorio)
 
         self._campo_codigo = QLineEdit()
@@ -131,6 +147,30 @@ class PlanoContaFormView(QDialog):
             self._combo_tipo.setCurrentIndex(idx_tipo)
 
         self._spin_nivel.setValue(self._plano.nivel)
+
+        if self._plano.pai_id is not None:
+            idx_pai = self._combo_pai.findData(self._plano.pai_id)
+            if idx_pai >= 0:
+                self._combo_pai.setCurrentIndex(idx_pai)
+
+    def _atualizar_opcoes_pai(self) -> None:
+        escritorio_id = self._combo_escritorio.currentData()
+        self._combo_pai.clear()
+        self._combo_pai.addItem("Nenhum (conta raiz)", None)
+        if escritorio_id is None:
+            return
+
+        try:
+            contas = self._listar.execute(
+                escritorio_id=escritorio_id, skip=0, limit=500
+            )
+        except Exception:
+            return
+
+        for conta in contas:
+            if self._editando and self._plano is not None and conta.id == self._plano.id:
+                continue
+            self._combo_pai.addItem(f"{conta.codigo} - {conta.nome}", conta.id)
 
     def _salvar(self) -> None:
         escritorio_id = self._combo_escritorio.currentData()

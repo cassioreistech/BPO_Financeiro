@@ -8,6 +8,7 @@ from infrastructure.database.models.contador_model import ContadorModel
 from infrastructure.database.models.empresa_model import EmpresaModel
 from infrastructure.database.models.escritorio_model import EscritorioModel
 from infrastructure.database.models.plano_conta_model import PlanoContaModel
+from infrastructure.database.models.titulo_model import TituloModel
 
 __all__ = [
     "CentroCustoModel",
@@ -16,4 +17,5 @@ __all__ = [
     "EscritorioModel",
     "EmpresaModel",
     "PlanoContaModel",
+    "TituloModel",
 ]

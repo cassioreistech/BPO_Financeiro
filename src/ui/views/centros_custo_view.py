@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QComboBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from application.dto.centro_custo_dto import CentroCustoResponseDTO
+from application.dto.empresa_dto import EmpresaResponseDTO
 from application.use_cases.centro_custo_use_cases import (
     CadastrarCentroCustoUseCase,
     DesativarCentroCustoUseCase,
@@ -63,6 +65,14 @@ class CentrosCustoView(QWidget):
         cabecalho.addWidget(titulo)
         cabecalho.addStretch()
 
+        cabecalho.addWidget(QLabel("Empresa:"))
+        self._combo_filtro_empresa = QComboBox()
+        self._combo_filtro_empresa.setMinimumWidth(200)
+        self._combo_filtro_empresa.currentIndexChanged.connect(
+            self.atualizar_lista
+        )
+        cabecalho.addWidget(self._combo_filtro_empresa)
+
         btn_novo = QPushButton("Novo Centro")
         btn_novo.setObjectName("btnPrimario")
         btn_novo.clicked.connect(self._novo)
@@ -105,11 +115,22 @@ class CentrosCustoView(QWidget):
             mapa_emp = {e.id: e.nome_fantasia for e in empresas if e.id is not None}
         except Exception:
             mapa_emp = {}
+            empresas = []
+
+        self._atualizar_combo_filtro(empresas)
+        empresa_id = self._combo_filtro_empresa.currentData()
+        if empresa_id is None:
+            self._tabela.setRowCount(0)
+            return
 
         try:
-            centros = self._listar.execute(empresa_id=0, skip=0, limit=500)
+            centros = self._listar.execute(
+                empresa_id=empresa_id, skip=0, limit=500
+            )
         except Exception as e:
-            QMessageBox.warning(self, "Erro", f"Erro ao listar centros de custo: {e}")
+            QMessageBox.warning(
+                self, "Erro", f"Erro ao listar centros de custo: {e}"
+            )
             return
 
         self._tabela.setRowCount(len(centros))
@@ -125,6 +146,24 @@ class CentrosCustoView(QWidget):
             self._tabela.setItem(
                 i, 4, self._item_centralizado("Sim" if centro.ativo else "Nao")
             )
+
+    def _atualizar_combo_filtro(
+        self, empresas: list[EmpresaResponseDTO]
+    ) -> None:
+        atual = self._combo_filtro_empresa.currentData()
+        self._combo_filtro_empresa.blockSignals(True)
+        self._combo_filtro_empresa.clear()
+        self._combo_filtro_empresa.addItem("Selecione...", None)
+        for emp in empresas:
+            if emp.id is not None:
+                self._combo_filtro_empresa.addItem(
+                    emp.nome_fantasia, emp.id
+                )
+        if atual is not None:
+            idx = self._combo_filtro_empresa.findData(atual)
+            if idx >= 0:
+                self._combo_filtro_empresa.setCurrentIndex(idx)
+        self._combo_filtro_empresa.blockSignals(False)
 
     def _item_centralizado(self, texto: str) -> QTableWidgetItem:
         item = QTableWidgetItem(texto)
@@ -164,6 +203,7 @@ class CentrosCustoView(QWidget):
             criar_use_case=self._criar,
             editar_use_case=self._editar,
             opcoes_empresa=opcoes,
+            empresa_id=self._combo_filtro_empresa.currentData(),
             parent=self,
         )
         if form.exec() == CentroCustoFormView.DialogCode.Accepted:
@@ -181,6 +221,7 @@ class CentrosCustoView(QWidget):
             criar_use_case=self._criar,
             editar_use_case=self._editar,
             opcoes_empresa=opcoes,
+            empresa_id=centro.empresa_id,
             parent=self,
             centro=centro,
         )

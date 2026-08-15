@@ -34,6 +34,7 @@ class CentroCustoFormView(QDialog):
         criar_use_case: CadastrarCentroCustoUseCase,
         editar_use_case: EditarCentroCustoUseCase,
         opcoes_empresa: list[tuple[int, str]],
+        empresa_id: int | None = None,
         parent: QWidget | None = None,
         centro: CentroCustoResponseDTO | None = None,
     ) -> None:
@@ -47,6 +48,14 @@ class CentroCustoFormView(QDialog):
         self._configurar_janela()
         self._montar_formulario()
         self._preencher_se_edicao()
+        self._selecionar_empresa_inicial(empresa_id)
+
+    def _selecionar_empresa_inicial(self, empresa_id: int | None) -> None:
+        if empresa_id is None:
+            return
+        idx = self._combo_empresa.findData(empresa_id)
+        if idx >= 0:
+            self._combo_empresa.setCurrentIndex(idx)
 
     def _configurar_janela(self) -> None:
         titulo = "Editar Centro de Custo" if self._editando else "Novo Centro de Custo"

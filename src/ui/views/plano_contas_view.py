@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QComboBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from application.dto.escritorio_dto import EscritorioResponseDTO
 from application.dto.plano_conta_dto import PlanoContaResponseDTO
 from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
 from application.use_cases.plano_conta_use_cases import (
@@ -63,6 +65,14 @@ class PlanoContasView(QWidget):
         cabecalho.addWidget(titulo)
         cabecalho.addStretch()
 
+        cabecalho.addWidget(QLabel("Escritorio:"))
+        self._combo_filtro_escritorio = QComboBox()
+        self._combo_filtro_escritorio.setMinimumWidth(200)
+        self._combo_filtro_escritorio.currentIndexChanged.connect(
+            self.atualizar_lista
+        )
+        cabecalho.addWidget(self._combo_filtro_escritorio)
+
         btn_novo = QPushButton("Nova Conta")
         btn_novo.setObjectName("btnPrimario")
         btn_novo.clicked.connect(self._novo)
@@ -105,9 +115,18 @@ class PlanoContasView(QWidget):
             mapa_esc = {e.id: e.nome for e in escritorios if e.id is not None}
         except Exception:
             mapa_esc = {}
+            escritorios = []
+
+        self._atualizar_combo_filtro(escritorios)
+        escritorio_id = self._combo_filtro_escritorio.currentData()
+        if escritorio_id is None:
+            self._tabela.setRowCount(0)
+            return
 
         try:
-            contas = self._listar.execute(escritorio_id=0, skip=0, limit=500)
+            contas = self._listar.execute(
+                escritorio_id=escritorio_id, skip=0, limit=500
+            )
         except Exception as e:
             QMessageBox.warning(self, "Erro", f"Erro ao listar plano de contas: {e}")
             return
@@ -129,6 +148,23 @@ class PlanoContasView(QWidget):
             self._tabela.setItem(
                 i, 6, QTableWidgetItem(str(conta.pai_id) if conta.pai_id else "—")
             )
+
+    def _atualizar_combo_filtro(
+        self, escritorios: list[EscritorioResponseDTO]
+    ) -> None:
+
+        atual = self._combo_filtro_escritorio.currentData()
+        self._combo_filtro_escritorio.blockSignals(True)
+        self._combo_filtro_escritorio.clear()
+        self._combo_filtro_escritorio.addItem("Selecione...", None)
+        for esc in escritorios:
+            if esc.id is not None:
+                self._combo_filtro_escritorio.addItem(esc.nome, esc.id)
+        if atual is not None:
+            idx = self._combo_filtro_escritorio.findData(atual)
+            if idx >= 0:
+                self._combo_filtro_escritorio.setCurrentIndex(idx)
+        self._combo_filtro_escritorio.blockSignals(False)
 
     def _item_centralizado(self, texto: str) -> QTableWidgetItem:
         item = QTableWidgetItem(texto)
@@ -167,7 +203,9 @@ class PlanoContasView(QWidget):
         form = PlanoContaFormView(
             criar_use_case=self._criar,
             editar_use_case=self._editar,
+            listar_use_case=self._listar,
             opcoes_escritorio=opcoes,
+            escritorio_id=self._combo_filtro_escritorio.currentData(),
             parent=self,
         )
         if form.exec() == PlanoContaFormView.DialogCode.Accepted:
@@ -184,7 +222,9 @@ class PlanoContasView(QWidget):
         form = PlanoContaFormView(
             criar_use_case=self._criar,
             editar_use_case=self._editar,
+            listar_use_case=self._listar,
             opcoes_escritorio=opcoes,
+            escritorio_id=self._combo_filtro_escritorio.currentData(),
             parent=self,
             plano=plano,
         )

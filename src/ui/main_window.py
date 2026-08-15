@@ -31,12 +31,17 @@ from infrastructure.database.repositories.sqlite_escritorio_repository import (
 from infrastructure.database.repositories.sqlite_plano_conta_repository import (
     SQLitePlanoContaRepository,
 )
+from infrastructure.database.repositories.sqlite_titulo_repository import (
+    SQLiteTituloRepository,
+)
 from ui.views.centros_custo_view import CentrosCustoView
 from ui.views.contadores_view import ContadoresView
 from ui.views.contas_bancarias_view import ContasBancariasView
+from ui.views.dashboard_view import DashboardView
 from ui.views.empresas_view import EmpresasView
 from ui.views.escritorios_view import EscritoriosView
 from ui.views.plano_contas_view import PlanoContasView
+from ui.views.titulos_view import TitulosView
 
 
 class MainWindow(QMainWindow):
@@ -58,6 +63,7 @@ class MainWindow(QMainWindow):
         self._cont_repo = SQLiteContadorRepository(SessionLocal)
         self._conta_repo = SQLiteContaBancariaRepository(SessionLocal)
         self._plano_repo = SQLitePlanoContaRepository(SessionLocal)
+        self._titulo_repo = SQLiteTituloRepository(SessionLocal)
         self._centro_repo = SQLiteCentroCustoRepository(SessionLocal)
 
         from application.use_cases.centro_custo_use_cases import (
@@ -81,6 +87,9 @@ class MainWindow(QMainWindow):
             ListarContadoresUseCase,
             ObterContadorUseCase,
         )
+        from application.use_cases.dashboard_use_cases import (
+            ResumoFinanceiroUseCase,
+        )
         from application.use_cases.empresa_use_cases import (
             CadastrarEmpresaUseCase,
             EditarEmpresaUseCase,
@@ -100,9 +109,19 @@ class MainWindow(QMainWindow):
             ObterPlanoContaUseCase,
             RemoverPlanoContaUseCase,
         )
+        from application.use_cases.titulo_use_cases import (
+            CadastrarTituloUseCase,
+            CancelarTituloUseCase,
+            EditarTituloUseCase,
+            ListarTitulosUseCase,
+            ObterTituloUseCase,
+            QuitarTituloUseCase,
+            RemoverTituloUseCase,
+        )
 
         self._uc_listar_esc = ListarEscritoriosUseCase(self._esc_repo)
         self._uc_obter_esc = ObterEscritorioUseCase(self._esc_repo)
+        self._uc_resumo_dashboard = ResumoFinanceiroUseCase(self._titulo_repo)
         self._uc_criar_esc = CriarEscritorioUseCase(self._esc_repo)
         self._uc_editar_esc = EditarEscritorioUseCase(self._esc_repo)
 
@@ -128,6 +147,14 @@ class MainWindow(QMainWindow):
         self._uc_criar_plano = CadastrarPlanoContaUseCase(self._plano_repo)
         self._uc_editar_plano = EditarPlanoContaUseCase(self._plano_repo)
         self._uc_remover_plano = RemoverPlanoContaUseCase(self._plano_repo)
+
+        self._uc_listar_titulo = ListarTitulosUseCase(self._titulo_repo)
+        self._uc_obter_titulo = ObterTituloUseCase(self._titulo_repo)
+        self._uc_criar_titulo = CadastrarTituloUseCase(self._titulo_repo)
+        self._uc_editar_titulo = EditarTituloUseCase(self._titulo_repo)
+        self._uc_quitar_titulo = QuitarTituloUseCase(self._titulo_repo)
+        self._uc_cancelar_titulo = CancelarTituloUseCase(self._titulo_repo)
+        self._uc_remover_titulo = RemoverTituloUseCase(self._titulo_repo)
 
         self._uc_listar_centro = ListarCentroCustoUseCase(self._centro_repo)
         self._uc_obter_centro = ObterCentroCustoUseCase(self._centro_repo)
@@ -172,12 +199,14 @@ class MainWindow(QMainWindow):
         self._botoes_nav: list[QPushButton] = []
 
         nav_items = [
-            ("  Escritorios", 0),
-            ("  Empresas", 1),
-            ("  Contadores", 2),
-            ("  Contas Bancarias", 3),
-            ("  Plano de Contas", 4),
-            ("  Centros de Custo", 5),
+            ("  Dashboard", 0),
+            ("  Escritorios", 1),
+            ("  Empresas", 2),
+            ("  Contadores", 3),
+            ("  Contas Bancarias", 4),
+            ("  Plano de Contas", 5),
+            ("  Centros de Custo", 6),
+            ("  Titulos", 7),
         ]
 
         for texto, indice in nav_items:
@@ -193,6 +222,12 @@ class MainWindow(QMainWindow):
         return sidebar
 
     def _criar_paginas(self) -> None:
+        self._view_dashboard = DashboardView(
+            resumo=self._uc_resumo_dashboard,
+            listar_escritorios=self._uc_listar_esc,
+        )
+        self._stack.addWidget(self._view_dashboard)
+
         self._view_escritorios = EscritoriosView(
             listar=self._uc_listar_esc,
             obter=self._uc_obter_esc,
@@ -249,6 +284,21 @@ class MainWindow(QMainWindow):
             listar_empresas=self._uc_listar_emp,
         )
         self._stack.addWidget(self._view_centros)
+
+        self._view_titulos = TitulosView(
+            listar=self._uc_listar_titulo,
+            obter=self._uc_obter_titulo,
+            criar=self._uc_criar_titulo,
+            editar=self._uc_editar_titulo,
+            quitar=self._uc_quitar_titulo,
+            cancelar=self._uc_cancelar_titulo,
+            remover=self._uc_remover_titulo,
+            listar_escritorios=self._uc_listar_esc,
+            listar_empresas=self._uc_listar_emp,
+            listar_plano_contas=self._uc_listar_plano,
+            listar_centros_custo=self._uc_listar_centro,
+        )
+        self._stack.addWidget(self._view_titulos)
 
     def _navegar(self, indice: int) -> None:
         self._stack.setCurrentIndex(indice)

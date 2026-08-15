@@ -22,7 +22,7 @@ def main() -> int:
     janela = MainWindow()
     janela.show()
 
-    return app.exec()  # type: ignore[no-any-return]
+    return app.exec()
 
 
 if __name__ == "__main__":

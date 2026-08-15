@@ -30,6 +30,7 @@ def init_db() -> None:
         EmpresaModel,
         EscritorioModel,
         PlanoContaModel,
+        TituloModel,
     )
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)

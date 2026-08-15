@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Plano de Contas e Centro de Custo implementados em todas as camadas (domain/application/infrastructure/UI). Navegacao lateral com 6 telas. 137 testes passando, ruff e mypy limpos.",
-  "current_task": "Bloco estrutural completo (Escritorio, Empresa, Contador, ContaBancaria, PlanoConta, CentroCusto). Proximas etapas: modulos financeiros.",
+  "last_summary": "Projeto finalizado no escopo acordado: cadastros base, Plano de Contas, Centros de Custo, Titulos financeiros e Dashboard. Conciliacao bancaria adiada. 137 testes passando, ruff e mypy limpos.",
+  "current_task": "Projeto entregue. Sem tarefas pendentes no escopo atual.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
@@ -11,11 +11,7 @@
     "CentroCusto: codigo, nome, ativo, ligado a empresa",
     "UI mantem padrao visual existente"
   ],
-  "pending_actions": [
-    "Proxima etapa: modulos financeiros (titulos, contas a pagar/receber)",
-    "Opcional: relatorios e dashboards",
-    "Opcional: conciliacao bancaria"
-  ],
+  "pending_actions": [],
   "recent_files": [
     "src/domain/enums/tipo_plano_conta.py",
     "src/domain/entities/plano_conta.py",
@@ -34,6 +30,18 @@
     "src/ui/views/plano_contas_view.py",
     "src/ui/views/centro_custo_form_view.py",
     "src/ui/views/centros_custo_view.py",
+    "src/ui/main_window.py",
+    "src/domain/entities/titulo.py",
+    "src/domain/enums/tipo_titulo.py",
+    "src/domain/enums/status_titulo.py",
+    "src/application/dto/titulo_dto.py",
+    "src/application/use_cases/titulo_use_cases.py",
+    "src/infrastructure/database/models/titulo_model.py",
+    "src/infrastructure/database/repositories/sqlite_titulo_repository.py",
+    "src/ui/views/titulos_view.py",
+    "src/ui/views/titulo_form_view.py",
+    "src/application/use_cases/dashboard_use_cases.py",
+    "src/ui/views/dashboard_view.py",
     "src/ui/main_window.py"
   ]
 }
