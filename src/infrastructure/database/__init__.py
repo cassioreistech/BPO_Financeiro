@@ -23,7 +23,12 @@ class Base(DeclarativeBase):
 def init_db() -> None:
     """Garante o diretorio de dados e cria o schema conhecido pelos models."""
     # Importacao registra os models no metadata do Base antes do create_all.
-    from infrastructure.database.models import EmpresaModel, EscritorioModel  # noqa: F401
+    from infrastructure.database.models import (  # noqa: F401
+        ContaBancariaModel,
+        ContadorModel,
+        EmpresaModel,
+        EscritorioModel,
+    )
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(bind=engine)

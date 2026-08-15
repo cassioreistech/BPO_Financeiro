@@ -8,15 +8,31 @@ import pytest
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from domain.entities.conta_bancaria import ContaBancaria
+from domain.entities.contador import Contador
 from domain.entities.empresa import Empresa
 from domain.entities.escritorio import Escritorio
 from domain.enums.regime_tributario import RegimeTributario
 from domain.enums.status_empresa import StatusEmpresa
+from domain.enums.tipo_conta_bancaria import TipoContaBancaria
+from domain.value_objects.banco_codigo import BancoCodigo
 from domain.value_objects.cnpj import CNPJ
+from domain.value_objects.crc import CRC
 from domain.value_objects.email import Email
 from domain.value_objects.telefone import Telefone
 from infrastructure.database import Base
-from infrastructure.database.models import EmpresaModel, EscritorioModel  # noqa: F401
+from infrastructure.database.models import (  # noqa: F401
+    ContaBancariaModel,
+    ContadorModel,
+    EmpresaModel,
+    EscritorioModel,
+)
+from infrastructure.database.repositories.sqlite_conta_bancaria_repository import (
+    SQLiteContaBancariaRepository,
+)
+from infrastructure.database.repositories.sqlite_contador_repository import (
+    SQLiteContadorRepository,
+)
 from infrastructure.database.repositories.sqlite_empresa_repository import (
     SQLiteEmpresaRepository,
 )
@@ -63,6 +79,20 @@ def empresa_repo(session_factory: sessionmaker[Session]) -> SQLiteEmpresaReposit
     return SQLiteEmpresaRepository(session_factory)
 
 
+@pytest.fixture()
+def contador_repo(session_factory: sessionmaker[Session]) -> SQLiteContadorRepository:
+    """Repository real de contador sobre o banco de teste."""
+    return SQLiteContadorRepository(session_factory)
+
+
+@pytest.fixture()
+def conta_bancaria_repo(
+    session_factory: sessionmaker[Session],
+) -> SQLiteContaBancariaRepository:
+    """Repository real de conta bancaria sobre o banco de teste."""
+    return SQLiteContaBancariaRepository(session_factory)
+
+
 def criar_escritorio(
     repo: SQLiteEscritorioRepository,
     nome: str = "Escritorio Teste",
@@ -93,5 +123,43 @@ def criar_empresa(
         email_financeiro=Email(EMAIL),
         telefone_financeiro=Telefone(TELEFONE),
         ativo=StatusEmpresa.ATIVA if ativo else StatusEmpresa.INATIVA,
+    )
+    return repo.create(entidade)
+
+
+def criar_contador(
+    repo: SQLiteContadorRepository,
+    escritorio_id: int,
+    nome: str = "Contador Teste",
+    crc: str | None = "01-123456/O",
+) -> Contador:
+    """Cria um contador valido usando o repository real."""
+    entidade = Contador(
+        escritorio_id=escritorio_id,
+        nome=nome,
+        crc=CRC(crc) if crc else None,
+    )
+    return repo.create(entidade)
+
+
+def criar_conta_bancaria(
+    repo: SQLiteContaBancariaRepository,
+    empresa_id: int,
+    banco_nome: str = "Banco do Brasil",
+    banco_codigo: str = "001",
+    agencia: str = "1234",
+    conta: str = "56789-0",
+    tipo: TipoContaBancaria = TipoContaBancaria.CORRENTE,
+    descricao: str = "Conta teste",
+) -> ContaBancaria:
+    """Cria uma conta bancaria valida usando o repository real."""
+    entidade = ContaBancaria(
+        empresa_id=empresa_id,
+        banco_nome=banco_nome,
+        banco_codigo=BancoCodigo(banco_codigo),
+        agencia=agencia,
+        conta=conta,
+        tipo=tipo,
+        descricao=descricao,
     )
     return repo.create(entidade)
