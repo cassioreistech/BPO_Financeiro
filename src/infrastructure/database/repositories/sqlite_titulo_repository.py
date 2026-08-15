@@ -214,14 +214,18 @@ class SQLiteTituloRepository(TituloRepository):
 
             if filtro.texto:
                 termo = f"%{filtro.texto}%"
-                stmt = stmt.where(
-                    or_(
-                        TituloModel.descricao.ilike(termo),
-                        TituloModel.numero_documento.ilike(termo),
-                        TituloModel.categoria.ilike(termo),
-                        TituloModel.codigo_barras.ilike(termo),
-                    )
-                )
+                condicoes = [
+                    TituloModel.descricao.ilike(termo),
+                    TituloModel.numero_documento.ilike(termo),
+                    TituloModel.categoria.ilike(termo),
+                    TituloModel.codigo_barras.ilike(termo),
+                ]
+                try:
+                    id_busca = int(filtro.texto)
+                    condicoes.append(TituloModel.id == id_busca)  # type: ignore[arg-type]
+                except ValueError:
+                    pass
+                stmt = stmt.where(or_(*condicoes))
 
             stmt = (
                 stmt.order_by(

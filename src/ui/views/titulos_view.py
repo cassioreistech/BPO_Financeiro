@@ -175,7 +175,7 @@ class TitulosView(QWidget):
         filtros.addWidget(lbl_busca, 0, 2)
         self._campo_busca = QLineEdit()
         self._campo_busca.setPlaceholderText(
-            "Descricao, numero do documento, categoria ou codigo de barras"
+            "ID, descricao, numero do documento, categoria ou codigo de barras"
         )
         filtros.addWidget(self._campo_busca, 0, 3, 1, 3)
 
