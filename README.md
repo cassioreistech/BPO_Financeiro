@@ -8,8 +8,14 @@ Auxiliar escritórios contábeis (público inicial: até ~20 empresas clientes) 
 dos seus clientes. Fases futuras incluirão empresas, contadores, contas bancárias, contas a pagar
 e receber, conciliação bancária, fluxo de caixa de 13 semanas, relatórios e IA.
 
-**Estágio atual:** fundação técnica — estrutura, convenções e arquitetura prontas para crescer.
-Nenhuma regra de negócio implementada ainda.
+**Estágio atual:** módulos operacionais implementados e em uso.
+Funcionalidades existentes:
+- Cadastros de escritório, empresa, contador, conta bancária, plano de contas e centro de custo.
+- Lançamento e gestão de títulos (contas a pagar/receber) com quitacao, cancelamento e remocao.
+- Filtros avancados de titulos e relatorios PDF (titulos, fluxo de caixa, projecao financeira).
+- Dashboard financeiro com resumo, grafico por categoria e tabela de vencidos.
+- Contexto global de empresa ativa: o usuario seleciona a empresa no cabecalho e todas as telas operacionais carregam dados dela.
+- Alertas de titulos multiempresa (Vencidos / Vence hoje / Vence amanha / Esta semana), com modo consolidado (Todas) ou filtro por empresa ativa.
 
 ## Stack
 
