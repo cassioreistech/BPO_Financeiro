@@ -240,10 +240,10 @@ class MainWindow(QMainWindow):
         config_layout.setSpacing(4)
 
         config_items = [
-            ("    Contas Bancarias", 2),
-            ("    Empresas", 3),
-            ("    Escritorios", 4),
-            ("    Contadores", 5),
+            ("    Contas Bancarias", 4),
+            ("    Empresas", 5),
+            ("    Escritorios", 6),
+            ("    Contadores", 7),
         ]
 
         self._botoes_config: list[QPushButton] = []
