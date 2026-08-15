@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Projeto finalizado no escopo acordado: cadastros base, Plano de Contas, Centros de Custo, Titulos financeiros e Dashboard. Conciliacao bancaria adiada. 137 testes passando, ruff e mypy limpos.",
-  "current_task": "Projeto entregue. Sem tarefas pendentes no escopo atual.",
+  "last_summary": "Ajustes finos no Dashboard: grid responsivo nos cards (columnStretch), sombra e efeito hover, titulo dinamico com nome do escritorio, tooltips nos cards e no grafico (hover tooltip per bar), gridlines e rótulos de eixo no grafico de barras, padding maior e animacao de atualizacao. 137 testes passando, ruff e mypy limpos.",
+  "current_task": "Ajustes finos no dashboard concluidos.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
