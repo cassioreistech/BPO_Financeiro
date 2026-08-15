@@ -1,0 +1,31 @@
+{
+  "project_name": "Sistema BPO Financeiro (Python desktop)",
+  "version": "1.0",
+  "token_saving_mode": true,
+  "last_summary": "Fundação técnica criada: estrutura hexagonal (domain/application/infrastructure/ui), pyproject.toml, entrypoint src/main.py, MainWindow PySide6 mínima, banco SQLite via SQLAlchemy 2.x com Base declarativa, logging structlog, testes smoke. Imports flat sem prefixo src.",
+  "current_task": "Etapa concluída. Próxima etapa provável: plan-phase da fundação ou definição do domínio (empresas/escritórios).",
+  "key_decisions": [
+    "Arquitetura hexagonal: ui -> infrastructure -> application -> domain (dependências apontam para dentro)",
+    "Imports flat obrigatórios: from domain/application/infrastructure/ui (nunca src.)",
+    "Mapeamento setuptools package-dir para instalar pacotes top-level a partir de src/",
+    "Banco SQLite local em data/bpo.db, criado automaticamente em runtime",
+    "Mypy strict, Ruff + Black com line-length 100, alvo Python 3.12",
+    "Sem regras de negócio, CRUD ou telas completas nesta etapa"
+  ],
+  "pending_actions": [
+    "Instalar deps: python -m venv .venv; .\\.venv\\Scripts\\Activate.ps1; pip install -e \".[dev]\"",
+    "Rodar app: python src/main.py",
+    "Rodar pytest / ruff check . / black . / mypy",
+    "Futuro: gsd-plan-phase para iniciar execução planejada"
+  ],
+  "recent_files": [
+    "pyproject.toml",
+    "src/main.py",
+    "src/infrastructure/database.py",
+    "src/infrastructure/logging_config.py",
+    "src/ui/main_window.py",
+    "src/ui/styles.py",
+    "tests/test_smoke.py",
+    "README.md"
+  ]
+}
