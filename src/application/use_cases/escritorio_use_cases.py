@@ -131,3 +131,21 @@ class ObterEscritorioUseCase:
         if escritorio is None:
             raise ValueError(f"Escritorio com ID {id} nao encontrado.")
         return _para_response_dto(escritorio)
+
+
+class ExcluirEscritorioUseCase:
+    """Use case para exclusao de escritorio."""
+
+    def __init__(self, repository: EscritorioRepository) -> None:
+        self._repository = repository
+
+    def execute(self, id: int) -> None:
+        """Exclui um escritorio por ID.
+
+        Raises:
+            ValueError: se escritorio nao existe.
+        """
+        existente = self._repository.get_by_id(id)
+        if existente is None:
+            raise ValueError(f"Escritorio com ID {id} nao encontrado.")
+        self._repository.delete(id)

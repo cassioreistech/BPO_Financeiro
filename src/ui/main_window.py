@@ -93,12 +93,14 @@ class MainWindow(QMainWindow):
         from application.use_cases.empresa_use_cases import (
             CadastrarEmpresaUseCase,
             EditarEmpresaUseCase,
+            ExcluirEmpresaUseCase,
             ListarEmpresasUseCase,
             ObterEmpresaUseCase,
         )
         from application.use_cases.escritorio_use_cases import (
             CriarEscritorioUseCase,
             EditarEscritorioUseCase,
+            ExcluirEscritorioUseCase,
             ListarEscritoriosUseCase,
             ObterEscritorioUseCase,
         )
@@ -124,11 +126,13 @@ class MainWindow(QMainWindow):
         self._uc_resumo_dashboard = ResumoFinanceiroUseCase(self._titulo_repo)
         self._uc_criar_esc = CriarEscritorioUseCase(self._esc_repo)
         self._uc_editar_esc = EditarEscritorioUseCase(self._esc_repo)
+        self._uc_excluir_esc = ExcluirEscritorioUseCase(self._esc_repo)
 
         self._uc_listar_emp = ListarEmpresasUseCase(self._emp_repo)
         self._uc_obter_emp = ObterEmpresaUseCase(self._emp_repo)
         self._uc_criar_emp = CadastrarEmpresaUseCase(self._emp_repo)
         self._uc_editar_emp = EditarEmpresaUseCase(self._emp_repo)
+        self._uc_excluir_emp = ExcluirEmpresaUseCase(self._emp_repo)
 
         self._uc_listar_cont = ListarContadoresUseCase(self._cont_repo)
         self._uc_obter_cont = ObterContadorUseCase(self._cont_repo)
@@ -233,6 +237,7 @@ class MainWindow(QMainWindow):
             obter=self._uc_obter_esc,
             criar=self._uc_criar_esc,
             editar=self._uc_editar_esc,
+            excluir=self._uc_excluir_esc,
         )
         self._stack.addWidget(self._view_escritorios)
 
@@ -241,6 +246,7 @@ class MainWindow(QMainWindow):
             obter=self._uc_obter_emp,
             criar=self._uc_criar_emp,
             editar=self._uc_editar_emp,
+            excluir=self._uc_excluir_emp,
             listar_escritorios=self._uc_listar_esc,
         )
         self._stack.addWidget(self._view_empresas)

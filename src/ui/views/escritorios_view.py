@@ -19,6 +19,7 @@ from application.dto.escritorio_dto import EscritorioResponseDTO
 from application.use_cases.escritorio_use_cases import (
     CriarEscritorioUseCase,
     EditarEscritorioUseCase,
+    ExcluirEscritorioUseCase,
     ListarEscritoriosUseCase,
     ObterEscritorioUseCase,
 )
@@ -36,6 +37,7 @@ class EscritoriosView(QWidget):
         obter: ObterEscritorioUseCase,
         criar: CriarEscritorioUseCase,
         editar: EditarEscritorioUseCase,
+        excluir: ExcluirEscritorioUseCase,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -43,6 +45,7 @@ class EscritoriosView(QWidget):
         self._obter = obter
         self._criar = criar
         self._editar = editar
+        self._excluir = excluir
         self._montar()
         self.atualizar_lista()
 
@@ -93,6 +96,12 @@ class EscritoriosView(QWidget):
         btn_editar = QPushButton("Editar")
         btn_editar.clicked.connect(self._editar_selecionado)
         botoes.addWidget(btn_editar)
+
+        btn_excluir = QPushButton("Excluir")
+        btn_excluir.setObjectName("btnPerigo")
+        btn_excluir.clicked.connect(self._excluir_selecionado)
+        botoes.addWidget(btn_excluir)
+
         botoes.addStretch()
         layout.addLayout(botoes)
 
@@ -153,3 +162,24 @@ class EscritoriosView(QWidget):
         )
         if form.exec() == EscritorioFormView.DialogCode.Accepted:
             self.atualizar_lista()
+
+    def _excluir_selecionado(self) -> None:
+        esc = self._obter_selecionado()
+        if esc is None:
+            QMessageBox.information(
+                self, "Selecao", "Selecione um escritorio para excluir."
+            )
+            return
+        resposta = QMessageBox.question(
+            self,
+            "Confirmar exclusao",
+            f"Deseja excluir o escritorio '{esc.nome}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if resposta == QMessageBox.StandardButton.Yes:
+            try:
+                self._excluir.execute(esc.id)
+                self.atualizar_lista()
+                QMessageBox.information(self, "Sucesso", "Escritorio excluido com sucesso.")
+            except ValueError as e:
+                QMessageBox.warning(self, "Erro", str(e))

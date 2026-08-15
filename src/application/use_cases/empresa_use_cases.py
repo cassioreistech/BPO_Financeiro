@@ -216,3 +216,21 @@ class ObterEmpresaUseCase:
         if empresa is None:
             raise ValueError(f"Empresa com ID {id} nao encontrada.")
         return _para_response_dto(empresa)
+
+
+class ExcluirEmpresaUseCase:
+    """Use case para exclusao de empresa."""
+
+    def __init__(self, repository: EmpresaRepository) -> None:
+        self._repository = repository
+
+    def execute(self, id: int) -> None:
+        """Exclui uma empresa por ID.
+
+        Raises:
+            ValueError: se empresa nao existe.
+        """
+        existente = self._repository.get_by_id(id)
+        if existente is None:
+            raise ValueError(f"Empresa com ID {id} nao encontrada.")
+        self._repository.delete(id)

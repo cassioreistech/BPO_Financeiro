@@ -19,6 +19,7 @@ from application.dto.empresa_dto import EmpresaResponseDTO
 from application.use_cases.empresa_use_cases import (
     CadastrarEmpresaUseCase,
     EditarEmpresaUseCase,
+    ExcluirEmpresaUseCase,
     ListarEmpresasUseCase,
     ObterEmpresaUseCase,
 )
@@ -45,6 +46,7 @@ class EmpresasView(QWidget):
         obter: ObterEmpresaUseCase,
         criar: CadastrarEmpresaUseCase,
         editar: EditarEmpresaUseCase,
+        excluir: ExcluirEmpresaUseCase,
         listar_escritorios: ListarEscritoriosUseCase,
         parent: QWidget | None = None,
     ) -> None:
@@ -53,6 +55,7 @@ class EmpresasView(QWidget):
         self._obter = obter
         self._criar = criar
         self._editar = editar
+        self._excluir = excluir
         self._listar_escritorios = listar_escritorios
         self._montar()
         self.atualizar_lista()
@@ -104,6 +107,12 @@ class EmpresasView(QWidget):
         btn_editar = QPushButton("Editar")
         btn_editar.clicked.connect(self._editar_selecionado)
         botoes.addWidget(btn_editar)
+
+        btn_excluir = QPushButton("Excluir")
+        btn_excluir.setObjectName("btnPerigo")
+        btn_excluir.clicked.connect(self._excluir_selecionado)
+        botoes.addWidget(btn_excluir)
+
         botoes.addStretch()
         layout.addLayout(botoes)
 
@@ -196,3 +205,24 @@ class EmpresasView(QWidget):
         )
         if form.exec() == EmpresaFormView.DialogCode.Accepted:
             self.atualizar_lista()
+
+    def _excluir_selecionado(self) -> None:
+        emp = self._obter_selecionado()
+        if emp is None:
+            QMessageBox.information(
+                self, "Selecao", "Selecione uma empresa para excluir."
+            )
+            return
+        resposta = QMessageBox.question(
+            self,
+            "Confirmar exclusao",
+            f"Deseja excluir a empresa '{emp.nome_fantasia}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if resposta == QMessageBox.StandardButton.Yes:
+            try:
+                self._excluir.execute(emp.id)
+                self.atualizar_lista()
+                QMessageBox.information(self, "Sucesso", "Empresa excluida com sucesso.")
+            except ValueError as e:
+                QMessageBox.warning(self, "Erro", str(e))
