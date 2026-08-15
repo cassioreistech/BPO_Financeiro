@@ -202,18 +202,17 @@ class MainWindow(QMainWindow):
 
         self._botoes_nav: list[QPushButton] = []
 
-        nav_items = [
+        # Itens principais (operacionais)
+        main_items = [
             ("  Dashboard", 0),
-            ("  Escritorios", 1),
-            ("  Empresas", 2),
-            ("  Contadores", 3),
-            ("  Contas Bancarias", 4),
-            ("  Plano de Contas", 5),
-            ("  Centros de Custo", 6),
-            ("  Titulos", 7),
+            ("  Empresas", 1),
+            ("  Contas Bancarias", 2),
+            ("  Plano de Contas", 3),
+            ("  Centros de Custo", 4),
+            ("  Titulos", 5),
         ]
 
-        for texto, indice in nav_items:
+        for texto, indice in main_items:
             btn = QPushButton(texto)
             btn.setObjectName("navButton")
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -221,26 +220,61 @@ class MainWindow(QMainWindow):
             layout.addWidget(btn)
             self._botoes_nav.append(btn)
 
+        # Separador antes de Configurações
+        sep2 = QWidget()
+        sep2.setFixedHeight(1)
+        sep2.setObjectName("separator")
+        layout.addWidget(sep2)
+
+        # Botão Configurações (expansível)
+        self._btn_config = QPushButton("  Configurações")
+        self._btn_config.setObjectName("navButton")
+        self._btn_config.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_config.setCheckable(True)
+        self._btn_config.clicked.connect(self._toggle_config)
+        layout.addWidget(self._btn_config)
+
+        # Container dos itens de configuração (inicialmente oculto)
+        self._config_container = QWidget()
+        self._config_container.setVisible(False)
+        config_layout = QVBoxLayout(self._config_container)
+        config_layout.setContentsMargins(16, 8, 0, 8)
+        config_layout.setSpacing(4)
+
+        config_items = [
+            ("    Escritorios", 5),
+            ("    Contadores", 6),
+        ]
+
+        self._botoes_config: list[QPushButton] = []
+        for texto, indice in config_items:
+            btn = QPushButton(texto)
+            btn.setObjectName("navButtonConfig")
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.clicked.connect(lambda checked, i=indice: self._navegar(i))
+            config_layout.addWidget(btn)
+            self._botoes_config.append(btn)
+
+        layout.addWidget(self._config_container)
         layout.addStretch()
 
         return sidebar
 
+    def _toggle_config(self) -> None:
+        """Alterna visibilidade do menu de configurações."""
+        visivel = self._config_container.isVisible()
+        self._config_container.setVisible(not visivel)
+        self._btn_config.setChecked(not visivel)
+
     def _criar_paginas(self) -> None:
+        # 0: Dashboard
         self._view_dashboard = DashboardView(
             resumo=self._uc_resumo_dashboard,
             listar_empresas=self._uc_listar_emp,
         )
         self._stack.addWidget(self._view_dashboard)
 
-        self._view_escritorios = EscritoriosView(
-            listar=self._uc_listar_esc,
-            obter=self._uc_obter_esc,
-            criar=self._uc_criar_esc,
-            editar=self._uc_editar_esc,
-            excluir=self._uc_excluir_esc,
-        )
-        self._stack.addWidget(self._view_escritorios)
-
+        # 1: Empresas
         self._view_empresas = EmpresasView(
             listar=self._uc_listar_emp,
             obter=self._uc_obter_emp,
@@ -251,16 +285,7 @@ class MainWindow(QMainWindow):
         )
         self._stack.addWidget(self._view_empresas)
 
-        self._view_contadores = ContadoresView(
-            listar=self._uc_listar_cont,
-            obter=self._uc_obter_cont,
-            criar=self._uc_criar_cont,
-            editar=self._uc_editar_cont,
-            excluir=self._uc_excluir_cont,
-            listar_escritorios=self._uc_listar_esc,
-        )
-        self._stack.addWidget(self._view_contadores)
-
+        # 2: Contas Bancarias
         self._view_contas = ContasBancariasView(
             listar=self._uc_listar_conta,
             obter=self._uc_obter_conta,
@@ -271,6 +296,7 @@ class MainWindow(QMainWindow):
         )
         self._stack.addWidget(self._view_contas)
 
+        # 3: Plano de Contas
         self._view_plano = PlanoContasView(
             listar=self._uc_listar_plano,
             obter=self._uc_obter_plano,
@@ -281,6 +307,7 @@ class MainWindow(QMainWindow):
         )
         self._stack.addWidget(self._view_plano)
 
+        # 4: Centros de Custo
         self._view_centros = CentrosCustoView(
             listar=self._uc_listar_centro,
             obter=self._uc_obter_centro,
@@ -291,6 +318,7 @@ class MainWindow(QMainWindow):
         )
         self._stack.addWidget(self._view_centros)
 
+        # 4: Titulos
         self._view_titulos = TitulosView(
             listar=self._uc_listar_titulo,
             obter=self._uc_obter_titulo,
@@ -305,6 +333,27 @@ class MainWindow(QMainWindow):
             listar_centros_custo=self._uc_listar_centro,
         )
         self._stack.addWidget(self._view_titulos)
+
+        # 6: Escritorios (config)
+        self._view_escritorios = EscritoriosView(
+            listar=self._uc_listar_esc,
+            obter=self._uc_obter_esc,
+            criar=self._uc_criar_esc,
+            editar=self._uc_editar_esc,
+            excluir=self._uc_excluir_esc,
+        )
+        self._stack.addWidget(self._view_escritorios)
+
+        # 7: Contadores (config)
+        self._view_contadores = ContadoresView(
+            listar=self._uc_listar_cont,
+            obter=self._uc_obter_cont,
+            criar=self._uc_criar_cont,
+            editar=self._uc_editar_cont,
+            excluir=self._uc_excluir_cont,
+            listar_escritorios=self._uc_listar_esc,
+        )
+        self._stack.addWidget(self._view_contadores)
 
     def _navegar(self, indice: int) -> None:
         self._stack.setCurrentIndex(indice)
