@@ -51,6 +51,30 @@ class CNPJ:
 
         return int(cnpj[13]) == dv2
 
+    @staticmethod
+    def calcular_digitos_verificadores(cnpj_base_12: str) -> str:
+        """Calcula os 2 digitos verificadores para um CNPJ de 12 digitos.
+
+        Args:
+            cnpj_base_12: os 12 primeiros digitos do CNPJ.
+
+        Returns:
+            Os 2 digitos verificadores como string.
+        """
+        pesos_1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+        pesos_2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+        soma = sum(int(cnpj_base_12[i]) * pesos_1[i] for i in range(12))
+        resto = soma % 11
+        dv1 = 0 if resto < 2 else 11 - resto
+
+        base_13 = cnpj_base_12 + str(dv1)
+        soma = sum(int(base_13[i]) * pesos_2[i] for i in range(13))
+        resto = soma % 11
+        dv2 = 0 if resto < 2 else 11 - resto
+
+        return f"{dv1}{dv2}"
+
     def formatted(self) -> str:
         """Retorna o CNPJ formatado: XX.XXX.XXX/XXXX-XX."""
         v = self.valor

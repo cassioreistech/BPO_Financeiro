@@ -13,6 +13,9 @@ from PySide6.QtWidgets import (
 )
 
 from infrastructure.database import SessionLocal
+from infrastructure.database.repositories.sqlite_centro_custo_repository import (
+    SQLiteCentroCustoRepository,
+)
 from infrastructure.database.repositories.sqlite_conta_bancaria_repository import (
     SQLiteContaBancariaRepository,
 )
@@ -25,10 +28,15 @@ from infrastructure.database.repositories.sqlite_empresa_repository import (
 from infrastructure.database.repositories.sqlite_escritorio_repository import (
     SQLiteEscritorioRepository,
 )
+from infrastructure.database.repositories.sqlite_plano_conta_repository import (
+    SQLitePlanoContaRepository,
+)
+from ui.views.centros_custo_view import CentrosCustoView
 from ui.views.contadores_view import ContadoresView
 from ui.views.contas_bancarias_view import ContasBancariasView
 from ui.views.empresas_view import EmpresasView
 from ui.views.escritorios_view import EscritoriosView
+from ui.views.plano_contas_view import PlanoContasView
 
 
 class MainWindow(QMainWindow):
@@ -49,7 +57,16 @@ class MainWindow(QMainWindow):
         self._emp_repo = SQLiteEmpresaRepository(SessionLocal)
         self._cont_repo = SQLiteContadorRepository(SessionLocal)
         self._conta_repo = SQLiteContaBancariaRepository(SessionLocal)
+        self._plano_repo = SQLitePlanoContaRepository(SessionLocal)
+        self._centro_repo = SQLiteCentroCustoRepository(SessionLocal)
 
+        from application.use_cases.centro_custo_use_cases import (
+            CadastrarCentroCustoUseCase,
+            DesativarCentroCustoUseCase,
+            EditarCentroCustoUseCase,
+            ListarCentroCustoUseCase,
+            ObterCentroCustoUseCase,
+        )
         from application.use_cases.conta_bancaria_use_cases import (
             CadastrarContaBancariaUseCase,
             DesativarContaBancariaUseCase,
@@ -76,6 +93,13 @@ class MainWindow(QMainWindow):
             ListarEscritoriosUseCase,
             ObterEscritorioUseCase,
         )
+        from application.use_cases.plano_conta_use_cases import (
+            CadastrarPlanoContaUseCase,
+            EditarPlanoContaUseCase,
+            ListarPlanoContaUseCase,
+            ObterPlanoContaUseCase,
+            RemoverPlanoContaUseCase,
+        )
 
         self._uc_listar_esc = ListarEscritoriosUseCase(self._esc_repo)
         self._uc_obter_esc = ObterEscritorioUseCase(self._esc_repo)
@@ -98,6 +122,18 @@ class MainWindow(QMainWindow):
         self._uc_criar_conta = CadastrarContaBancariaUseCase(self._conta_repo)
         self._uc_editar_conta = EditarContaBancariaUseCase(self._conta_repo)
         self._uc_desativar_conta = DesativarContaBancariaUseCase(self._conta_repo)
+
+        self._uc_listar_plano = ListarPlanoContaUseCase(self._plano_repo)
+        self._uc_obter_plano = ObterPlanoContaUseCase(self._plano_repo)
+        self._uc_criar_plano = CadastrarPlanoContaUseCase(self._plano_repo)
+        self._uc_editar_plano = EditarPlanoContaUseCase(self._plano_repo)
+        self._uc_remover_plano = RemoverPlanoContaUseCase(self._plano_repo)
+
+        self._uc_listar_centro = ListarCentroCustoUseCase(self._centro_repo)
+        self._uc_obter_centro = ObterCentroCustoUseCase(self._centro_repo)
+        self._uc_criar_centro = CadastrarCentroCustoUseCase(self._centro_repo)
+        self._uc_editar_centro = EditarCentroCustoUseCase(self._centro_repo)
+        self._uc_desativar_centro = DesativarCentroCustoUseCase(self._centro_repo)
 
     def _montar_ui(self) -> None:
         central = QWidget()
@@ -140,6 +176,8 @@ class MainWindow(QMainWindow):
             ("  Empresas", 1),
             ("  Contadores", 2),
             ("  Contas Bancarias", 3),
+            ("  Plano de Contas", 4),
+            ("  Centros de Custo", 5),
         ]
 
         for texto, indice in nav_items:
@@ -191,6 +229,26 @@ class MainWindow(QMainWindow):
             listar_empresas=self._uc_listar_emp,
         )
         self._stack.addWidget(self._view_contas)
+
+        self._view_plano = PlanoContasView(
+            listar=self._uc_listar_plano,
+            obter=self._uc_obter_plano,
+            criar=self._uc_criar_plano,
+            editar=self._uc_editar_plano,
+            remover=self._uc_remover_plano,
+            listar_escritorios=self._uc_listar_esc,
+        )
+        self._stack.addWidget(self._view_plano)
+
+        self._view_centros = CentrosCustoView(
+            listar=self._uc_listar_centro,
+            obter=self._uc_obter_centro,
+            criar=self._uc_criar_centro,
+            editar=self._uc_editar_centro,
+            desativar=self._uc_desativar_centro,
+            listar_empresas=self._uc_listar_emp,
+        )
+        self._stack.addWidget(self._view_centros)
 
     def _navegar(self, indice: int) -> None:
         self._stack.setCurrentIndex(indice)
