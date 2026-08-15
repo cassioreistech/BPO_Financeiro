@@ -50,6 +50,7 @@ class ContaBancariaFormView(QDialog):
         criar_use_case: CadastrarContaBancariaUseCase,
         editar_use_case: EditarContaBancariaUseCase,
         opcoes_empresa: list[tuple[int, str]],
+        empresa_id: int | None = None,
         parent: QWidget | None = None,
         conta: ContaBancariaResponseDTO | None = None,
     ) -> None:
@@ -57,12 +58,14 @@ class ContaBancariaFormView(QDialog):
         self._criar = criar_use_case
         self._editar = editar_use_case
         self._opcoes_empresa = opcoes_empresa
+        self._empresa_id = empresa_id
         self._conta = conta
         self._editando = conta is not None
 
         self._configurar_janela()
         self._montar_formulario()
         self._preencher_se_edicao()
+        self._selecionar_empresa_inicial(empresa_id)
 
     def _configurar_janela(self) -> None:
         titulo = "Editar Conta Bancaria" if self._editando else "Nova Conta Bancaria"
@@ -145,6 +148,13 @@ class ContaBancariaFormView(QDialog):
                     self._campo_banco_nome.setText(nome)
                     self._campo_banco_codigo.setText(codigo)
                     break
+
+    def _selecionar_empresa_inicial(self, empresa_id: int | None) -> None:
+        if empresa_id is None:
+            return
+        idx = self._combo_empresa.findData(empresa_id)
+        if idx >= 0:
+            self._combo_empresa.setCurrentIndex(idx)
 
     def _preencher_se_edicao(self) -> None:
         if self._conta is None:

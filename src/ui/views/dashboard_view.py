@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from application.dto.empresa_dto import EmpresaResponseDTO
+from application.services.empresa_context_service import EmpresaContextService
 from application.use_cases.dashboard_use_cases import ResumoFinanceiroUseCase
 from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
 from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
@@ -178,12 +179,14 @@ class DashboardView(QWidget):
         resumo: ResumoFinanceiroUseCase,
         listar_escritorios: ListarEscritoriosUseCase,
         listar_empresas: ListarEmpresasUseCase,
+        contexto_empresa: EmpresaContextService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._resumo = resumo
         self._listar_escritorios = listar_escritorios
         self._listar_empresas = listar_empresas
+        self._contexto_empresa = contexto_empresa
         self._empresas: dict[int, EmpresaResponseDTO] = {}
         self._cards: dict[str, QLabel] = {}
         self._labels_tooltips: dict[str, tuple[str, str, str]] = {}
@@ -332,7 +335,24 @@ class DashboardView(QWidget):
         for emp in empresas:
             if emp.id is not None:
                 self._combo_empresa.addItem(emp.nome_fantasia, emp.id)
+
+        empresa_ativa = self._contexto_empresa.get_empresa_ativa()
+        if empresa_ativa is not None:
+            idx = self._combo_empresa.findData(empresa_ativa)
+            if idx >= 0:
+                self._combo_empresa.setCurrentIndex(idx)
+
         self._combo_empresa.blockSignals(False)
+
+    def carregar_empresa_ativa(self) -> None:
+        """Recarrega o dashboard usando a empresa ativa do contexto global."""
+        empresa_id = self._contexto_empresa.get_empresa_ativa()
+        if empresa_id is None:
+            return
+        idx = self._combo_empresa.findData(empresa_id)
+        if idx >= 0:
+            self._combo_empresa.setCurrentIndex(idx)
+        self._atualizar()
 
     def _atualizar(self) -> None:
         empresa_id = self._combo_empresa.currentData()

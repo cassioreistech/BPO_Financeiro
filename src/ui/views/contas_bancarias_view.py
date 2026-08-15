@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from application.dto.conta_bancaria_dto import ContaBancariaResponseDTO
+from application.services.empresa_context_service import EmpresaContextService
 from application.use_cases.conta_bancaria_use_cases import (
     CadastrarContaBancariaUseCase,
     DesativarContaBancariaUseCase,
@@ -51,6 +52,7 @@ class ContasBancariasView(QWidget):
         editar: EditarContaBancariaUseCase,
         desativar: DesativarContaBancariaUseCase,
         listar_empresas: ListarEmpresasUseCase,
+        contexto_empresa: EmpresaContextService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -60,8 +62,9 @@ class ContasBancariasView(QWidget):
         self._editar = editar
         self._desativar = desativar
         self._listar_empresas = listar_empresas
+        self._contexto_empresa = contexto_empresa
         self._montar()
-        self.atualizar_lista()
+        self.carregar_empresa_ativa()
 
     def _montar(self) -> None:
         layout = QVBoxLayout(self)
@@ -102,17 +105,28 @@ class ContasBancariasView(QWidget):
         botoes.addStretch()
         layout.addLayout(botoes)
 
+    def carregar_empresa_ativa(self) -> None:
+        """Recarrega a listagem usando a empresa ativa do contexto global."""
+        self.atualizar_lista()
+
     def atualizar_lista(self) -> None:
         try:
             empresas = self._listar_empresas.execute(skip=0, limit=1000)
-            mapa_emp = {e.id: e.nome_fantasia for e in empresas if e.id is not None}
+            mapa_emp = {
+                e.id: e.nome_fantasia for e in empresas if e.id is not None
+            }
         except Exception:
             mapa_emp = {}
 
+        empresa_id = self._contexto_empresa.get_empresa_ativa()
         try:
-            contas = self._listar.execute(skip=0, limit=500)
+            contas = self._listar.execute(
+                empresa_id=empresa_id, skip=0, limit=500
+            )
         except Exception as e:
-            QMessageBox.warning(self, "Erro", f"Erro ao listar contas bancarias: {e}")
+            QMessageBox.warning(
+                self, "Erro", f"Erro ao listar contas bancarias: {e}"
+            )
             return
 
         self._tabela.setRowCount(len(contas))
@@ -165,6 +179,7 @@ class ContasBancariasView(QWidget):
             criar_use_case=self._criar,
             editar_use_case=self._editar,
             opcoes_empresa=opcoes,
+            empresa_id=self._contexto_empresa.get_empresa_ativa(),
             parent=self,
         )
         if form.exec() == ContaBancariaFormView.DialogCode.Accepted:

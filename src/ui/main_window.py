@@ -307,9 +307,9 @@ class MainWindow(QMainWindow):
         if hasattr(self, "_view_titulos"):
             self._view_titulos.carregar_empresa_ativa()
         if hasattr(self, "_view_contas"):
-            self._view_contas.atualizar_lista()
+            self._view_contas.carregar_empresa_ativa()
         if hasattr(self, "_view_dashboard"):
-            self._view_dashboard._atualizar()
+            self._view_dashboard.carregar_empresa_ativa()
 
     def _criar_sidebar(self) -> QWidget:
         sidebar = QWidget()
@@ -423,6 +423,7 @@ class MainWindow(QMainWindow):
             resumo=self._uc_resumo_dashboard,
             listar_escritorios=self._uc_listar_esc,
             listar_empresas=self._uc_listar_emp,
+            contexto_empresa=self._contexto_empresa,
         )
         self._stack.addWidget(self._view_dashboard)
 
@@ -463,6 +464,7 @@ class MainWindow(QMainWindow):
             editar=self._uc_editar_conta,
             desativar=self._uc_desativar_conta,
             listar_empresas=self._uc_listar_emp,
+            contexto_empresa=self._contexto_empresa,
         )
         self._stack.addWidget(self._view_contas)
 

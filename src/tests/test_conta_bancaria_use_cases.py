@@ -237,3 +237,34 @@ class TestListarContasBancarias:
         )
         resultado = listar_uc.execute()
         assert len(resultado) == 2
+
+    def test_listar_filtra_por_empresa(
+        self,
+        cadastrar_uc: CadastrarContaBancariaUseCase,
+        listar_uc: ListarContasBancariasUseCase,
+    ) -> None:
+        cadastrar_uc.execute(
+            CadastrarContaBancariaDTO(
+                empresa_id=1,
+                banco_nome="BB",
+                banco_codigo="001",
+                agencia="1234",
+                conta="1111",
+                tipo="CORRENTE",
+                descricao="Conta A",
+            )
+        )
+        cadastrar_uc.execute(
+            CadastrarContaBancariaDTO(
+                empresa_id=2,
+                banco_nome="Itau",
+                banco_codigo="341",
+                agencia="5678",
+                conta="2222",
+                tipo="CORRENTE",
+                descricao="Conta B",
+            )
+        )
+        resultado = listar_uc.execute(empresa_id=1)
+        assert len(resultado) == 1
+        assert resultado[0].empresa_id == 1

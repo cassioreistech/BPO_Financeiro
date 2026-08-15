@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from application.dto.centro_custo_dto import CentroCustoResponseDTO
 from application.dto.empresa_dto import EmpresaResponseDTO
+from application.services.empresa_context_service import EmpresaContextService
 from application.use_cases.centro_custo_use_cases import (
     CadastrarCentroCustoUseCase,
     DesativarCentroCustoUseCase,
@@ -47,6 +48,7 @@ class CentrosCustoView(QWidget):
         editar: EditarCentroCustoUseCase,
         desativar: DesativarCentroCustoUseCase,
         listar_empresas: ListarEmpresasUseCase,
+        contexto_empresa: EmpresaContextService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -56,8 +58,9 @@ class CentrosCustoView(QWidget):
         self._editar = editar
         self._desativar = desativar
         self._listar_empresas = listar_empresas
+        self._contexto_empresa = contexto_empresa
         self._montar()
-        self.atualizar_lista()
+        self.carregar_empresa_ativa()
 
     def _montar(self) -> None:
         layout = QVBoxLayout(self)
@@ -163,10 +166,15 @@ class CentrosCustoView(QWidget):
                 i, 4, criar_item_centralizado("Sim" if centro.ativo else "Nao")
             )
 
+    def carregar_empresa_ativa(self) -> None:
+        """Recarrega a listagem usando a empresa ativa do contexto global."""
+        self.atualizar_lista()
+
     def _atualizar_combo_filtro(
         self, empresas: list[EmpresaResponseDTO]
     ) -> None:
         atual = self._combo_filtro_empresa.currentData()
+        empresa_ativa = self._contexto_empresa.get_empresa_ativa()
         self._combo_filtro_empresa.blockSignals(True)
         self._combo_filtro_empresa.clear()
         self._combo_filtro_empresa.addItem("Selecione...", None)
@@ -177,6 +185,10 @@ class CentrosCustoView(QWidget):
                 )
         if atual is not None:
             idx = self._combo_filtro_empresa.findData(atual)
+            if idx >= 0:
+                self._combo_filtro_empresa.setCurrentIndex(idx)
+        elif empresa_ativa is not None:
+            idx = self._combo_filtro_empresa.findData(empresa_ativa)
             if idx >= 0:
                 self._combo_filtro_empresa.setCurrentIndex(idx)
         self._combo_filtro_empresa.blockSignals(False)
@@ -210,11 +222,15 @@ class CentrosCustoView(QWidget):
                 "Cadastre uma empresa antes de cadastrar centros de custo.",
             )
             return
+        empresa_id = (
+            self._combo_filtro_empresa.currentData()
+            or self._contexto_empresa.get_empresa_ativa()
+        )
         form = CentroCustoFormView(
             criar_use_case=self._criar,
             editar_use_case=self._editar,
             opcoes_empresa=opcoes,
-            empresa_id=self._combo_filtro_empresa.currentData(),
+            empresa_id=empresa_id,
             parent=self,
         )
         if form.exec() == CentroCustoFormView.DialogCode.Accepted:
