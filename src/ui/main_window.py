@@ -261,10 +261,26 @@ class MainWindow(QMainWindow):
         return sidebar
 
     def _toggle_config(self) -> None:
-        """Alterna visibilidade do menu de configurações."""
+        """Alterna visibilidade do menu de configuracoes."""
         visivel = self._config_container.isVisible()
         self._config_container.setVisible(not visivel)
         self._btn_config.setChecked(not visivel)
+
+    def _colapsar_config(self) -> None:
+        """Colapsa o menu de configuracoes se estiver aberto."""
+        if self._config_container.isVisible():
+            self._config_container.setVisible(False)
+            self._btn_config.setChecked(False)
+
+    def _navegar(self, indice: int) -> None:
+        # Colapsa config ao navegar para item principal
+        if indice in (0, 1, 3, 4):  # indices dos itens principais
+            self._colapsar_config()
+        self._stack.setCurrentIndex(indice)
+        for i, btn in enumerate(self._botoes_nav):
+            btn.setProperty("active", i == indice)
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
 
     def _criar_paginas(self) -> None:
         # 0: Dashboard
@@ -354,10 +370,3 @@ class MainWindow(QMainWindow):
             listar_escritorios=self._uc_listar_esc,
         )
         self._stack.addWidget(self._view_contadores)
-
-    def _navegar(self, indice: int) -> None:
-        self._stack.setCurrentIndex(indice)
-        for i, btn in enumerate(self._botoes_nav):
-            btn.setProperty("active", i == indice)
-            btn.style().unpolish(btn)
-            btn.style().polish(btn)
