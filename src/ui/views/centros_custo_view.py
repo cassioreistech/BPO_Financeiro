@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -61,30 +64,49 @@ class CentrosCustoView(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        cabecalho = QHBoxLayout()
+        # --- Linha 1: Título + Ações principais ---
+        topo = QHBoxLayout()
+        topo.setSpacing(12)
+
         titulo = QLabel("Centros de Custo")
         titulo.setObjectName("viewTitulo")
-        cabecalho.addWidget(titulo)
-        cabecalho.addStretch()
-
-        cabecalho.addWidget(QLabel("Empresa:"))
-        self._combo_filtro_empresa = QComboBox()
-        self._combo_filtro_empresa.setMinimumWidth(200)
-        self._combo_filtro_empresa.currentIndexChanged.connect(
-            self.atualizar_lista
-        )
-        cabecalho.addWidget(self._combo_filtro_empresa)
+        topo.addWidget(titulo)
+        topo.addStretch()
 
         btn_novo = QPushButton("Novo Centro")
         btn_novo.setObjectName("btnPrimario")
+        btn_novo.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_novo.clicked.connect(self._novo)
-        cabecalho.addWidget(btn_novo)
+        topo.addWidget(btn_novo)
 
         btn_atualizar = QPushButton("Atualizar")
+        btn_atualizar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_atualizar.clicked.connect(self.atualizar_lista)
-        cabecalho.addWidget(btn_atualizar)
+        topo.addWidget(btn_atualizar)
 
-        layout.addLayout(cabecalho)
+        layout.addLayout(topo)
+
+        # --- Linha 2: Filtros ---
+        filtros = QGridLayout()
+        filtros.setHorizontalSpacing(16)
+        filtros.setVerticalSpacing(8)
+        filtros.setContentsMargins(0, 0, 0, 0)
+
+        lbl_emp = QLabel("Empresa:")
+        lbl_emp.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_emp, 0, 0)
+
+        self._combo_filtro_empresa = QComboBox()
+        self._combo_filtro_empresa.setMinimumWidth(220)
+        self._combo_filtro_empresa.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_filtro_empresa.currentIndexChanged.connect(self.atualizar_lista)
+        filtros.addWidget(self._combo_filtro_empresa, 0, 1)
+
+        filtros.setColumnStretch(2, 1)
+
+        layout.addLayout(filtros)
 
         self._tabela = QTableWidget()
         self._tabela.setColumnCount(len(self.COLUNAS))

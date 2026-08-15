@@ -6,13 +6,16 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -93,50 +96,92 @@ class TitulosView(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        cabecalho = QHBoxLayout()
+        # --- Linha 1: Título + Ações principais ---
+        topo = QHBoxLayout()
+        topo.setSpacing(12)
+
         titulo = QLabel("Titulos Financeiros")
         titulo.setObjectName("viewTitulo")
-        cabecalho.addWidget(titulo)
-        cabecalho.addStretch()
-
-        cabecalho.addWidget(QLabel("Escritorio:"))
-        self._combo_filtro_escritorio = QComboBox()
-        self._combo_filtro_escritorio.setMinimumWidth(160)
-        self._combo_filtro_escritorio.currentIndexChanged.connect(
-            self._escritorio_alterado
-        )
-        cabecalho.addWidget(self._combo_filtro_escritorio)
-
-        cabecalho.addWidget(QLabel("Empresa:"))
-        self._combo_filtro_empresa = QComboBox()
-        self._combo_filtro_empresa.setMinimumWidth(140)
-        self._combo_filtro_empresa.addItem("Todas", None)
-        cabecalho.addWidget(self._combo_filtro_empresa)
-
-        cabecalho.addWidget(QLabel("Tipo:"))
-        self._combo_filtro_tipo = QComboBox()
-        self._combo_filtro_tipo.addItem("Todos", None)
-        for t in TipoTitulo:
-            self._combo_filtro_tipo.addItem(t.value, t.value)
-        cabecalho.addWidget(self._combo_filtro_tipo)
-
-        cabecalho.addWidget(QLabel("Status:"))
-        self._combo_filtro_status = QComboBox()
-        self._combo_filtro_status.addItem("Todos", None)
-        for s in StatusTitulo:
-            self._combo_filtro_status.addItem(s.value, s.value)
-        cabecalho.addWidget(self._combo_filtro_status)
-
-        btn_filtrar = QPushButton("Filtrar")
-        btn_filtrar.clicked.connect(self.atualizar_lista)
-        cabecalho.addWidget(btn_filtrar)
+        topo.addWidget(titulo)
+        topo.addStretch()
 
         btn_novo = QPushButton("Novo Titulo")
         btn_novo.setObjectName("btnPrimario")
+        btn_novo.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_novo.clicked.connect(self._novo)
-        cabecalho.addWidget(btn_novo)
+        topo.addWidget(btn_novo)
 
-        layout.addLayout(cabecalho)
+        layout.addLayout(topo)
+
+        # --- Linha 2: Filtros (grid alinhado) ---
+        filtros = QGridLayout()
+        filtros.setHorizontalSpacing(16)
+        filtros.setVerticalSpacing(8)
+        filtros.setContentsMargins(0, 0, 0, 0)
+
+        # Coluna 0: Escritório
+        lbl_esc = QLabel("Escritório:")
+        lbl_esc.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_esc, 0, 0)
+        self._combo_filtro_escritorio = QComboBox()
+        self._combo_filtro_escritorio.setMinimumWidth(180)
+        self._combo_filtro_escritorio.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_filtro_escritorio.currentIndexChanged.connect(self._escritorio_alterado)
+        filtros.addWidget(self._combo_filtro_escritorio, 0, 1)
+
+        # Coluna 1: Empresa
+        lbl_emp = QLabel("Empresa:")
+        lbl_emp.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_emp, 0, 2)
+        self._combo_filtro_empresa = QComboBox()
+        self._combo_filtro_empresa.setMinimumWidth(160)
+        self._combo_filtro_empresa.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_filtro_empresa.addItem("Todas", None)
+        filtros.addWidget(self._combo_filtro_empresa, 0, 3)
+
+        # Coluna 2: Tipo
+        lbl_tipo = QLabel("Tipo:")
+        lbl_tipo.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_tipo, 0, 4)
+        self._combo_filtro_tipo = QComboBox()
+        self._combo_filtro_tipo.setMinimumWidth(140)
+        self._combo_filtro_tipo.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_filtro_tipo.addItem("Todos", None)
+        for t in TipoTitulo:
+            self._combo_filtro_tipo.addItem(t.value, t.value)
+        filtros.addWidget(self._combo_filtro_tipo, 0, 5)
+
+        # Coluna 3: Status
+        lbl_status = QLabel("Status:")
+        lbl_status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_status, 0, 6)
+        self._combo_filtro_status = QComboBox()
+        self._combo_filtro_status.setMinimumWidth(140)
+        self._combo_filtro_status.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_filtro_status.addItem("Todos", None)
+        for s in StatusTitulo:
+            self._combo_filtro_status.addItem(s.value, s.value)
+        filtros.addWidget(self._combo_filtro_status, 0, 7)
+
+        # Coluna 4: Botões de ação (Filtrar)
+        btn_filtrar = QPushButton("Filtrar")
+        btn_filtrar.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_filtrar.clicked.connect(self.atualizar_lista)
+        btn_filtrar.setFixedWidth(100)
+        filtros.addWidget(btn_filtrar, 0, 8, Qt.AlignmentFlag.AlignLeft)
+
+        # Stretch na última coluna para empurrar tudo para a esquerda
+        filtros.setColumnStretch(9, 1)
+
+        layout.addLayout(filtros)
 
         self._tabela = QTableWidget()
         self._tabela.setColumnCount(len(self.COLUNAS))
