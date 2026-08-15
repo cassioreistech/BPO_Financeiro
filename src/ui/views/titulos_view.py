@@ -78,7 +78,7 @@ class TitulosView(QWidget):
         "Status",
         "Valor",
         "Valor Pago",
-        "Forma Pagamento",
+        "Pagamento",
         "Vencimento",
     ]
 
@@ -464,7 +464,9 @@ class TitulosView(QWidget):
             self._tabela.setItem(
                 i, 1, criar_item_centralizado(t.categoria)
             )
-            self._tabela.setItem(i, 2, QTableWidgetItem(t.descricao))
+            self._tabela.setItem(
+                i, 2, criar_item_centralizado(t.descricao)
+            )
             self._tabela.setItem(i, 3, QTableWidgetItem(t.tipo))
             self._tabela.setItem(
                 i, 4, QTableWidgetItem(formatar_status_titulo(t.status))
