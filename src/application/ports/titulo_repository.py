@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from datetime import date
 from decimal import Decimal
 
+from application.dto.titulo_dto import FiltroTitulosDTO
 from domain.entities.alerta_titulo import AlertaTitulo
 from domain.entities.titulo import Titulo
 from domain.enums.status_titulo import StatusTitulo
@@ -42,6 +43,16 @@ class TituloRepository(ABC):
         limit: int = 100,
     ) -> list[Titulo]:
         """Lista titulos de um escritorio com filtros opcionais."""
+
+    @abstractmethod
+    def list_filtered(
+        self,
+        escritorio_id: int,
+        filtro: FiltroTitulosDTO,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Titulo]:
+        """Lista titulos com filtros avancados."""
 
     @abstractmethod
     def total_por_status(

@@ -8,6 +8,7 @@ from decimal import Decimal
 import pytest
 
 from application.dto.alerta_titulo_dto import FiltroAlertasTitulosDTO
+from application.dto.titulo_dto import FiltroTitulosDTO
 from application.ports.titulo_repository import TituloRepository
 from application.use_cases.alerta_titulo_use_cases import (
     ObterDashboardAlertasTitulosUseCase,
@@ -54,6 +55,15 @@ class FakeTituloRepository(TituloRepository):
         limit: int = 100,
     ) -> list[Titulo]:
         return list(self._titulos.values())
+
+    def list_filtered(
+        self,
+        escritorio_id: int,
+        filtro: FiltroTitulosDTO,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Titulo]:
+        return list(self._titulos.values())[skip : skip + limit]
 
     def total_por_status(
         self,

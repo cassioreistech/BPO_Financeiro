@@ -7,7 +7,7 @@ from decimal import Decimal
 
 import pytest
 
-from application.dto.titulo_dto import EditarTituloDTO, QuitarTituloDTO
+from application.dto.titulo_dto import EditarTituloDTO, FiltroTitulosDTO, QuitarTituloDTO
 from application.ports.conta_bancaria_repository import ContaBancariaRepository
 from application.ports.titulo_repository import TituloRepository
 from application.use_cases.titulo_use_cases import (
@@ -68,6 +68,50 @@ class FakeTituloRepository(TituloRepository):
         if status is not None:
             items = [t for t in items if t.status == status]
         return items
+
+    def list_filtered(
+        self,
+        escritorio_id: int,
+        filtro: FiltroTitulosDTO,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Titulo]:
+        items = [
+            t
+            for t in self._titulos.values()
+            if t.escritorio_id == escritorio_id
+        ]
+        if filtro.empresa_id is not None:
+            items = [t for t in items if t.empresa_id == filtro.empresa_id]
+        if filtro.categoria is not None:
+            items = [t for t in items if t.categoria.value == filtro.categoria]
+        if filtro.tipo is not None:
+            items = [t for t in items if t.tipo.value == filtro.tipo]
+        if filtro.status is not None:
+            items = [t for t in items if t.status.value == filtro.status]
+        if filtro.texto:
+            termo = filtro.texto.lower()
+            items = [
+                t
+                for t in items
+                if termo in t.descricao.lower()
+                or (t.numero_documento is not None and termo in t.numero_documento.lower())
+                or (t.codigo_barras is not None and termo in t.codigo_barras.lower())
+                or termo in t.categoria.value.lower()
+            ]
+        if filtro.data_vencimento_inicio is not None:
+            items = [
+                t
+                for t in items
+                if t.data_vencimento >= filtro.data_vencimento_inicio
+            ]
+        if filtro.data_vencimento_fim is not None:
+            items = [
+                t
+                for t in items
+                if t.data_vencimento <= filtro.data_vencimento_fim
+            ]
+        return items[skip : skip + limit]
 
     def total_por_status(
         self,

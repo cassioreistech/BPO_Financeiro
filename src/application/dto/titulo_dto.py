@@ -8,6 +8,20 @@ from decimal import Decimal
 
 
 @dataclass(frozen=True)
+class FiltroTitulosDTO:
+    """DTO para filtragem avancada de titulos."""
+
+    empresa_id: int | None = None
+    texto: str | None = None
+    categoria: str | None = None
+    tipo: str | None = None
+    status: str | None = None
+    data_vencimento_inicio: date | None = None
+    data_vencimento_fim: date | None = None
+    situacao_vencimento: str | None = None
+
+
+@dataclass(frozen=True)
 class CadastrarTituloDTO:
     """DTO para cadastro de titulo financeiro."""
 

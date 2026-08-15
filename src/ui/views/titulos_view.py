@@ -27,7 +27,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from application.dto.titulo_dto import QuitarTituloDTO, TituloResponseDTO
+from application.dto.titulo_dto import (
+    FiltroTitulosDTO,
+    QuitarTituloDTO,
+    TituloResponseDTO,
+)
 from application.services.empresa_context_service import EmpresaContextService
 from application.use_cases.conta_bancaria_use_cases import (
     ListarContasBancariasUseCase,
@@ -50,7 +54,7 @@ from application.use_cases.titulo_use_cases import (
     RemoverTituloUseCase,
 )
 from domain.enums.categoria_titulo import CategoriaTitulo
-from domain.enums.forma_pagamento import FormaPagamento
+from domain.enums.situacao_vencimento import SituacaoVencimento
 from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_titulo import TipoTitulo
 from ui.views.quitacao_dialog import QuitacaoDialog
@@ -165,53 +169,20 @@ class TitulosView(QWidget):
         self._combo_filtro_empresa.addItem("Selecione...", None)
         filtros.addWidget(self._combo_filtro_empresa, 0, 1)
 
-        # Coluna 1: Categoria
-        lbl_cat = QLabel("Categoria:")
-        lbl_cat.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_cat, 0, 2)
-        self._combo_filtro_categoria = QComboBox()
-        self._combo_filtro_categoria.setMinimumWidth(140)
-        self._combo_filtro_categoria.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        # Coluna 1: Busca textual
+        lbl_busca = QLabel("Busca:")
+        lbl_busca.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_busca, 0, 2)
+        self._campo_busca = QLineEdit()
+        self._campo_busca.setPlaceholderText(
+            "Descricao, numero do documento, categoria ou codigo de barras"
         )
-        self._combo_filtro_categoria.addItem("Todas", None)
-        for c in CategoriaTitulo:
-            self._combo_filtro_categoria.addItem(c.value, c.value)
-        filtros.addWidget(self._combo_filtro_categoria, 0, 3)
+        filtros.addWidget(self._campo_busca, 0, 3, 1, 3)
 
-        # Coluna 2: Forma Pagamento
-        lbl_forma = QLabel("Forma Pag.:")
-        lbl_forma.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_forma, 0, 4)
-        self._combo_filtro_forma = QComboBox()
-        self._combo_filtro_forma.setMinimumWidth(140)
-        self._combo_filtro_forma.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
-        self._combo_filtro_forma.addItem("Todas", None)
-        for f in FormaPagamento:
-            self._combo_filtro_forma.addItem(f.value, f.value)
-        filtros.addWidget(self._combo_filtro_forma, 0, 5)
-
-        # Coluna 3: Tipo
-        lbl_tipo = QLabel("Tipo:")
-        lbl_tipo.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_tipo, 0, 6)
-        self._combo_filtro_tipo = QComboBox()
-        self._combo_filtro_tipo.setMinimumWidth(140)
-        self._combo_filtro_tipo.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
-        self._combo_filtro_tipo.addItem("Todos", None)
-        for t in TipoTitulo:
-            self._combo_filtro_tipo.addItem(t.value, t.value)
-        filtros.addWidget(self._combo_filtro_tipo, 0, 7)
-
-        # Linha 1
-        # Coluna 0: Status
+        # Coluna 4: Status
         lbl_status = QLabel("Status:")
         lbl_status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_status, 1, 0)
+        filtros.addWidget(lbl_status, 0, 6)
         self._combo_filtro_status = QComboBox()
         self._combo_filtro_status.setMinimumWidth(140)
         self._combo_filtro_status.setSizePolicy(
@@ -222,70 +193,109 @@ class TitulosView(QWidget):
             self._combo_filtro_status.addItem(
                 formatar_status_titulo(s.value), s.value
             )
-        filtros.addWidget(self._combo_filtro_status, 1, 1)
+        filtros.addWidget(self._combo_filtro_status, 0, 7)
 
-        # Coluna 1: Vencimento inicio
+        # Linha 1
+        # Coluna 0: Categoria
+        lbl_cat = QLabel("Categoria:")
+        lbl_cat.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_cat, 1, 0)
+        self._combo_filtro_categoria = QComboBox()
+        self._combo_filtro_categoria.setMinimumWidth(140)
+        self._combo_filtro_categoria.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_filtro_categoria.addItem("Todas", None)
+        for c in CategoriaTitulo:
+            self._combo_filtro_categoria.addItem(c.value, c.value)
+        filtros.addWidget(self._combo_filtro_categoria, 1, 1)
+
+        # Coluna 1: Tipo
+        lbl_tipo = QLabel("Tipo:")
+        lbl_tipo.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_tipo, 1, 2)
+        self._combo_filtro_tipo = QComboBox()
+        self._combo_filtro_tipo.setMinimumWidth(140)
+        self._combo_filtro_tipo.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_filtro_tipo.addItem("Todos", None)
+        for t in TipoTitulo:
+            self._combo_filtro_tipo.addItem(t.value, t.value)
+        filtros.addWidget(self._combo_filtro_tipo, 1, 3)
+
+        # Coluna 2: Vencimento inicio
         lbl_venc_ini = QLabel("Venc. Inicio:")
         lbl_venc_ini.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_venc_ini, 1, 2)
+        filtros.addWidget(lbl_venc_ini, 1, 4)
         self._date_filtro_venc_ini = QDateEdit()
         self._date_filtro_venc_ini.setCalendarPopup(True)
         self._date_filtro_venc_ini.setSpecialValueText("Sem limite")
         self._date_filtro_venc_ini.setDate(
             self._date_filtro_venc_ini.minimumDate()
         )
-        filtros.addWidget(self._date_filtro_venc_ini, 1, 3)
+        filtros.addWidget(self._date_filtro_venc_ini, 1, 5)
 
-        # Coluna 2: Vencimento fim
+        # Coluna 3: Vencimento fim
         lbl_venc_fim = QLabel("Venc. Fim:")
         lbl_venc_fim.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_venc_fim, 1, 4)
+        filtros.addWidget(lbl_venc_fim, 1, 6)
         self._date_filtro_venc_fim = QDateEdit()
         self._date_filtro_venc_fim.setCalendarPopup(True)
         self._date_filtro_venc_fim.setSpecialValueText("Sem limite")
         self._date_filtro_venc_fim.setDate(
             self._date_filtro_venc_fim.minimumDate()
         )
-        filtros.addWidget(self._date_filtro_venc_fim, 1, 5)
+        filtros.addWidget(self._date_filtro_venc_fim, 1, 7)
 
         # Linha 2
-        # Coluna 0: Busca
-        lbl_busca = QLabel("Busca:")
-        lbl_busca.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_busca, 2, 0)
-        self._campo_busca = QLineEdit()
-        self._campo_busca.setPlaceholderText(
-            "Descricao, numero do documento ou codigo de barras"
+        # Coluna 0: Situacao de vencimento
+        lbl_situacao = QLabel("Situacao:")
+        lbl_situacao.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_situacao, 2, 0)
+        self._combo_filtro_situacao = QComboBox()
+        self._combo_filtro_situacao.setMinimumWidth(160)
+        self._combo_filtro_situacao.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
-        filtros.addWidget(self._campo_busca, 2, 1, 1, 3)
+        self._combo_filtro_situacao.addItem("Todas", None)
+        self._combo_filtro_situacao.addItem("Vencidos", SituacaoVencimento.VENCIDOS.value)
+        self._combo_filtro_situacao.addItem("Vencem hoje", SituacaoVencimento.HOJE.value)
+        self._combo_filtro_situacao.addItem(
+            "Vencem amanha", SituacaoVencimento.AMANHA.value
+        )
+        self._combo_filtro_situacao.addItem(
+            "Proximos 7 dias", SituacaoVencimento.PROXIMA_SEMANA.value
+        )
+        filtros.addWidget(self._combo_filtro_situacao, 2, 1)
 
-        # Coluna 4: Botoes rapidos
+        # Coluna 2: Botoes rapidos
         btn_vencidos = QPushButton("Vencidos")
         btn_vencidos.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_vencidos.clicked.connect(self._filtrar_vencidos)
-        filtros.addWidget(btn_vencidos, 2, 4)
+        filtros.addWidget(btn_vencidos, 2, 3)
 
         btn_a_vencer = QPushButton("A vencer")
         btn_a_vencer.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_a_vencer.clicked.connect(self._filtrar_a_vencer)
-        filtros.addWidget(btn_a_vencer, 2, 5)
+        filtros.addWidget(btn_a_vencer, 2, 4)
 
         btn_do_mes = QPushButton("Do mes")
         btn_do_mes.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_do_mes.clicked.connect(self._filtrar_do_mes)
-        filtros.addWidget(btn_do_mes, 2, 6)
+        filtros.addWidget(btn_do_mes, 2, 5)
 
         btn_limpar = QPushButton("Limpar")
         btn_limpar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_limpar.clicked.connect(self._limpar_filtros)
-        filtros.addWidget(btn_limpar, 2, 7)
+        filtros.addWidget(btn_limpar, 2, 6)
 
-        # Linha 3: Botao Filtrar
+        # Botao Filtrar
         btn_filtrar = QPushButton("Filtrar")
         btn_filtrar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_filtrar.clicked.connect(self.atualizar_lista)
         btn_filtrar.setFixedWidth(100)
-        filtros.addWidget(btn_filtrar, 3, 7, Qt.AlignmentFlag.AlignRight)
+        filtros.addWidget(btn_filtrar, 2, 7, Qt.AlignmentFlag.AlignRight)
 
         # Stretch na ultima coluna para empurrar tudo para a esquerda
         filtros.setColumnStretch(8, 1)
@@ -308,6 +318,10 @@ class TitulosView(QWidget):
             self._atualizar_botoes_acoes
         )
         layout.addWidget(self._tabela, stretch=1)
+
+        self._label_resultados = QLabel("0 titulos encontrados")
+        self._label_resultados.setAlignment(Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self._label_resultados)
 
         botoes = QHBoxLayout()
         btn_editar = QPushButton("Editar")
@@ -408,58 +422,39 @@ class TitulosView(QWidget):
         empresa_id = self._combo_filtro_empresa.currentData()
         if empresa_id is None:
             self._tabela.setRowCount(0)
+            self._label_resultados.setText("0 titulos encontrados")
             return
 
         escritorio_id = self._escritorio_da_empresa(empresa_id)
         if escritorio_id is None:
             self._tabela.setRowCount(0)
+            self._label_resultados.setText("0 titulos encontrados")
             return
 
-        tipo = self._combo_filtro_tipo.currentData()
-        status = self._combo_filtro_status.currentData()
-        categoria = self._combo_filtro_categoria.currentData()
-        forma = self._combo_filtro_forma.currentData()
-        venc_ini = self._data_filtro_venc_ini()
-        venc_fim = self._data_filtro_venc_fim()
-        busca = self._campo_busca.text().strip().lower()
+        filtro = FiltroTitulosDTO(
+            empresa_id=empresa_id,
+            texto=self._campo_busca.text().strip() or None,
+            categoria=self._combo_filtro_categoria.currentData(),
+            tipo=self._combo_filtro_tipo.currentData(),
+            status=self._combo_filtro_status.currentData(),
+            data_vencimento_inicio=self._data_filtro_venc_ini(),
+            data_vencimento_fim=self._data_filtro_venc_fim(),
+            situacao_vencimento=self._combo_filtro_situacao.currentData(),
+        )
 
         try:
             titulos = self._listar.execute(
                 escritorio_id=escritorio_id,
-                empresa_id=empresa_id,
-                tipo=tipo,
-                status=status,
+                filtro=filtro,
                 skip=0,
                 limit=500,
             )
+        except ValueError as e:
+            QMessageBox.warning(self, "Filtro invalido", str(e))
+            return
         except Exception as e:
             QMessageBox.warning(self, "Erro", f"Erro ao listar titulos: {e}")
             return
-
-        if categoria is not None:
-            titulos = [t for t in titulos if t.categoria == categoria]
-
-        if forma is not None:
-            titulos = [t for t in titulos if t.forma_pagamento == forma]
-
-        if venc_ini is not None:
-            titulos = [
-                t for t in titulos if t.data_vencimento >= venc_ini
-            ]
-
-        if venc_fim is not None:
-            titulos = [
-                t for t in titulos if t.data_vencimento <= venc_fim
-            ]
-
-        if busca:
-            titulos = [
-                t
-                for t in titulos
-                if busca in t.descricao.lower()
-                or (t.numero_documento is not None and busca in t.numero_documento.lower())
-                or (t.codigo_barras is not None and busca in t.codigo_barras.lower())
-            ]
 
         self._tabela.setRowCount(len(titulos))
         for i, t in enumerate(titulos):
@@ -503,6 +498,15 @@ class TitulosView(QWidget):
                     item.setForeground(self._cor(cor_texto))
                     item.setBackground(self._cor(cor_fundo))
 
+        self._atualizar_label_resultados(len(titulos))
+
+    def _atualizar_label_resultados(self, quantidade: int) -> None:
+        """Atualiza o label de contagem de resultados."""
+        palavra = "titulos" if quantidade != 1 else "titulo"
+        self._label_resultados.setText(
+            f"{quantidade} {palavra} encontrados"
+        )
+
     def _cores_linha(self, titulo: TituloResponseDTO) -> tuple[str, str]:
         """Retorna (cor_texto, cor_fundo) para a linha do titulo."""
         if titulo.status == "PAGO":
@@ -534,25 +538,39 @@ class TitulosView(QWidget):
         return cast(date, self._date_filtro_venc_fim.date().toPython())
 
     def _filtrar_vencidos(self) -> None:
-        """Preenche os filtros para mostrar titulos abertos vencidos."""
-        self._combo_filtro_status.setCurrentIndex(
-            self._combo_filtro_status.findText("ABERTO")
+        """Preenche os filtros para mostrar titulos vencidos."""
+        self._combo_filtro_status.setCurrentIndex(0)
+        self._combo_filtro_situacao.setCurrentIndex(
+            self._combo_filtro_situacao.findData(
+                SituacaoVencimento.VENCIDOS.value
+            )
         )
+        self._date_filtro_venc_ini.setDate(
+            self._date_filtro_venc_ini.minimumDate()
+        )
+        self._date_filtro_venc_ini.setSpecialValueText("Sem limite")
         self._date_filtro_venc_fim.setDate(
-            QDate(date.today().year, date.today().month, date.today().day)
+            self._date_filtro_venc_fim.minimumDate()
         )
-        self._date_filtro_venc_fim.setSpecialValueText("")
+        self._date_filtro_venc_fim.setSpecialValueText("Sem limite")
         self.atualizar_lista()
 
     def _filtrar_a_vencer(self) -> None:
-        """Preenche os filtros para mostrar titulos abertos a vencer."""
-        self._combo_filtro_status.setCurrentIndex(
-            self._combo_filtro_status.findText("ABERTO")
+        """Preenche os filtros para mostrar titulos a vencer."""
+        self._combo_filtro_status.setCurrentIndex(0)
+        self._combo_filtro_situacao.setCurrentIndex(
+            self._combo_filtro_situacao.findData(
+                SituacaoVencimento.PROXIMA_SEMANA.value
+            )
         )
         self._date_filtro_venc_ini.setDate(
-            QDate(date.today().year, date.today().month, date.today().day)
+            self._date_filtro_venc_ini.minimumDate()
         )
-        self._date_filtro_venc_ini.setSpecialValueText("")
+        self._date_filtro_venc_ini.setSpecialValueText("Sem limite")
+        self._date_filtro_venc_fim.setDate(
+            self._date_filtro_venc_fim.minimumDate()
+        )
+        self._date_filtro_venc_fim.setSpecialValueText("Sem limite")
         self.atualizar_lista()
 
     def _filtrar_do_mes(self) -> None:
@@ -560,6 +578,7 @@ class TitulosView(QWidget):
         hoje = date.today()
         primeiro_dia = date(hoje.year, hoje.month, 1)
         ultimo_dia = date(hoje.year, hoje.month, self._ultimo_dia_mes(hoje))
+        self._combo_filtro_situacao.setCurrentIndex(0)
         self._date_filtro_venc_ini.setDate(
             QDate(primeiro_dia.year, primeiro_dia.month, primeiro_dia.day)
         )
@@ -577,12 +596,11 @@ class TitulosView(QWidget):
         return calendar.monthrange(data.year, data.month)[1]
 
     def _limpar_filtros(self) -> None:
-        """Reseta os filtros para os valores padrao."""
-        self._combo_filtro_empresa.setCurrentIndex(0)
+        """Reseta os filtros para os valores padrao mantendo empresa ativa."""
         self._combo_filtro_categoria.setCurrentIndex(0)
-        self._combo_filtro_forma.setCurrentIndex(0)
         self._combo_filtro_tipo.setCurrentIndex(0)
         self._combo_filtro_status.setCurrentIndex(0)
+        self._combo_filtro_situacao.setCurrentIndex(0)
         self._date_filtro_venc_ini.setDate(
             self._date_filtro_venc_ini.minimumDate()
         )
@@ -592,6 +610,15 @@ class TitulosView(QWidget):
         )
         self._date_filtro_venc_fim.setSpecialValueText("Sem limite")
         self._campo_busca.clear()
+
+        empresa_ativa = self._contexto_empresa.get_empresa_ativa()
+        if empresa_ativa is not None:
+            idx = self._combo_filtro_empresa.findData(empresa_ativa)
+            if idx >= 0:
+                self._combo_filtro_empresa.setCurrentIndex(idx)
+        else:
+            self._combo_filtro_empresa.setCurrentIndex(0)
+
         self.atualizar_lista()
 
     @staticmethod

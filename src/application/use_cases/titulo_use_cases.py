@@ -7,6 +7,7 @@ from decimal import Decimal
 from application.dto.titulo_dto import (
     CadastrarTituloDTO,
     EditarTituloDTO,
+    FiltroTitulosDTO,
     QuitarTituloDTO,
     TituloResponseDTO,
 )
@@ -206,20 +207,38 @@ class ListarTitulosUseCase:
     def execute(
         self,
         escritorio_id: int,
-        empresa_id: int | None = None,
-        tipo: str | None = None,
-        status: str | None = None,
+        filtro: FiltroTitulosDTO | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[TituloResponseDTO]:
         """Lista titulos de um escritorio com filtros opcionais."""
-        tipo_enum = TipoTitulo(tipo) if tipo else None
-        status_enum = StatusTitulo(status) if status else None
-        titulos = self._repository.list_by_escritorio(
+        if filtro is None:
+            filtro = FiltroTitulosDTO()
+
+        filtro_validado = FiltroTitulosDTO(
+            empresa_id=filtro.empresa_id,
+            texto=filtro.texto.strip().lower() if filtro.texto else None,
+            categoria=filtro.categoria,
+            tipo=filtro.tipo,
+            status=filtro.status,
+            data_vencimento_inicio=filtro.data_vencimento_inicio,
+            data_vencimento_fim=filtro.data_vencimento_fim,
+            situacao_vencimento=filtro.situacao_vencimento,
+        )
+
+        if (
+            filtro_validado.data_vencimento_inicio is not None
+            and filtro_validado.data_vencimento_fim is not None
+            and filtro_validado.data_vencimento_inicio
+            > filtro_validado.data_vencimento_fim
+        ):
+            raise ValueError(
+                "Data de vencimento inicial nao pode ser posterior a data final."
+            )
+
+        titulos = self._repository.list_filtered(
             escritorio_id=escritorio_id,
-            empresa_id=empresa_id,
-            tipo=tipo_enum,
-            status=status_enum,
+            filtro=filtro_validado,
             skip=skip,
             limit=limit,
         )

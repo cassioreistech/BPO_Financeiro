@@ -5,14 +5,16 @@ from __future__ import annotations
 from datetime import date, timedelta
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from application.dto.titulo_dto import FiltroTitulosDTO
 from application.ports.titulo_repository import TituloRepository
 from domain.entities.alerta_titulo import AlertaTitulo, NivelUrgencia
 from domain.entities.titulo import Titulo
 from domain.enums.categoria_titulo import CategoriaTitulo
 from domain.enums.forma_pagamento import FormaPagamento
+from domain.enums.situacao_vencimento import SituacaoVencimento
 from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_titulo import TipoTitulo
 from infrastructure.database.models.empresa_model import EmpresaModel
@@ -153,6 +155,80 @@ class SQLiteTituloRepository(TituloRepository):
                 stmt = stmt.where(TituloModel.status == status.value)
             stmt = (
                 stmt.order_by(TituloModel.data_vencimento, TituloModel.descricao)
+                .offset(skip)
+                .limit(limit)
+            )
+            models = session.scalars(stmt).all()
+            return [_para_entidade(m) for m in models]
+
+    def list_filtered(
+        self,
+        escritorio_id: int,
+        filtro: FiltroTitulosDTO,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Titulo]:
+        with self._session_factory() as session:
+            stmt = select(TituloModel).where(
+                TituloModel.escritorio_id == escritorio_id
+            )
+
+            if filtro.empresa_id is not None:
+                stmt = stmt.where(TituloModel.empresa_id == filtro.empresa_id)
+
+            if filtro.categoria is not None:
+                stmt = stmt.where(TituloModel.categoria == filtro.categoria)
+
+            if filtro.tipo is not None:
+                stmt = stmt.where(TituloModel.tipo == filtro.tipo)
+
+            if filtro.status is not None:
+                stmt = stmt.where(TituloModel.status == filtro.status)
+
+            if filtro.data_vencimento_inicio is not None:
+                stmt = stmt.where(
+                    TituloModel.data_vencimento >= filtro.data_vencimento_inicio
+                )
+
+            if filtro.data_vencimento_fim is not None:
+                stmt = stmt.where(
+                    TituloModel.data_vencimento <= filtro.data_vencimento_fim
+                )
+
+            if filtro.situacao_vencimento is not None:
+                hoje = date.today()
+                situacao = SituacaoVencimento(filtro.situacao_vencimento)
+                if situacao == SituacaoVencimento.VENCIDOS:
+                    stmt = stmt.where(TituloModel.data_vencimento < hoje)
+                elif situacao == SituacaoVencimento.HOJE:
+                    stmt = stmt.where(TituloModel.data_vencimento == hoje)
+                elif situacao == SituacaoVencimento.AMANHA:
+                    stmt = stmt.where(
+                        TituloModel.data_vencimento == hoje + timedelta(days=1)
+                    )
+                elif situacao == SituacaoVencimento.PROXIMA_SEMANA:
+                    stmt = stmt.where(
+                        TituloModel.data_vencimento > hoje,
+                        TituloModel.data_vencimento <= hoje + timedelta(days=7),
+                    )
+
+            if filtro.texto:
+                termo = f"%{filtro.texto}%"
+                stmt = stmt.where(
+                    or_(
+                        TituloModel.descricao.ilike(termo),
+                        TituloModel.numero_documento.ilike(termo),
+                        TituloModel.categoria.ilike(termo),
+                        TituloModel.codigo_barras.ilike(termo),
+                    )
+                )
+
+            stmt = (
+                stmt.order_by(
+                    TituloModel.data_vencimento,
+                    TituloModel.status,
+                    TituloModel.descricao,
+                )
                 .offset(skip)
                 .limit(limit)
             )
