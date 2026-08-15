@@ -5,6 +5,8 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
+from infrastructure.database.schema_upgrade import upgrade_database
+
 DATA_DIR = Path(__file__).resolve().parents[3] / "data"
 DATABASE_PATH = DATA_DIR / "bpo.db"
 
@@ -21,7 +23,7 @@ class Base(DeclarativeBase):
 
 
 def init_db() -> None:
-    """Garante o diretorio de dados e cria o schema conhecido pelos models."""
+    """Garante o diretorio de dados e cria/atualiza o schema do banco."""
     # Importacao registra os models no metadata do Base antes do create_all.
     from infrastructure.database.models import (  # noqa: F401
         CentroCustoModel,
@@ -35,3 +37,4 @@ def init_db() -> None:
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(bind=engine)
+    upgrade_database(engine)
