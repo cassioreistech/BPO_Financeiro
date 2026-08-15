@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import date
 from decimal import Decimal
 
 from application.dto.titulo_dto import (
     CadastrarTituloDTO,
     EditarTituloDTO,
+    QuitarTituloDTO,
     TituloResponseDTO,
 )
 from application.ports.titulo_repository import TituloRepository
 from domain.entities.titulo import Titulo
+from domain.enums.categoria_titulo import CategoriaTitulo
+from domain.enums.forma_pagamento import FormaPagamento
 from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_titulo import TipoTitulo
 
@@ -24,13 +26,19 @@ def _para_response_dto(titulo: Titulo) -> TituloResponseDTO:
         empresa_id=titulo.empresa_id,
         plano_conta_id=titulo.plano_conta_id,
         centro_custo_id=titulo.centro_custo_id,
+        numero_documento=titulo.numero_documento,
+        codigo_barras=titulo.codigo_barras,
+        categoria=titulo.categoria.value,
         descricao=titulo.descricao,
         tipo=titulo.tipo.value,
         status=titulo.status.value,
         valor=titulo.valor,
+        valor_pago=titulo.valor_pago,
         data_emissao=titulo.data_emissao,
         data_vencimento=titulo.data_vencimento,
         data_quitacao=titulo.data_quitacao,
+        conta_bancaria_id=titulo.conta_bancaria_id,
+        forma_pagamento=titulo.forma_pagamento.value,
         observacao=titulo.observacao,
     )
 
@@ -67,6 +75,30 @@ def _parse_tipo(tipo_str: str) -> TipoTitulo:
         ) from None
 
 
+def _parse_categoria(categoria_str: str) -> CategoriaTitulo:
+    """Converte string para CategoriaTitulo."""
+    try:
+        return CategoriaTitulo(categoria_str)
+    except ValueError:
+        categorias_validas = [c.value for c in CategoriaTitulo]
+        raise ValueError(
+            f"Categoria invalida: '{categoria_str}'. "
+            f"Valores aceitos: {categorias_validas}."
+        ) from None
+
+
+def _parse_forma_pagamento(forma_str: str) -> FormaPagamento:
+    """Converte string para FormaPagamento."""
+    try:
+        return FormaPagamento(forma_str)
+    except ValueError:
+        formas_validas = [f.value for f in FormaPagamento]
+        raise ValueError(
+            f"Forma de pagamento invalida: '{forma_str}'. "
+            f"Valores aceitos: {formas_validas}."
+        ) from None
+
+
 class CadastrarTituloUseCase:
     """Use case para cadastro de titulo financeiro."""
 
@@ -81,12 +113,20 @@ class CadastrarTituloUseCase:
         """
         _validar_dto(dto)
         tipo = _parse_tipo(dto.tipo)
+        categoria = _parse_categoria(dto.categoria)
 
         titulo = Titulo(
             escritorio_id=dto.escritorio_id,
             empresa_id=dto.empresa_id,
             plano_conta_id=dto.plano_conta_id,
             centro_custo_id=dto.centro_custo_id,
+            numero_documento=dto.numero_documento.strip()
+            if dto.numero_documento
+            else None,
+            codigo_barras=dto.codigo_barras.strip()
+            if dto.codigo_barras
+            else None,
+            categoria=categoria,
             descricao=dto.descricao.strip(),
             tipo=tipo,
             status=StatusTitulo.ABERTO,
@@ -120,6 +160,7 @@ class EditarTituloUseCase:
 
         _validar_dto(dto)
         tipo = _parse_tipo(dto.tipo)
+        categoria = _parse_categoria(dto.categoria)
 
         titulo = Titulo(
             id=dto.id,
@@ -127,13 +168,25 @@ class EditarTituloUseCase:
             empresa_id=dto.empresa_id,
             plano_conta_id=dto.plano_conta_id,
             centro_custo_id=dto.centro_custo_id,
+            numero_documento=dto.numero_documento.strip()
+            if dto.numero_documento
+            else None,
+            codigo_barras=dto.codigo_barras.strip()
+            if dto.codigo_barras
+            else None,
+            categoria=categoria,
             descricao=dto.descricao.strip(),
             tipo=tipo,
             status=existente.status,
             valor=dto.valor,
+            valor_pago=existente.valor_pago,
             data_emissao=dto.data_emissao,
             data_vencimento=dto.data_vencimento,
             data_quitacao=existente.data_quitacao,
+            conta_bancaria_id=existente.conta_bancaria_id,
+            forma_pagamento=FormaPagamento(existente.forma_pagamento.value)
+            if existente.forma_pagamento
+            else FormaPagamento.OUTRO,
             observacao=dto.observacao.strip() if dto.observacao else None,
         )
 
@@ -194,17 +247,23 @@ class QuitarTituloUseCase:
     def __init__(self, repository: TituloRepository) -> None:
         self._repository = repository
 
-    def execute(self, id: int, data_quitacao: date | None = None) -> TituloResponseDTO:
-        """Marca um titulo como pago.
+    def execute(self, dto: QuitarTituloDTO) -> TituloResponseDTO:
+        """Marca um titulo como pago com dados da quitacao.
 
         Raises:
-            ValueError: se titulo nao existe ou ja esta cancelado.
+            ValueError: se titulo nao existe, ja esta cancelado ou dados invalidos.
         """
-        existente = self._repository.get_by_id(id)
+        existente = self._repository.get_by_id(dto.id)
         if existente is None:
-            raise ValueError(f"Titulo com ID {id} nao encontrado.")
+            raise ValueError(f"Titulo com ID {dto.id} nao encontrado.")
         if existente.status == StatusTitulo.CANCELADO:
             raise ValueError("Nao e possivel quitar um titulo cancelado.")
+        if dto.valor_pago < Decimal("0"):
+            raise ValueError("Valor pago nao pode ser negativo.")
+        if dto.conta_bancaria_id is not None and dto.conta_bancaria_id <= 0:
+            raise ValueError("Conta bancaria ID deve ser um numero positivo.")
+
+        forma_pagamento = _parse_forma_pagamento(dto.forma_pagamento)
 
         titulo = Titulo(
             id=existente.id,
@@ -212,13 +271,19 @@ class QuitarTituloUseCase:
             empresa_id=existente.empresa_id,
             plano_conta_id=existente.plano_conta_id,
             centro_custo_id=existente.centro_custo_id,
+            numero_documento=existente.numero_documento,
+            codigo_barras=existente.codigo_barras,
+            categoria=existente.categoria,
             descricao=existente.descricao,
             tipo=existente.tipo,
             status=StatusTitulo.PAGO,
             valor=existente.valor,
+            valor_pago=dto.valor_pago,
             data_emissao=existente.data_emissao,
             data_vencimento=existente.data_vencimento,
-            data_quitacao=data_quitacao or date.today(),
+            data_quitacao=dto.data_quitacao,
+            conta_bancaria_id=dto.conta_bancaria_id,
+            forma_pagamento=forma_pagamento,
             observacao=existente.observacao,
         )
 
@@ -248,13 +313,19 @@ class CancelarTituloUseCase:
             empresa_id=existente.empresa_id,
             plano_conta_id=existente.plano_conta_id,
             centro_custo_id=existente.centro_custo_id,
+            numero_documento=existente.numero_documento,
+            codigo_barras=existente.codigo_barras,
+            categoria=existente.categoria,
             descricao=existente.descricao,
             tipo=existente.tipo,
             status=StatusTitulo.CANCELADO,
             valor=existente.valor,
+            valor_pago=None,
             data_emissao=existente.data_emissao,
             data_vencimento=existente.data_vencimento,
             data_quitacao=None,
+            conta_bancaria_id=None,
+            forma_pagamento=FormaPagamento.OUTRO,
             observacao=existente.observacao,
         )
 

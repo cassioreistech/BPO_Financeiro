@@ -39,3 +39,21 @@ class TituloModel(Base):
     data_vencimento: Mapped[date] = mapped_column(Date, nullable=False)
     data_quitacao: Mapped[date | None] = mapped_column(Date, nullable=True)
     observacao: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    numero_documento: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )
+    codigo_barras: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
+    categoria: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="OUTRO"
+    )
+    valor_pago: Mapped[Decimal | None] = mapped_column(
+        Numeric(15, 2), nullable=True
+    )
+    conta_bancaria_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("contas_bancarias.id"), nullable=True
+    )
+    forma_pagamento: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="OUTRO"
+    )

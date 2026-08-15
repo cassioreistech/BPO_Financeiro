@@ -20,6 +20,9 @@ class CadastrarTituloDTO:
     data_vencimento: date
     empresa_id: int | None = None
     centro_custo_id: int | None = None
+    numero_documento: str | None = None
+    codigo_barras: str | None = None
+    categoria: str = "OUTRO"
     observacao: str | None = None
 
 
@@ -37,7 +40,21 @@ class EditarTituloDTO:
     data_vencimento: date
     empresa_id: int | None = None
     centro_custo_id: int | None = None
+    numero_documento: str | None = None
+    codigo_barras: str | None = None
+    categoria: str = "OUTRO"
     observacao: str | None = None
+
+
+@dataclass(frozen=True)
+class QuitarTituloDTO:
+    """DTO para quitacao de titulo financeiro."""
+
+    id: int
+    data_quitacao: date
+    valor_pago: Decimal
+    conta_bancaria_id: int | None = None
+    forma_pagamento: str = "OUTRO"
 
 
 @dataclass(frozen=True)
@@ -49,11 +66,17 @@ class TituloResponseDTO:
     empresa_id: int | None
     plano_conta_id: int
     centro_custo_id: int | None
+    numero_documento: str | None
+    codigo_barras: str | None
+    categoria: str
     descricao: str
     tipo: str
     status: str
     valor: Decimal
+    valor_pago: Decimal | None
     data_emissao: date
     data_vencimento: date
     data_quitacao: date | None
+    conta_bancaria_id: int | None
+    forma_pagamento: str
     observacao: str | None

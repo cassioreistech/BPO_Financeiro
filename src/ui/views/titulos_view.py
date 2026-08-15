@@ -4,15 +4,19 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
+    QDateEdit,
     QGridLayout,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
+    QLineEdit,
+    QMenu,
     QMessageBox,
     QPushButton,
     QSizePolicy,
@@ -22,12 +26,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from application.dto.escritorio_dto import EscritorioResponseDTO
-from application.dto.titulo_dto import TituloResponseDTO
-from application.use_cases.centro_custo_use_cases import ListarCentroCustoUseCase
+from application.dto.titulo_dto import QuitarTituloDTO, TituloResponseDTO
+from application.services.empresa_context_service import EmpresaContextService
+from application.use_cases.conta_bancaria_use_cases import (
+    ListarContasBancariasUseCase,
+)
 from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
 from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
-from application.use_cases.plano_conta_use_cases import ListarPlanoContaUseCase
+from application.use_cases.plano_conta_use_cases import GarantirContaPadraoUseCase
+from application.use_cases.relatorio_titulos_use_cases import (
+    FluxoCaixaUseCase,
+    ProjecaoFinanceiraUseCase,
+    RelatorioTitulosUseCase,
+)
 from application.use_cases.titulo_use_cases import (
     CadastrarTituloUseCase,
     CancelarTituloUseCase,
@@ -37,8 +48,12 @@ from application.use_cases.titulo_use_cases import (
     QuitarTituloUseCase,
     RemoverTituloUseCase,
 )
+from domain.enums.categoria_titulo import CategoriaTitulo
+from domain.enums.forma_pagamento import FormaPagamento
 from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_titulo import TipoTitulo
+from ui.views.quitacao_dialog import QuitacaoDialog
+from ui.views.relatorio_dialog import RelatorioDialog
 from ui.views.table_helpers import (
     configurar_tabela_padrao,
     criar_item_centralizado,
@@ -51,13 +66,13 @@ class TitulosView(QWidget):
 
     COLUNAS = [
         "ID",
-        "Escritorio",
-        "Empresa",
-        "Plano Conta",
+        "Categoria",
         "Descricao",
         "Tipo",
         "Status",
         "Valor",
+        "Valor Pago",
+        "Forma Pagamento",
         "Vencimento",
     ]
 
@@ -72,8 +87,12 @@ class TitulosView(QWidget):
         remover: RemoverTituloUseCase,
         listar_escritorios: ListarEscritoriosUseCase,
         listar_empresas: ListarEmpresasUseCase,
-        listar_plano_contas: ListarPlanoContaUseCase,
-        listar_centros_custo: ListarCentroCustoUseCase,
+        listar_contas_bancarias: ListarContasBancariasUseCase,
+        garantir_conta_padrao: GarantirContaPadraoUseCase,
+        relatorio_titulos: RelatorioTitulosUseCase,
+        fluxo_caixa: FluxoCaixaUseCase,
+        projecao_financeira: ProjecaoFinanceiraUseCase,
+        contexto_empresa: EmpresaContextService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -86,17 +105,22 @@ class TitulosView(QWidget):
         self._remover = remover
         self._listar_escritorios = listar_escritorios
         self._listar_empresas = listar_empresas
-        self._listar_plano_contas = listar_plano_contas
-        self._listar_centros_custo = listar_centros_custo
+        self._listar_contas_bancarias = listar_contas_bancarias
+        self._garantir_conta_padrao = garantir_conta_padrao
+        self._relatorio_titulos = relatorio_titulos
+        self._fluxo_caixa = fluxo_caixa
+        self._projecao_financeira = projecao_financeira
+        self._contexto_empresa = contexto_empresa
+        self._mapa_empresa_escritorio: dict[int, int] = {}
         self._montar()
-        self.atualizar_lista()
+        self.carregar_empresa_ativa()
 
     def _montar(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        # --- Linha 1: Título + Ações principais ---
+        # --- Linha 1: Titulo + Acoes principais ---
         topo = QHBoxLayout()
         topo.setSpacing(12)
 
@@ -111,6 +135,11 @@ class TitulosView(QWidget):
         btn_novo.clicked.connect(self._novo)
         topo.addWidget(btn_novo)
 
+        btn_relatorio = QPushButton("Relatorios")
+        btn_relatorio.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_relatorio.clicked.connect(self._abrir_relatorios)
+        topo.addWidget(btn_relatorio)
+
         layout.addLayout(topo)
 
         # --- Linha 2: Filtros (grid alinhado) ---
@@ -119,34 +148,51 @@ class TitulosView(QWidget):
         filtros.setVerticalSpacing(8)
         filtros.setContentsMargins(0, 0, 0, 0)
 
-        # Coluna 0: Escritório
-        lbl_esc = QLabel("Escritório:")
-        lbl_esc.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_esc, 0, 0)
-        self._combo_filtro_escritorio = QComboBox()
-        self._combo_filtro_escritorio.setMinimumWidth(180)
-        self._combo_filtro_escritorio.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
-        self._combo_filtro_escritorio.currentIndexChanged.connect(self._escritorio_alterado)
-        filtros.addWidget(self._combo_filtro_escritorio, 0, 1)
-
-        # Coluna 1: Empresa
+        # Linha 0
+        # Coluna 0: Empresa
         lbl_emp = QLabel("Empresa:")
         lbl_emp.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_emp, 0, 2)
+        filtros.addWidget(lbl_emp, 0, 0)
         self._combo_filtro_empresa = QComboBox()
-        self._combo_filtro_empresa.setMinimumWidth(160)
+        self._combo_filtro_empresa.setMinimumWidth(200)
         self._combo_filtro_empresa.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
-        self._combo_filtro_empresa.addItem("Todas", None)
-        filtros.addWidget(self._combo_filtro_empresa, 0, 3)
+        self._combo_filtro_empresa.addItem("Selecione...", None)
+        filtros.addWidget(self._combo_filtro_empresa, 0, 1)
 
-        # Coluna 2: Tipo
+        # Coluna 1: Categoria
+        lbl_cat = QLabel("Categoria:")
+        lbl_cat.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_cat, 0, 2)
+        self._combo_filtro_categoria = QComboBox()
+        self._combo_filtro_categoria.setMinimumWidth(140)
+        self._combo_filtro_categoria.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_filtro_categoria.addItem("Todas", None)
+        for c in CategoriaTitulo:
+            self._combo_filtro_categoria.addItem(c.value, c.value)
+        filtros.addWidget(self._combo_filtro_categoria, 0, 3)
+
+        # Coluna 2: Forma Pagamento
+        lbl_forma = QLabel("Forma Pag.:")
+        lbl_forma.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_forma, 0, 4)
+        self._combo_filtro_forma = QComboBox()
+        self._combo_filtro_forma.setMinimumWidth(140)
+        self._combo_filtro_forma.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_filtro_forma.addItem("Todas", None)
+        for f in FormaPagamento:
+            self._combo_filtro_forma.addItem(f.value, f.value)
+        filtros.addWidget(self._combo_filtro_forma, 0, 5)
+
+        # Coluna 3: Tipo
         lbl_tipo = QLabel("Tipo:")
         lbl_tipo.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_tipo, 0, 4)
+        filtros.addWidget(lbl_tipo, 0, 6)
         self._combo_filtro_tipo = QComboBox()
         self._combo_filtro_tipo.setMinimumWidth(140)
         self._combo_filtro_tipo.setSizePolicy(
@@ -155,12 +201,13 @@ class TitulosView(QWidget):
         self._combo_filtro_tipo.addItem("Todos", None)
         for t in TipoTitulo:
             self._combo_filtro_tipo.addItem(t.value, t.value)
-        filtros.addWidget(self._combo_filtro_tipo, 0, 5)
+        filtros.addWidget(self._combo_filtro_tipo, 0, 7)
 
-        # Coluna 3: Status
+        # Linha 1
+        # Coluna 0: Status
         lbl_status = QLabel("Status:")
         lbl_status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        filtros.addWidget(lbl_status, 0, 6)
+        filtros.addWidget(lbl_status, 1, 0)
         self._combo_filtro_status = QComboBox()
         self._combo_filtro_status.setMinimumWidth(140)
         self._combo_filtro_status.setSizePolicy(
@@ -169,17 +216,73 @@ class TitulosView(QWidget):
         self._combo_filtro_status.addItem("Todos", None)
         for s in StatusTitulo:
             self._combo_filtro_status.addItem(s.value, s.value)
-        filtros.addWidget(self._combo_filtro_status, 0, 7)
+        filtros.addWidget(self._combo_filtro_status, 1, 1)
 
-        # Coluna 4: Botões de ação (Filtrar)
+        # Coluna 1: Vencimento inicio
+        lbl_venc_ini = QLabel("Venc. Inicio:")
+        lbl_venc_ini.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_venc_ini, 1, 2)
+        self._date_filtro_venc_ini = QDateEdit()
+        self._date_filtro_venc_ini.setCalendarPopup(True)
+        self._date_filtro_venc_ini.setSpecialValueText("Sem limite")
+        self._date_filtro_venc_ini.setDate(
+            self._date_filtro_venc_ini.minimumDate()
+        )
+        filtros.addWidget(self._date_filtro_venc_ini, 1, 3)
+
+        # Coluna 2: Vencimento fim
+        lbl_venc_fim = QLabel("Venc. Fim:")
+        lbl_venc_fim.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_venc_fim, 1, 4)
+        self._date_filtro_venc_fim = QDateEdit()
+        self._date_filtro_venc_fim.setCalendarPopup(True)
+        self._date_filtro_venc_fim.setSpecialValueText("Sem limite")
+        self._date_filtro_venc_fim.setDate(
+            self._date_filtro_venc_fim.minimumDate()
+        )
+        filtros.addWidget(self._date_filtro_venc_fim, 1, 5)
+
+        # Linha 2
+        # Coluna 0: Busca
+        lbl_busca = QLabel("Busca:")
+        lbl_busca.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        filtros.addWidget(lbl_busca, 2, 0)
+        self._campo_busca = QLineEdit()
+        self._campo_busca.setPlaceholderText(
+            "Descricao, numero do documento ou codigo de barras"
+        )
+        filtros.addWidget(self._campo_busca, 2, 1, 1, 3)
+
+        # Coluna 4: Botoes rapidos
+        btn_vencidos = QPushButton("Vencidos")
+        btn_vencidos.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_vencidos.clicked.connect(self._filtrar_vencidos)
+        filtros.addWidget(btn_vencidos, 2, 4)
+
+        btn_a_vencer = QPushButton("A vencer")
+        btn_a_vencer.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_a_vencer.clicked.connect(self._filtrar_a_vencer)
+        filtros.addWidget(btn_a_vencer, 2, 5)
+
+        btn_do_mes = QPushButton("Do mes")
+        btn_do_mes.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_do_mes.clicked.connect(self._filtrar_do_mes)
+        filtros.addWidget(btn_do_mes, 2, 6)
+
+        btn_limpar = QPushButton("Limpar")
+        btn_limpar.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_limpar.clicked.connect(self._limpar_filtros)
+        filtros.addWidget(btn_limpar, 2, 7)
+
+        # Linha 3: Botao Filtrar
         btn_filtrar = QPushButton("Filtrar")
         btn_filtrar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_filtrar.clicked.connect(self.atualizar_lista)
         btn_filtrar.setFixedWidth(100)
-        filtros.addWidget(btn_filtrar, 0, 8, Qt.AlignmentFlag.AlignLeft)
+        filtros.addWidget(btn_filtrar, 3, 7, Qt.AlignmentFlag.AlignRight)
 
-        # Stretch na última coluna para empurrar tudo para a esquerda
-        filtros.setColumnStretch(9, 1)
+        # Stretch na ultima coluna para empurrar tudo para a esquerda
+        filtros.setColumnStretch(8, 1)
 
         layout.addLayout(filtros)
 
@@ -187,8 +290,15 @@ class TitulosView(QWidget):
         self._tabela.setColumnCount(len(self.COLUNAS))
         self._tabela.setHorizontalHeaderLabels(self.COLUNAS)
         configurar_tabela_padrao(self._tabela)
+        self._configurar_colunas_tabela()
         self._tabela.doubleClicked.connect(self._editar_selecionado)
-        layout.addWidget(self._tabela)
+        self._tabela.setContextMenuPolicy(
+            Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        self._tabela.customContextMenuRequested.connect(
+            self._exibir_menu_contexto
+        )
+        layout.addWidget(self._tabela, stretch=1)
 
         botoes = QHBoxLayout()
         btn_editar = QPushButton("Editar")
@@ -209,60 +319,100 @@ class TitulosView(QWidget):
         botoes.addStretch()
         layout.addLayout(botoes)
 
-    def _escritorio_alterado(self) -> None:
-        self._atualizar_filtro_empresa()
-        self.atualizar_lista()
+    def _configurar_colunas_tabela(self) -> None:
+        """Define larguras e comportamento de redimensionamento das colunas."""
+        header = self._tabela.horizontalHeader()
+        header.setStretchLastSection(False)
 
-    def _atualizar_filtro_empresa(self) -> None:
-        escritorio_id = self._combo_filtro_escritorio.currentData()
+        # Larguras fixas para colunas pequenas
+        larguras_fixas = {
+            0: 60,   # ID
+            3: 80,   # Tipo
+            4: 90,   # Status
+            5: 110,  # Valor
+            6: 110,  # Valor Pago
+            7: 130,  # Forma Pagamento
+            8: 100,  # Vencimento
+        }
+        for coluna, largura in larguras_fixas.items():
+            header.setSectionResizeMode(coluna, QHeaderView.ResizeMode.Fixed)
+            self._tabela.setColumnWidth(coluna, largura)
+
+        # Categoria ajusta ao conteudo
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+
+        # Descricao ocupa o espaco restante
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        header.setStretchLastSection(False)
+
+        # Altura das linhas um pouco maior para melhor legibilidade
+        self._tabela.verticalHeader().setDefaultSectionSize(40)
+        self._tabela.verticalHeader().setMinimumSectionSize(40)
+
+        # Altura minima da tabela para aproveitar melhor a tela
+        self._tabela.setMinimumHeight(400)
+
+    def _carregar_empresas(self) -> None:
+        try:
+            empresas = self._listar_empresas.execute(skip=0, limit=1000)
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", f"Erro ao carregar empresas: {e}")
+            self._mapa_empresa_escritorio = {}
+            return
+
+        self._mapa_empresa_escritorio = {
+            e.id: e.escritorio_id for e in empresas if e.id is not None
+        }
+
         self._combo_filtro_empresa.blockSignals(True)
+        atual = self._combo_filtro_empresa.currentData()
         self._combo_filtro_empresa.clear()
-        self._combo_filtro_empresa.addItem("Todas", None)
-        if escritorio_id is not None:
-            try:
-                empresas = self._listar_empresas.execute(skip=0, limit=1000)
-                for emp in empresas:
-                    if emp.escritorio_id == escritorio_id and emp.id is not None:
-                        self._combo_filtro_empresa.addItem(
-                            emp.razao_social, emp.id
-                        )
-            except Exception:
-                pass
+        self._combo_filtro_empresa.addItem("Selecione...", None)
+        for emp in empresas:
+            if emp.id is not None:
+                self._combo_filtro_empresa.addItem(
+                    emp.razao_social, emp.id
+                )
+
+        empresa_ativa = self._contexto_empresa.get_empresa_ativa()
+        if empresa_ativa is not None:
+            idx = self._combo_filtro_empresa.findData(empresa_ativa)
+            if idx >= 0:
+                self._combo_filtro_empresa.setCurrentIndex(idx)
+        elif atual is not None:
+            idx = self._combo_filtro_empresa.findData(atual)
+            if idx >= 0:
+                self._combo_filtro_empresa.setCurrentIndex(idx)
         self._combo_filtro_empresa.blockSignals(False)
 
-    def atualizar_lista(self) -> None:
-        try:
-            escritorios = self._listar_escritorios.execute(skip=0, limit=1000)
-            mapa_esc = {e.id: e.nome for e in escritorios if e.id is not None}
-        except Exception:
-            mapa_esc = {}
-            escritorios = []
+    def carregar_empresa_ativa(self) -> None:
+        """Recarrega a lista usando a empresa ativa do contexto global."""
+        self.atualizar_lista()
 
-        self._atualizar_combo_filtro(escritorios)
-        escritorio_id = self._combo_filtro_escritorio.currentData()
+    def _escritorio_da_empresa(self, empresa_id: int | None) -> int | None:
+        if empresa_id is None:
+            return None
+        return self._mapa_empresa_escritorio.get(empresa_id)
+
+    def atualizar_lista(self) -> None:
+        self._carregar_empresas()
+        empresa_id = self._combo_filtro_empresa.currentData()
+        if empresa_id is None:
+            self._tabela.setRowCount(0)
+            return
+
+        escritorio_id = self._escritorio_da_empresa(empresa_id)
         if escritorio_id is None:
             self._tabela.setRowCount(0)
             return
 
-        try:
-            empresas = self._listar_empresas.execute(skip=0, limit=1000)
-            mapa_emp = {e.id: e.razao_social for e in empresas if e.id is not None}
-        except Exception:
-            mapa_emp = {}
-
-        try:
-            planos = self._listar_plano_contas.execute(
-                escritorio_id=escritorio_id, skip=0, limit=500
-            )
-            mapa_plano = {
-                p.id: f"{p.codigo} - {p.nome}" for p in planos if p.id is not None
-            }
-        except Exception:
-            mapa_plano = {}
-
-        empresa_id = self._combo_filtro_empresa.currentData()
         tipo = self._combo_filtro_tipo.currentData()
         status = self._combo_filtro_status.currentData()
+        categoria = self._combo_filtro_categoria.currentData()
+        forma = self._combo_filtro_forma.currentData()
+        venc_ini = self._data_filtro_venc_ini()
+        venc_fim = self._data_filtro_venc_fim()
+        busca = self._campo_busca.text().strip().lower()
 
         try:
             titulos = self._listar.execute(
@@ -277,33 +427,55 @@ class TitulosView(QWidget):
             QMessageBox.warning(self, "Erro", f"Erro ao listar titulos: {e}")
             return
 
+        if categoria is not None:
+            titulos = [t for t in titulos if t.categoria == categoria]
+
+        if forma is not None:
+            titulos = [t for t in titulos if t.forma_pagamento == forma]
+
+        if venc_ini is not None:
+            titulos = [
+                t for t in titulos if t.data_vencimento >= venc_ini
+            ]
+
+        if venc_fim is not None:
+            titulos = [
+                t for t in titulos if t.data_vencimento <= venc_fim
+            ]
+
+        if busca:
+            titulos = [
+                t
+                for t in titulos
+                if busca in t.descricao.lower()
+                or (t.numero_documento is not None and busca in t.numero_documento.lower())
+                or (t.codigo_barras is not None and busca in t.codigo_barras.lower())
+            ]
+
         self._tabela.setRowCount(len(titulos))
         for i, t in enumerate(titulos):
             self._tabela.setItem(
                 i, 0, criar_item_centralizado(str(t.id or ""))
             )
             self._tabela.setItem(
-                i, 1, QTableWidgetItem(mapa_esc.get(t.escritorio_id, "—"))
+                i, 1, criar_item_centralizado(t.categoria)
+            )
+            self._tabela.setItem(i, 2, QTableWidgetItem(t.descricao))
+            self._tabela.setItem(i, 3, QTableWidgetItem(t.tipo))
+            self._tabela.setItem(i, 4, QTableWidgetItem(t.status))
+            self._tabela.setItem(
+                i, 5, criar_item_centralizado(self._formatar_valor(t.valor))
+            )
+            valor_pago_texto = (
+                self._formatar_valor(t.valor_pago)
+                if t.valor_pago is not None
+                else "—"
             )
             self._tabela.setItem(
-                i,
-                2,
-                QTableWidgetItem(
-                    mapa_emp.get(t.empresa_id, "—") if t.empresa_id else "—"
-                ),
+                i, 6, criar_item_centralizado(valor_pago_texto)
             )
             self._tabela.setItem(
-                i,
-                3,
-                QTableWidgetItem(
-                    mapa_plano.get(t.plano_conta_id, "—")
-                ),
-            )
-            self._tabela.setItem(i, 4, QTableWidgetItem(t.descricao))
-            self._tabela.setItem(i, 5, QTableWidgetItem(t.tipo))
-            self._tabela.setItem(i, 6, QTableWidgetItem(t.status))
-            self._tabela.setItem(
-                i, 7, criar_item_centralizado(self._formatar_valor(t.valor))
+                i, 7, criar_item_centralizado(t.forma_pagamento)
             )
             self._tabela.setItem(
                 i,
@@ -321,26 +493,87 @@ class TitulosView(QWidget):
                 cor = "#c62828"
             else:
                 cor = "#000000"
-            for col in range(9):
+            for col in range(len(self.COLUNAS)):
                 item = self._tabela.item(i, col)
                 if item is not None:
                     item.setForeground(self._cor(cor))
 
-    def _atualizar_combo_filtro(
-        self, escritorios: list[EscritorioResponseDTO]
-    ) -> None:
-        atual = self._combo_filtro_escritorio.currentData()
-        self._combo_filtro_escritorio.blockSignals(True)
-        self._combo_filtro_escritorio.clear()
-        self._combo_filtro_escritorio.addItem("Selecione...", None)
-        for esc in escritorios:
-            if esc.id is not None:
-                self._combo_filtro_escritorio.addItem(esc.nome, esc.id)
-        if atual is not None:
-            idx = self._combo_filtro_escritorio.findData(atual)
-            if idx >= 0:
-                self._combo_filtro_escritorio.setCurrentIndex(idx)
-        self._combo_filtro_escritorio.blockSignals(False)
+    def _data_filtro_venc_ini(self) -> date | None:
+        """Retorna a data inicial do filtro de vencimento ou None se nao definida."""
+        if self._date_filtro_venc_ini.specialValueText() == "Sem limite":
+            qdate = self._date_filtro_venc_ini.date()
+            if qdate == self._date_filtro_venc_ini.minimumDate():
+                return None
+        return cast(date, self._date_filtro_venc_ini.date().toPython())
+
+    def _data_filtro_venc_fim(self) -> date | None:
+        """Retorna a data final do filtro de vencimento ou None se nao definida."""
+        if self._date_filtro_venc_fim.specialValueText() == "Sem limite":
+            qdate = self._date_filtro_venc_fim.date()
+            if qdate == self._date_filtro_venc_fim.minimumDate():
+                return None
+        return cast(date, self._date_filtro_venc_fim.date().toPython())
+
+    def _filtrar_vencidos(self) -> None:
+        """Preenche os filtros para mostrar titulos abertos vencidos."""
+        self._combo_filtro_status.setCurrentIndex(
+            self._combo_filtro_status.findText("ABERTO")
+        )
+        self._date_filtro_venc_fim.setDate(
+            QDate(date.today().year, date.today().month, date.today().day)
+        )
+        self._date_filtro_venc_fim.setSpecialValueText("")
+        self.atualizar_lista()
+
+    def _filtrar_a_vencer(self) -> None:
+        """Preenche os filtros para mostrar titulos abertos a vencer."""
+        self._combo_filtro_status.setCurrentIndex(
+            self._combo_filtro_status.findText("ABERTO")
+        )
+        self._date_filtro_venc_ini.setDate(
+            QDate(date.today().year, date.today().month, date.today().day)
+        )
+        self._date_filtro_venc_ini.setSpecialValueText("")
+        self.atualizar_lista()
+
+    def _filtrar_do_mes(self) -> None:
+        """Preenche os filtros para mostrar titulos com vencimento no mes atual."""
+        hoje = date.today()
+        primeiro_dia = date(hoje.year, hoje.month, 1)
+        ultimo_dia = date(hoje.year, hoje.month, self._ultimo_dia_mes(hoje))
+        self._date_filtro_venc_ini.setDate(
+            QDate(primeiro_dia.year, primeiro_dia.month, primeiro_dia.day)
+        )
+        self._date_filtro_venc_ini.setSpecialValueText("")
+        self._date_filtro_venc_fim.setDate(
+            QDate(ultimo_dia.year, ultimo_dia.month, ultimo_dia.day)
+        )
+        self._date_filtro_venc_fim.setSpecialValueText("")
+        self.atualizar_lista()
+
+    @staticmethod
+    def _ultimo_dia_mes(data: date) -> int:
+        import calendar
+
+        return calendar.monthrange(data.year, data.month)[1]
+
+    def _limpar_filtros(self) -> None:
+        """Reseta os filtros para os valores padrao."""
+        self._combo_filtro_empresa.setCurrentIndex(0)
+        self._combo_filtro_categoria.setCurrentIndex(0)
+        self._combo_filtro_forma.setCurrentIndex(0)
+        self._combo_filtro_tipo.setCurrentIndex(0)
+        self._combo_filtro_status.setCurrentIndex(0)
+        self._date_filtro_venc_ini.setDate(
+            self._date_filtro_venc_ini.minimumDate()
+        )
+        self._date_filtro_venc_ini.setSpecialValueText("Sem limite")
+        self._date_filtro_venc_fim.setDate(
+            self._date_filtro_venc_fim.minimumDate()
+        )
+        self._date_filtro_venc_fim.setSpecialValueText("Sem limite")
+        self._campo_busca.clear()
+        self.atualizar_lista()
 
     @staticmethod
     def _formatar_valor(valor: Decimal) -> str:
@@ -376,35 +609,45 @@ class TitulosView(QWidget):
         except Exception:
             return []
 
-    def _obter_opcoes_plano_conta(self, escritorio_id: int | None) -> list[tuple[int, str]]:
-        if escritorio_id is None:
-            return []
+    def _obter_opcoes_empresa(self) -> list[tuple[int, str, int]]:
         try:
-            planos = self._listar_plano_contas.execute(
-                escritorio_id=escritorio_id, skip=0, limit=500
-            )
+            empresas = self._listar_empresas.execute(skip=0, limit=1000)
             return [
-                (p.id, f"{p.codigo} - {p.nome}")
-                for p in planos
-                if p.id is not None
+                (e.id, e.razao_social, e.escritorio_id)
+                for e in empresas
+                if e.id is not None
             ]
         except Exception:
             return []
 
-    def _obter_opcoes_centro_custo(self, empresa_id: int | None) -> list[tuple[int, str]]:
+    def _abrir_relatorios(self) -> None:
+        empresa_id = self._combo_filtro_empresa.currentData()
         if empresa_id is None:
-            return []
-        try:
-            centros = self._listar_centros_custo.execute(
-                empresa_id=empresa_id, skip=0, limit=500
+            QMessageBox.information(
+                self,
+                "Aviso",
+                "Selecione uma empresa para gerar o relatorio.",
             )
-            return [
-                (c.id, f"{c.codigo} - {c.nome}")
-                for c in centros
-                if c.id is not None
-            ]
-        except Exception:
-            return []
+            return
+
+        escritorio_id = self._escritorio_da_empresa(empresa_id)
+        if escritorio_id is None:
+            QMessageBox.information(
+                self,
+                "Aviso",
+                "Empresa sem escritorio vinculado.",
+            )
+            return
+
+        dialogo = RelatorioDialog(
+            relatorio_use_case=self._relatorio_titulos,
+            fluxo_caixa_use_case=self._fluxo_caixa,
+            projecao_use_case=self._projecao_financeira,
+            escritorio_id=escritorio_id,
+            empresa_id=empresa_id,
+            parent=self,
+        )
+        dialogo.exec()
 
     def _novo(self) -> None:
         opcoes_escritorio = self._obter_opcoes(
@@ -418,30 +661,43 @@ class TitulosView(QWidget):
             )
             return
 
-        escritorio_id = self._combo_filtro_escritorio.currentData()
         empresa_id = self._combo_filtro_empresa.currentData()
-        opcoes_empresa = self._obter_opcoes(
-            self._listar_empresas, "id", "razao_social"
-        )
-        opcoes_plano = self._obter_opcoes_plano_conta(escritorio_id)
-        if not opcoes_plano:
+        if empresa_id is None:
             QMessageBox.information(
                 self,
                 "Aviso",
-                "Cadastre pelo menos uma conta no Plano de Contas "
-                "para este escritorio antes de cadastrar titulos.",
+                "Selecione uma empresa para cadastrar um titulo.",
             )
             return
-        opcoes_centro = self._obter_opcoes_centro_custo(empresa_id)
+
+        escritorio_id = self._escritorio_da_empresa(empresa_id)
+        if escritorio_id is None:
+            QMessageBox.information(
+                self,
+                "Aviso",
+                "Empresa sem escritorio vinculado.",
+            )
+            return
+
+        try:
+            plano_conta_id = self._garantir_conta_padrao.execute(escritorio_id)
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "Erro",
+                f"Nao foi possivel garantir a conta padrao: {e}",
+            )
+            return
+
+        opcoes_empresa = self._obter_opcoes_empresa()
 
         form = TituloFormView(
             criar_use_case=self._criar,
             editar_use_case=self._editar,
             opcoes_escritorio=opcoes_escritorio,
             opcoes_empresa=opcoes_empresa,
-            opcoes_plano_conta=opcoes_plano,
-            opcoes_centro_custo=opcoes_centro,
-            escritorio_id=escritorio_id,
+            plano_conta_id=plano_conta_id,
+            empresa_id=empresa_id,
             parent=self,
         )
         if form.exec() == TituloFormView.DialogCode.Accepted:
@@ -455,23 +711,30 @@ class TitulosView(QWidget):
             )
             return
 
+        try:
+            plano_conta_id = self._garantir_conta_padrao.execute(
+                titulo.escritorio_id
+            )
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "Erro",
+                f"Nao foi possivel garantir a conta padrao: {e}",
+            )
+            return
+
         opcoes_escritorio = self._obter_opcoes(
             self._listar_escritorios, "id", "nome"
         )
-        opcoes_empresa = self._obter_opcoes(
-            self._listar_empresas, "id", "razao_social"
-        )
-        opcoes_plano = self._obter_opcoes_plano_conta(titulo.escritorio_id)
-        opcoes_centro = self._obter_opcoes_centro_custo(titulo.empresa_id)
+        opcoes_empresa = self._obter_opcoes_empresa()
 
         form = TituloFormView(
             criar_use_case=self._criar,
             editar_use_case=self._editar,
             opcoes_escritorio=opcoes_escritorio,
             opcoes_empresa=opcoes_empresa,
-            opcoes_plano_conta=opcoes_plano,
-            opcoes_centro_custo=opcoes_centro,
-            escritorio_id=titulo.escritorio_id,
+            plano_conta_id=plano_conta_id,
+            empresa_id=titulo.empresa_id,
             parent=self,
             titulo=titulo,
         )
@@ -493,21 +756,45 @@ class TitulosView(QWidget):
                 self, "Aviso", "Nao e possivel quitar um titulo cancelado."
             )
             return
-        resposta = QMessageBox.question(
-            self,
-            "Confirmar quitacao",
-            f"Deseja quitar o titulo '{titulo.descricao}'?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+
+        opcoes_conta = self._obter_opcoes_conta_bancaria()
+        dialogo = QuitacaoDialog(
+            titulo=titulo,
+            opcoes_conta_bancaria=opcoes_conta,
+            parent=self,
         )
-        if resposta == QMessageBox.StandardButton.Yes:
-            try:
-                self._quitar.execute(titulo.id)
-                self.atualizar_lista()
-                QMessageBox.information(
-                    self, "Sucesso", "Titulo quitado com sucesso."
-                )
-            except ValueError as e:
-                QMessageBox.warning(self, "Erro", str(e))
+        if dialogo.exec() != QuitacaoDialog.DialogCode.Accepted:
+            return
+
+        try:
+            data_quitacao, valor_pago, conta_id, forma = dialogo.obter_dados()
+            dto = QuitarTituloDTO(
+                id=titulo.id,
+                data_quitacao=data_quitacao,
+                valor_pago=valor_pago,
+                conta_bancaria_id=conta_id,
+                forma_pagamento=forma,
+            )
+            self._quitar.execute(dto)
+            self.atualizar_lista()
+            QMessageBox.information(
+                self, "Sucesso", "Titulo quitado com sucesso."
+            )
+        except ValueError as e:
+            QMessageBox.warning(self, "Erro", str(e))
+
+    def _obter_opcoes_conta_bancaria(self) -> list[tuple[int, str]]:
+        try:
+            contas = self._listar_contas_bancarias.execute(
+                skip=0, limit=1000
+            )
+            return [
+                (c.id, f"{c.banco_nome} - {c.conta}")
+                for c in contas
+                if c.id is not None and c.ativo
+            ]
+        except Exception:
+            return []
 
     def _cancelar_selecionado(self) -> None:
         titulo = self._obter_selecionado()
@@ -559,3 +846,27 @@ class TitulosView(QWidget):
                 )
             except ValueError as e:
                 QMessageBox.warning(self, "Erro", str(e))
+
+    def _exibir_menu_contexto(self, pos: Any) -> None:
+        """Exibe menu de contexto com acoes para o titulo selecionado."""
+        item = self._tabela.itemAt(pos)
+        if item is None:
+            return
+        self._tabela.selectRow(item.row())
+
+        menu = QMenu(self)
+        acao_editar = menu.addAction("Editar")
+        acao_quitar = menu.addAction("Quitar")
+        acao_cancelar = menu.addAction("Cancelar")
+        menu.addSeparator()
+        acao_remover = menu.addAction("Apagar")
+
+        acao = menu.exec(self._tabela.viewport().mapToGlobal(pos))
+        if acao == acao_editar:
+            self._editar_selecionado()
+        elif acao == acao_quitar:
+            self._quitar_selecionado()
+        elif acao == acao_cancelar:
+            self._cancelar_selecionado()
+        elif acao == acao_remover:
+            self._remover_selecionado()

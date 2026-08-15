@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import date
 from decimal import Decimal
 
+from domain.entities.alerta_titulo import AlertaTitulo
 from domain.entities.titulo import Titulo
 from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_titulo import TipoTitulo
@@ -49,3 +51,13 @@ class TituloRepository(ABC):
         tipo: TipoTitulo | None = None,
     ) -> Decimal:
         """Retorna a soma dos valores dos titulos com o status informado."""
+
+    @abstractmethod
+    def list_alertas(
+        self,
+        escritorio_id: int,
+        empresa_id: int | None,
+        data_referencia: date,
+        incluir_vencidos: bool,
+    ) -> list[AlertaTitulo]:
+        """Lista titulos em aberto para alertas, com dados da empresa."""

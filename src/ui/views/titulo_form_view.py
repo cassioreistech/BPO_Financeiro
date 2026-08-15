@@ -31,6 +31,7 @@ from application.use_cases.titulo_use_cases import (
     CadastrarTituloUseCase,
     EditarTituloUseCase,
 )
+from domain.enums.categoria_titulo import CategoriaTitulo
 from domain.enums.tipo_titulo import TipoTitulo
 
 
@@ -38,16 +39,16 @@ class TituloFormView(QDialog):
     """Formulario modal para criar ou editar um titulo financeiro."""
 
     TIPOS = [t.value for t in TipoTitulo]
+    CATEGORIAS = [c.value for c in CategoriaTitulo]
 
     def __init__(
         self,
         criar_use_case: CadastrarTituloUseCase,
         editar_use_case: EditarTituloUseCase,
         opcoes_escritorio: list[tuple[int, str]],
-        opcoes_empresa: list[tuple[int, str]],
-        opcoes_plano_conta: list[tuple[int, str]],
-        opcoes_centro_custo: list[tuple[int, str]],
-        escritorio_id: int | None = None,
+        opcoes_empresa: list[tuple[int, str, int]],
+        plano_conta_id: int,
+        empresa_id: int | None = None,
         parent: QWidget | None = None,
         titulo: TituloResponseDTO | None = None,
     ) -> None:
@@ -56,15 +57,17 @@ class TituloFormView(QDialog):
         self._editar = editar_use_case
         self._opcoes_escritorio = opcoes_escritorio
         self._opcoes_empresa = opcoes_empresa
-        self._opcoes_plano_conta = opcoes_plano_conta
-        self._opcoes_centro_custo = opcoes_centro_custo
+        self._mapa_empresa_escritorio = {
+            eid: esc_id for eid, _, esc_id in opcoes_empresa
+        }
+        self._plano_conta_id = plano_conta_id
         self._titulo = titulo
         self._editando = titulo is not None
 
         self._configurar_janela()
         self._montar_formulario()
         self._preencher_se_edicao()
-        self._selecionar_escritorio_inicial(escritorio_id)
+        self._selecionar_escritorio_inicial(empresa_id)
 
     def _configurar_janela(self) -> None:
         titulo = "Editar Titulo" if self._editando else "Novo Titulo"
@@ -85,24 +88,31 @@ class TituloFormView(QDialog):
         self._combo_escritorio = QComboBox()
         for eid, nome in self._opcoes_escritorio:
             self._combo_escritorio.addItem(nome, eid)
-        form.addRow("Escritorio:", self._combo_escritorio)
 
         self._combo_empresa = QComboBox()
-        self._combo_empresa.addItem("Nenhuma", None)
-        for eid, nome in self._opcoes_empresa:
+        self._combo_empresa.addItem("Selecione...", None)
+        for eid, nome, _ in self._opcoes_empresa:
             self._combo_empresa.addItem(nome, eid)
-        form.addRow("Empresa:", self._combo_empresa)
+        self._combo_empresa.currentIndexChanged.connect(
+            self._empresa_alterada
+        )
+        form.addRow("Empresa:*", self._combo_empresa)
 
-        self._combo_plano_conta = QComboBox()
-        for pid, nome in self._opcoes_plano_conta:
-            self._combo_plano_conta.addItem(nome, pid)
-        form.addRow("Plano de Conta:", self._combo_plano_conta)
+        self._combo_categoria = QComboBox()
+        self._combo_categoria.addItems(self.CATEGORIAS)
+        form.addRow("Categoria:*", self._combo_categoria)
 
-        self._combo_centro_custo = QComboBox()
-        self._combo_centro_custo.addItem("Nenhum", None)
-        for cid, nome in self._opcoes_centro_custo:
-            self._combo_centro_custo.addItem(nome, cid)
-        form.addRow("Centro de Custo:", self._combo_centro_custo)
+        self._campo_numero_documento = QLineEdit()
+        self._campo_numero_documento.setPlaceholderText(
+            "Numero do boleto, nota fiscal etc."
+        )
+        form.addRow("No. Documento:", self._campo_numero_documento)
+
+        self._campo_codigo_barras = QLineEdit()
+        self._campo_codigo_barras.setPlaceholderText(
+            "Codigo de barras do boleto"
+        )
+        form.addRow("Cod. Barras:", self._campo_codigo_barras)
 
         self._campo_descricao = QLineEdit()
         self._campo_descricao.setPlaceholderText("Descricao do titulo")
@@ -153,14 +163,17 @@ class TituloFormView(QDialog):
         if self._titulo is None:
             return
 
-        self._selecionar_por_id(self._combo_escritorio, self._titulo.escritorio_id)
         self._selecionar_por_id(self._combo_empresa, self._titulo.empresa_id)
-        self._selecionar_por_id(
-            self._combo_plano_conta, self._titulo.plano_conta_id
-        )
-        self._selecionar_por_id(
-            self._combo_centro_custo, self._titulo.centro_custo_id
-        )
+
+        idx_categoria = self._combo_categoria.findText(self._titulo.categoria)
+        if idx_categoria >= 0:
+            self._combo_categoria.setCurrentIndex(idx_categoria)
+
+        if self._titulo.numero_documento:
+            self._campo_numero_documento.setText(self._titulo.numero_documento)
+
+        if self._titulo.codigo_barras:
+            self._campo_codigo_barras.setText(self._titulo.codigo_barras)
 
         self._campo_descricao.setText(self._titulo.descricao)
 
@@ -190,18 +203,25 @@ class TituloFormView(QDialog):
     def _formatar_valor(valor: Decimal) -> str:
         return f"{valor:.2f}".replace(".", ",")
 
-    def _selecionar_escritorio_inicial(self, escritorio_id: int | None) -> None:
-        if escritorio_id is None:
-            return
-        idx = self._combo_escritorio.findData(escritorio_id)
-        if idx >= 0:
-            self._combo_escritorio.setCurrentIndex(idx)
+    def _selecionar_escritorio_inicial(self, empresa_id: int | None) -> None:
+        if empresa_id is not None:
+            self._selecionar_por_id(self._combo_empresa, empresa_id)
+        self._empresa_alterada()
+
+    def _empresa_alterada(self) -> None:
+        empresa_id = self._combo_empresa.currentData()
+        if empresa_id is not None:
+            escritorio_id = self._mapa_empresa_escritorio.get(empresa_id)
+            self._selecionar_por_id(self._combo_escritorio, escritorio_id)
+        else:
+            self._combo_escritorio.setCurrentIndex(0)
 
     def _salvar(self) -> None:
         escritorio_id = self._combo_escritorio.currentData()
         empresa_id = self._combo_empresa.currentData()
-        plano_conta_id = self._combo_plano_conta.currentData()
-        centro_custo_id = self._combo_centro_custo.currentData()
+        categoria = self._combo_categoria.currentText()
+        numero_documento = self._campo_numero_documento.text().strip() or None
+        codigo_barras = self._campo_codigo_barras.text().strip() or None
         descricao = self._campo_descricao.text().strip()
         tipo = self._combo_tipo.currentText()
         valor_texto = self._campo_valor.text().strip().replace(",", ".")
@@ -209,6 +229,16 @@ class TituloFormView(QDialog):
         data_vencimento = cast(date, self._date_vencimento.date().toPython())
         observacao = self._campo_observacao.toPlainText().strip() or None
 
+        if empresa_id is None:
+            QMessageBox.warning(
+                self, "Campo obrigatorio", "Selecione uma empresa."
+            )
+            return
+        if escritorio_id is None or escritorio_id <= 0:
+            QMessageBox.warning(
+                self, "Campo obrigatorio", "Empresa sem escritorio vinculado."
+            )
+            return
         if not descricao:
             QMessageBox.warning(
                 self, "Campo obrigatorio", "A descricao nao pode ser vazia."
@@ -229,8 +259,11 @@ class TituloFormView(QDialog):
                     id=self._titulo.id,
                     escritorio_id=escritorio_id,
                     empresa_id=empresa_id,
-                    plano_conta_id=plano_conta_id,
-                    centro_custo_id=centro_custo_id,
+                    plano_conta_id=self._plano_conta_id,
+                    centro_custo_id=None,
+                    numero_documento=numero_documento,
+                    codigo_barras=codigo_barras,
+                    categoria=categoria,
                     descricao=descricao,
                     tipo=tipo,
                     valor=valor,
@@ -246,8 +279,11 @@ class TituloFormView(QDialog):
                 dto_criar = CadastrarTituloDTO(
                     escritorio_id=escritorio_id,
                     empresa_id=empresa_id,
-                    plano_conta_id=plano_conta_id,
-                    centro_custo_id=centro_custo_id,
+                    plano_conta_id=self._plano_conta_id,
+                    centro_custo_id=None,
+                    numero_documento=numero_documento,
+                    codigo_barras=codigo_barras,
+                    categoria=categoria,
                     descricao=descricao,
                     tipo=tipo,
                     valor=valor,

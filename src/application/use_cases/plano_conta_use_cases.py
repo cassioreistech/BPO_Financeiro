@@ -25,6 +25,48 @@ def _para_response_dto(plano: PlanoConta) -> PlanoContaResponseDTO:
     )
 
 
+class GarantirContaPadraoUseCase:
+    """Garante a existencia de uma conta padrao em cada escritorio.
+
+    Utilizado para lancamentos simplificados, onde o usuario nao escolhe
+    uma conta do plano de contas manualmente.
+    """
+
+    CODIGO_PADRAO = "0.00"
+    NOME_PADRAO = "Lancamentos diversos"
+    TIPO_PADRAO = TipoPlanoConta.OUTRO.value
+
+    def __init__(self, repository: PlanoContaRepository) -> None:
+        self._repository = repository
+
+    def execute(self, escritorio_id: int) -> int:
+        """Retorna o ID da conta padrao do escritorio, criando se necessario.
+
+        Raises:
+            ValueError: se escritorio_id invalido.
+            RuntimeError: se a conta nao puder ser criada.
+        """
+        if escritorio_id <= 0:
+            raise ValueError("Escritorio ID deve ser um numero positivo.")
+
+        existente = self._repository.get_by_codigo(
+            escritorio_id, self.CODIGO_PADRAO
+        )
+        if existente is not None and existente.id is not None:
+            return existente.id
+
+        plano = PlanoConta(
+            escritorio_id=escritorio_id,
+            codigo=self.CODIGO_PADRAO,
+            nome=self.NOME_PADRAO,
+            tipo=TipoPlanoConta(self.TIPO_PADRAO),
+        )
+        criado = self._repository.create(plano)
+        if criado.id is None:
+            raise RuntimeError("Falha ao criar conta padrao do escritorio.")
+        return criado.id
+
+
 class CadastrarPlanoContaUseCase:
     """Use case para cadastro de conta no plano."""
 

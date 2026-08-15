@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 
 from PySide6.QtCore import Qt
@@ -14,13 +15,22 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSizePolicy,
+    QTableWidget,
+    QTableWidgetItem,
     QToolTip,
     QVBoxLayout,
     QWidget,
 )
 
+from application.dto.empresa_dto import EmpresaResponseDTO
 from application.use_cases.dashboard_use_cases import ResumoFinanceiroUseCase
 from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
+from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
+from domain.entities.titulo import Titulo
+from ui.views.table_helpers import (
+    configurar_tabela_padrao,
+    criar_item_centralizado,
+)
 
 
 class GraficoBarrasWidget(QWidget):
@@ -154,15 +164,27 @@ class GraficoBarrasWidget(QWidget):
 class DashboardView(QWidget):
     """Dashboard financeiro com cards de indicadores e grafico."""
 
+    CORES_CATEGORIA = [
+        QColor("#1565c0"),
+        QColor("#c62828"),
+        QColor("#2e7d32"),
+        QColor("#6a1b9a"),
+        QColor("#ef6c00"),
+        QColor("#ad1457"),
+    ]
+
     def __init__(
         self,
         resumo: ResumoFinanceiroUseCase,
+        listar_escritorios: ListarEscritoriosUseCase,
         listar_empresas: ListarEmpresasUseCase,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._resumo = resumo
+        self._listar_escritorios = listar_escritorios
         self._listar_empresas = listar_empresas
+        self._empresas: dict[int, EmpresaResponseDTO] = {}
         self._cards: dict[str, QLabel] = {}
         self._labels_tooltips: dict[str, tuple[str, str, str]] = {}
         self._montar()
@@ -181,12 +203,11 @@ class DashboardView(QWidget):
 
         cabecalho.addWidget(QLabel("Empresa:"))
         self._combo_empresa = QComboBox()
-        self._combo_empresa.setMinimumWidth(220)
+        self._combo_empresa.setMinimumWidth(280)
         self._combo_empresa.currentIndexChanged.connect(self._atualizar)
         cabecalho.addWidget(self._combo_empresa)
 
         btn_atualizar = QPushButton("Atualizar")
-        btn_atualizar.setIcon  # noqa: B018 - placeholder para future icon
         btn_atualizar.clicked.connect(self._atualizar)
         cabecalho.addWidget(btn_atualizar)
 
@@ -211,20 +232,28 @@ class DashboardView(QWidget):
         self._cards["vencido_pagar"] = self._criar_card(
             "Vencido a Pagar", "#ad1457", "#fce4ec"
         )
+        self._cards["mes_receber"] = self._criar_card(
+            "Total do Mes a Receber", "#00695c", "#e0f2f1"
+        )
+        self._cards["mes_pagar"] = self._criar_card(
+            "Total do Mes a Pagar", "#d32f2f", "#ffebee"
+        )
 
         grid.addWidget(self._cards["a_receber"], 0, 0)
         grid.addWidget(self._cards["a_pagar"], 0, 1)
-        grid.addWidget(self._cards["recebido"], 1, 0)
-        grid.addWidget(self._cards["pago"], 1, 1)
-        grid.addWidget(self._cards["vencido_receber"], 2, 0)
-        grid.addWidget(self._cards["vencido_pagar"], 2, 1)
+        grid.addWidget(self._cards["recebido"], 0, 2)
+        grid.addWidget(self._cards["pago"], 0, 3)
+        grid.addWidget(self._cards["vencido_receber"], 1, 0)
+        grid.addWidget(self._cards["vencido_pagar"], 1, 1)
+        grid.addWidget(self._cards["mes_receber"], 1, 2)
+        grid.addWidget(self._cards["mes_pagar"], 1, 3)
 
-        grid.setColumnStretch(0, 1)
-        grid.setColumnStretch(1, 1)
+        for i in range(4):
+            grid.setColumnStretch(i, 1)
 
         layout.addLayout(grid)
 
-        grafico_titulo = QLabel("Resumo por Categoria")
+        grafico_titulo = QLabel("A Pagar/Receber por Categoria")
         grafico_titulo.setObjectName("sectionTitle")
         font = QFont()
         font.setPointSize(12)
@@ -234,6 +263,19 @@ class DashboardView(QWidget):
 
         self._grafico = GraficoBarrasWidget()
         layout.addWidget(self._grafico)
+
+        vencidos_titulo = QLabel("Titulos Vencidos (top 10)")
+        vencidos_titulo.setObjectName("sectionTitle")
+        vencidos_titulo.setFont(font)
+        layout.addWidget(vencidos_titulo)
+
+        self._tabela_vencidos = QTableWidget()
+        self._tabela_vencidos.setColumnCount(5)
+        self._tabela_vencidos.setHorizontalHeaderLabels(
+            ["Vencimento", "Descricao", "Tipo", "Valor", "Dias"]
+        )
+        configurar_tabela_padrao(self._tabela_vencidos)
+        layout.addWidget(self._tabela_vencidos)
 
     def _criar_card(self, titulo: str, cor_texto: str, cor_fundo: str) -> QLabel:
         valor_inicial = self._formatar_valor(Decimal("0"))
@@ -256,7 +298,6 @@ class DashboardView(QWidget):
                 border-radius: 10px;
                 padding: 18px 16px;
                 border: 1px solid {cor_texto}88;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }}
             QLabel:hover {{
                 background-color: {cor_fundo};
@@ -274,16 +315,20 @@ class DashboardView(QWidget):
 
     def _carregar_empresas(self) -> None:
         try:
-            empresas = self._listar_empresas.execute(ativo=True, skip=0, limit=1000)
+            empresas = self._listar_empresas.execute(
+                ativo=True, skip=0, limit=1000
+            )
         except Exception as e:
             QMessageBox.warning(
                 self, "Erro", f"Erro ao carregar empresas: {e}"
             )
             return
 
+        self._empresas = {e.id: e for e in empresas if e.id is not None}
+
         self._combo_empresa.blockSignals(True)
         self._combo_empresa.clear()
-        self._combo_empresa.addItem("Todas", None)
+        self._combo_empresa.addItem("Selecione...", None)
         for emp in empresas:
             if emp.id is not None:
                 self._combo_empresa.addItem(emp.nome_fantasia, emp.id)
@@ -291,15 +336,30 @@ class DashboardView(QWidget):
 
     def _atualizar(self) -> None:
         empresa_id = self._combo_empresa.currentData()
-        empresa_nome = (
-            self._combo_empresa.currentText()
-            if empresa_id is not None
-            else "Todas"
-        )
-        self._titulo.setText(f"Dashboard Financeiro — {empresa_nome}")
+        if empresa_id is None:
+            self._limpar_cards()
+            self._grafico.definir_dados([])
+            self._tabela_vencidos.setRowCount(0)
+            self._titulo.setText("Dashboard Financeiro")
+            return
+
+        empresa = self._empresas.get(empresa_id)
+        if empresa is None:
+            QMessageBox.warning(self, "Erro", "Empresa nao encontrada.")
+            return
+
+        self._titulo.setText(f"Dashboard Financeiro — {empresa.nome_fantasia}")
 
         try:
-            resumo = self._resumo.execute(escritorio_id=1, empresa_id=empresa_id)
+            resumo = self._resumo.execute(
+                escritorio_id=empresa.escritorio_id, empresa_id=empresa_id
+            )
+            por_categoria = self._resumo.resumo_por_categoria(
+                escritorio_id=empresa.escritorio_id, empresa_id=empresa_id
+            )
+            vencidos = self._resumo.titulos_vencidos(
+                escritorio_id=empresa.escritorio_id, empresa_id=empresa_id
+            )
         except Exception as e:
             QMessageBox.warning(self, "Erro", f"Erro ao carregar resumo: {e}")
             return
@@ -314,14 +374,48 @@ class DashboardView(QWidget):
         self._atualizar_card(
             "vencido_pagar", "Vencido a Pagar", resumo.vencido_pagar
         )
+        self._atualizar_card(
+            "mes_receber", "Total do Mes a Receber", resumo.total_mes_receber
+        )
+        self._atualizar_card(
+            "mes_pagar", "Total do Mes a Pagar", resumo.total_mes_pagar
+        )
 
-        dados = [
-            ("A Receber", resumo.a_receber, QColor("#1565c0")),
-            ("A Pagar", resumo.a_pagar, QColor("#c62828")),
-            ("Recebido", resumo.recebido, QColor("#2e7d32")),
-            ("Pago", resumo.pago, QColor("#6a1b9a")),
+        dados_grafico = [
+            (item.categoria, item.total, self._cor_categoria(i))
+            for i, item in enumerate(por_categoria)
         ]
-        self._grafico.definir_dados(dados)
+        self._grafico.definir_dados(dados_grafico)
+
+        self._atualizar_vencidos(vencidos)
+
+    def _atualizar_vencidos(self, vencidos: list[Titulo]) -> None:
+        self._tabela_vencidos.setRowCount(len(vencidos))
+        hoje = date.today()
+        for i, t in enumerate(vencidos):
+            dias = (hoje - t.data_vencimento).days
+            self._tabela_vencidos.setItem(
+                i,
+                0,
+                criar_item_centralizado(
+                    t.data_vencimento.strftime("%d/%m/%Y")
+                ),
+            )
+            self._tabela_vencidos.setItem(i, 1, QTableWidgetItem(t.descricao))
+            self._tabela_vencidos.setItem(
+                i, 2, criar_item_centralizado(t.tipo.value)
+            )
+            self._tabela_vencidos.setItem(
+                i,
+                3,
+                criar_item_centralizado(self._formatar_valor(t.valor)),
+            )
+            self._tabela_vencidos.setItem(
+                i, 4, criar_item_centralizado(str(dias))
+            )
+
+    def _cor_categoria(self, indice: int) -> QColor:
+        return self.CORES_CATEGORIA[indice % len(self.CORES_CATEGORIA)]
 
     def _atualizar_card(self, chave: str, titulo: str, valor: Decimal) -> None:
         valor_formatado = self._formatar_valor(valor)
@@ -332,7 +426,9 @@ class DashboardView(QWidget):
 
     def _limpar_cards(self) -> None:
         for chave, card in self._cards.items():
-            titulo = card.text().split("<br>")[0].replace("<b>", "").replace("</b>", "")
+            titulo = (
+                card.text().split("<br>")[0].replace("<b>", "").replace("</b>", "")
+            )
             self._atualizar_card(chave, titulo, Decimal("0"))
 
     @staticmethod
