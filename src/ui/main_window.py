@@ -206,10 +206,9 @@ class MainWindow(QMainWindow):
         main_items = [
             ("  Dashboard", 0),
             ("  Empresas", 1),
-            ("  Contas Bancarias", 2),
-            ("  Plano de Contas", 3),
-            ("  Centros de Custo", 4),
-            ("  Titulos", 5),
+            ("  Plano de Contas", 2),
+            ("  Centros de Custo", 3),
+            ("  Titulos", 4),
         ]
 
         for texto, indice in main_items:
@@ -242,8 +241,9 @@ class MainWindow(QMainWindow):
         config_layout.setSpacing(4)
 
         config_items = [
-            ("    Escritorios", 6),
-            ("    Contadores", 7),
+            ("    Contas Bancarias", 2),
+            ("    Escritorios", 5),
+            ("    Contadores", 6),
         ]
 
         self._botoes_config: list[QPushButton] = []
