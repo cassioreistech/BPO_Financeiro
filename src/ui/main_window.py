@@ -205,10 +205,9 @@ class MainWindow(QMainWindow):
         # Itens principais (operacionais)
         main_items = [
             ("  Dashboard", 0),
-            ("  Empresas", 1),
-            ("  Plano de Contas", 2),
-            ("  Centros de Custo", 3),
-            ("  Titulos", 4),
+            ("  Plano de Contas", 1),
+            ("  Centros de Custo", 2),
+            ("  Titulos", 3),
         ]
 
         for texto, indice in main_items:
@@ -242,8 +241,9 @@ class MainWindow(QMainWindow):
 
         config_items = [
             ("    Contas Bancarias", 2),
-            ("    Escritorios", 5),
-            ("    Contadores", 6),
+            ("    Empresas", 3),
+            ("    Escritorios", 4),
+            ("    Contadores", 5),
         ]
 
         self._botoes_config: list[QPushButton] = []
@@ -274,7 +274,7 @@ class MainWindow(QMainWindow):
 
     def _navegar(self, indice: int) -> None:
         # Colapsa config ao navegar para item principal
-        if indice in (0, 1, 3, 4):  # indices dos itens principais
+        if indice in (0, 1, 2, 3):  # indices dos itens principais
             self._colapsar_config()
         self._stack.setCurrentIndex(indice)
         for i, btn in enumerate(self._botoes_nav):
@@ -290,29 +290,7 @@ class MainWindow(QMainWindow):
         )
         self._stack.addWidget(self._view_dashboard)
 
-        # 1: Empresas
-        self._view_empresas = EmpresasView(
-            listar=self._uc_listar_emp,
-            obter=self._uc_obter_emp,
-            criar=self._uc_criar_emp,
-            editar=self._uc_editar_emp,
-            excluir=self._uc_excluir_emp,
-            listar_escritorios=self._uc_listar_esc,
-        )
-        self._stack.addWidget(self._view_empresas)
-
-        # 2: Contas Bancarias
-        self._view_contas = ContasBancariasView(
-            listar=self._uc_listar_conta,
-            obter=self._uc_obter_conta,
-            criar=self._uc_criar_conta,
-            editar=self._uc_editar_conta,
-            desativar=self._uc_desativar_conta,
-            listar_empresas=self._uc_listar_emp,
-        )
-        self._stack.addWidget(self._view_contas)
-
-        # 3: Plano de Contas
+        # 1: Plano de Contas
         self._view_plano = PlanoContasView(
             listar=self._uc_listar_plano,
             obter=self._uc_obter_plano,
@@ -323,7 +301,7 @@ class MainWindow(QMainWindow):
         )
         self._stack.addWidget(self._view_plano)
 
-        # 4: Centros de Custo
+        # 2: Centros de Custo
         self._view_centros = CentrosCustoView(
             listar=self._uc_listar_centro,
             obter=self._uc_obter_centro,
@@ -334,7 +312,7 @@ class MainWindow(QMainWindow):
         )
         self._stack.addWidget(self._view_centros)
 
-        # 4: Titulos
+        # 3: Titulos
         self._view_titulos = TitulosView(
             listar=self._uc_listar_titulo,
             obter=self._uc_obter_titulo,
@@ -349,6 +327,28 @@ class MainWindow(QMainWindow):
             listar_centros_custo=self._uc_listar_centro,
         )
         self._stack.addWidget(self._view_titulos)
+
+        # 4: Contas Bancarias (config)
+        self._view_contas = ContasBancariasView(
+            listar=self._uc_listar_conta,
+            obter=self._uc_obter_conta,
+            criar=self._uc_criar_conta,
+            editar=self._uc_editar_conta,
+            desativar=self._uc_desativar_conta,
+            listar_empresas=self._uc_listar_emp,
+        )
+        self._stack.addWidget(self._view_contas)
+
+        # 5: Empresas (config)
+        self._view_empresas = EmpresasView(
+            listar=self._uc_listar_emp,
+            obter=self._uc_obter_emp,
+            criar=self._uc_criar_emp,
+            editar=self._uc_editar_emp,
+            excluir=self._uc_excluir_emp,
+            listar_escritorios=self._uc_listar_esc,
+        )
+        self._stack.addWidget(self._view_empresas)
 
         # 6: Escritorios (config)
         self._view_escritorios = EscritoriosView(
