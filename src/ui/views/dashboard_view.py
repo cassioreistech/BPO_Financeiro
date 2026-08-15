@@ -214,14 +214,13 @@ class DashboardView(QWidget):
 
         grid.addWidget(self._cards["a_receber"], 0, 0)
         grid.addWidget(self._cards["a_pagar"], 0, 1)
-        grid.addWidget(self._cards["recebido"], 0, 2)
-        grid.addWidget(self._cards["pago"], 1, 0)
-        grid.addWidget(self._cards["vencido_receber"], 1, 1)
-        grid.addWidget(self._cards["vencido_pagar"], 1, 2)
+        grid.addWidget(self._cards["recebido"], 1, 0)
+        grid.addWidget(self._cards["pago"], 1, 1)
+        grid.addWidget(self._cards["vencido_receber"], 2, 0)
+        grid.addWidget(self._cards["vencido_pagar"], 2, 1)
 
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
-        grid.setColumnStretch(2, 1)
 
         layout.addLayout(grid)
 

@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Dashboard alterado para filtrar por empresa (em vez de escritorio). ResumoFinanceiroUseCase aceita empresa_id opcional. DashboardView usa combo de empresas, MainWindow passa ListarEmpresasUseCase. 137 testes passando, ruff e mypy limpos.",
-  "current_task": "Dashboard com filtro por empresa concluido. Sem tarefas pendentes.",
+  "last_summary": "Botao Excluir adicionado em Escritorios e Empresas (ExcluirEscritorioUseCase, ExcluirEmpresaUseCase, botoes com estilo btnPerigo, confirmacao via QMessageBox). Contadores, Plano de Contas e Titulos ja tinham. 137 testes passando, ruff e mypy limpos.",
+  "current_task": "Botoes de exclusao em todas as telas de cadastro. Sem tarefas pendentes.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
