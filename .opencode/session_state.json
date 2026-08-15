@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Fluxo completo de quitacao integral de titulos implementado. Titulo.quitar() valida regras de dominio; QuitarTituloUseCase valida empresa ativa, conta ativa e mesma empresa; QuitacaoDialog com observacao, confirmacao e contas por empresa; TitulosView integra contexto de empresa. Testes unitarios e de integracao SQLite adicionados. pytest, ruff e mypy limpos."
-  "current_task": "Fluxo de quitacao de titulos concluido. Commit realizado.",
+  "last_summary": "Revisao de consistencia e UX do fluxo de quitacao concluida. Status PAGO exibido como QUITADO na interface; TituloFormView bloqueia edicao de titulos quitados e exibe Dados da Quitacao somente leitura; Dashboard e Alertas sao atualizados automaticamente apos quitacao via callback do MainWindow; QuitacaoDialog valida contexto de empresa ativa. Testes adicionados. pytest, ruff e mypy limpos."
+  "current_task": "Revisao de consistencia e UX do fluxo de quitacao concluida. Commit realizado.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
@@ -20,20 +20,24 @@
     "Alertas de titulos funcionam em modo consolidado (Todas) ou filtrado por empresa ativa",
     "Quitacao integral: valor pago deve ser igual ao valor do titulo",
     "Quitacao valida empresa ativa, conta ativa e conta da mesma empresa do titulo",
-    "Quitacao registra observacao_quitacao separada da observacao do titulo"
+    "Quitacao registra observacao_quitacao separada da observacao do titulo",
+    "Status interno PAGO e exibido como QUITADO na interface",
+    "Titulos quitados abrem em modo visualizacao; edicao comum preserva dados da quitacao",
+    "Dashboard e Alertas sao atualizados automaticamente apos quitacao via callback"
   ],
   "pending_actions": [
     "Atualizar documentacao GSD se necessario"
   ],
   "recent_files": [
-    "src/domain/entities/titulo.py",
-    "src/application/dto/titulo_dto.py",
-    "src/application/use_cases/titulo_use_cases.py",
-    "src/ui/views/quitacao_dialog.py",
+    "src/ui/views/status_formatter.py",
+    "src/ui/views/titulo_form_view.py",
     "src/ui/views/titulos_view.py",
+    "src/ui/views/alertas_titulos_view.py",
+    "src/ui/views/dashboard_view.py",
+    "src/ui/views/quitacao_dialog.py",
     "src/ui/main_window.py",
-    "src/infrastructure/database/models/titulo_model.py",
-    "src/infrastructure/database/repositories/sqlite_titulo_repository.py",
+    "src/application/use_cases/titulo_use_cases.py",
+    "src/tests/test_status_formatter.py",
     "src/tests/test_quitacao_titulo_use_cases.py",
     "src/tests/test_quitacao_titulo_repository.py"
   ]
