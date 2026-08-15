@@ -38,6 +38,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Sistema BPO Financeiro")
         self.resize(1200, 720)
+        self.showMaximized()
 
         self._configurar_repositories()
         self._montar_ui()

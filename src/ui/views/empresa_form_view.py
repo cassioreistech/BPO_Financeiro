@@ -165,11 +165,11 @@ class EmpresaFormView(QDialog):
 
         try:
             CNPJ(cnpj)
-        except ValueError:
+        except ValueError as e:
             QMessageBox.warning(
                 self,
                 "CNPJ invalido",
-                "O CNPJ informado e invalido. Verifique os digitos e tente novamente.",
+                f"{e}\n\nVerifique se o CNPJ esta correto com os digitos verificadores.",
             )
             return
 
