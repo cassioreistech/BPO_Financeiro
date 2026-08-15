@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Ajustes finos no Dashboard: grid responsivo nos cards (columnStretch), sombra e efeito hover, titulo dinamico com nome do escritorio, tooltips nos cards e no grafico (hover tooltip per bar), gridlines e rótulos de eixo no grafico de barras, padding maior e animacao de atualizacao. 137 testes passando, ruff e mypy limpos.",
-  "current_task": "Ajustes finos no dashboard concluidos.",
+  "last_summary": "Dashboard alterado para filtrar por empresa (em vez de escritorio). ResumoFinanceiroUseCase aceita empresa_id opcional. DashboardView usa combo de empresas, MainWindow passa ListarEmpresasUseCase. 137 testes passando, ruff e mypy limpos.",
+  "current_task": "Dashboard com filtro por empresa concluido. Sem tarefas pendentes.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",

@@ -224,7 +224,7 @@ class MainWindow(QMainWindow):
     def _criar_paginas(self) -> None:
         self._view_dashboard = DashboardView(
             resumo=self._uc_resumo_dashboard,
-            listar_escritorios=self._uc_listar_esc,
+            listar_empresas=self._uc_listar_emp,
         )
         self._stack.addWidget(self._view_dashboard)
 

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from application.use_cases.dashboard_use_cases import ResumoFinanceiroUseCase
-from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
+from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
 
 
 class GraficoBarrasWidget(QWidget):
@@ -157,16 +157,16 @@ class DashboardView(QWidget):
     def __init__(
         self,
         resumo: ResumoFinanceiroUseCase,
-        listar_escritorios: ListarEscritoriosUseCase,
+        listar_empresas: ListarEmpresasUseCase,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._resumo = resumo
-        self._listar_escritorios = listar_escritorios
+        self._listar_empresas = listar_empresas
         self._cards: dict[str, QLabel] = {}
         self._labels_tooltips: dict[str, tuple[str, str, str]] = {}
         self._montar()
-        self._carregar_escritorios()
+        self._carregar_empresas()
 
     def _montar(self) -> None:
         layout = QVBoxLayout(self)
@@ -179,11 +179,11 @@ class DashboardView(QWidget):
         cabecalho.addWidget(self._titulo)
         cabecalho.addStretch()
 
-        cabecalho.addWidget(QLabel("Escritorio:"))
-        self._combo_escritorio = QComboBox()
-        self._combo_escritorio.setMinimumWidth(220)
-        self._combo_escritorio.currentIndexChanged.connect(self._atualizar)
-        cabecalho.addWidget(self._combo_escritorio)
+        cabecalho.addWidget(QLabel("Empresa:"))
+        self._combo_empresa = QComboBox()
+        self._combo_empresa.setMinimumWidth(220)
+        self._combo_empresa.currentIndexChanged.connect(self._atualizar)
+        cabecalho.addWidget(self._combo_empresa)
 
         btn_atualizar = QPushButton("Atualizar")
         btn_atualizar.setIcon  # noqa: B018 - placeholder para future icon
@@ -273,39 +273,34 @@ class DashboardView(QWidget):
         )
         return card
 
-    def _carregar_escritorios(self) -> None:
+    def _carregar_empresas(self) -> None:
         try:
-            escritorios = self._listar_escritorios.execute(skip=0, limit=1000)
+            empresas = self._listar_empresas.execute(ativo=True, skip=0, limit=1000)
         except Exception as e:
             QMessageBox.warning(
-                self, "Erro", f"Erro ao carregar escritorios: {e}"
+                self, "Erro", f"Erro ao carregar empresas: {e}"
             )
             return
 
-        self._combo_escritorio.blockSignals(True)
-        self._combo_escritorio.clear()
-        self._combo_escritorio.addItem("Selecione...", None)
-        for esc in escritorios:
-            if esc.id is not None:
-                self._combo_escritorio.addItem(esc.nome, esc.id)
-        self._combo_escritorio.blockSignals(False)
+        self._combo_empresa.blockSignals(True)
+        self._combo_empresa.clear()
+        self._combo_empresa.addItem("Todas", None)
+        for emp in empresas:
+            if emp.id is not None:
+                self._combo_empresa.addItem(emp.nome_fantasia, emp.id)
+        self._combo_empresa.blockSignals(False)
 
     def _atualizar(self) -> None:
-        escritorio_id = self._combo_escritorio.currentData()
-        escritorio_nome = (
-            self._combo_escritorio.currentText()
-            if escritorio_id is not None
-            else "todos"
+        empresa_id = self._combo_empresa.currentData()
+        empresa_nome = (
+            self._combo_empresa.currentText()
+            if empresa_id is not None
+            else "Todas"
         )
-        self._titulo.setText(f"Dashboard Financeiro — {escritorio_nome}")
-
-        if escritorio_id is None:
-            self._limpar_cards()
-            self._grafico.definir_dados([])
-            return
+        self._titulo.setText(f"Dashboard Financeiro — {empresa_nome}")
 
         try:
-            resumo = self._resumo.execute(escritorio_id)
+            resumo = self._resumo.execute(escritorio_id=1, empresa_id=empresa_id)
         except Exception as e:
             QMessageBox.warning(self, "Erro", f"Erro ao carregar resumo: {e}")
             return
