@@ -8,7 +8,6 @@ from decimal import Decimal
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QEnterEvent, QFont, QMouseEvent, QPainter, QPen
 from PySide6.QtWidgets import (
-    QComboBox,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -22,12 +21,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from application.dto.empresa_dto import EmpresaResponseDTO
 from application.services.empresa_context_service import EmpresaContextService
 from application.use_cases.dashboard_use_cases import ResumoFinanceiroUseCase
-from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
-from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
+from application.use_cases.empresa_use_cases import ObterEmpresaUseCase
 from domain.entities.titulo import Titulo
+from infrastructure.database import SessionLocal
+from infrastructure.database.repositories.sqlite_empresa_repository import (
+    SQLiteEmpresaRepository,
+)
 from ui.views.table_helpers import (
     configurar_tabela_padrao,
     criar_item_centralizado,
@@ -177,21 +178,15 @@ class DashboardView(QWidget):
     def __init__(
         self,
         resumo: ResumoFinanceiroUseCase,
-        listar_escritorios: ListarEscritoriosUseCase,
-        listar_empresas: ListarEmpresasUseCase,
         contexto_empresa: EmpresaContextService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._resumo = resumo
-        self._listar_escritorios = listar_escritorios
-        self._listar_empresas = listar_empresas
         self._contexto_empresa = contexto_empresa
-        self._empresas: dict[int, EmpresaResponseDTO] = {}
         self._cards: dict[str, QLabel] = {}
         self._labels_tooltips: dict[str, tuple[str, str, str]] = {}
         self._montar()
-        self._carregar_empresas()
 
     def _montar(self) -> None:
         layout = QVBoxLayout(self)
@@ -204,11 +199,10 @@ class DashboardView(QWidget):
         cabecalho.addWidget(self._titulo)
         cabecalho.addStretch()
 
-        cabecalho.addWidget(QLabel("Empresa:"))
-        self._combo_empresa = QComboBox()
-        self._combo_empresa.setMinimumWidth(280)
-        self._combo_empresa.currentIndexChanged.connect(self._atualizar)
-        cabecalho.addWidget(self._combo_empresa)
+        self._label_empresa = QLabel("")
+        self._label_empresa.setObjectName("labelEmpresaDashboard")
+        self._label_empresa.setStyleSheet("color: #666; font-size: 13px;")
+        cabecalho.addWidget(self._label_empresa)
 
         btn_atualizar = QPushButton("Atualizar")
         btn_atualizar.clicked.connect(self._atualizar)
@@ -318,42 +312,8 @@ class DashboardView(QWidget):
         )
         return card
 
-    def _carregar_empresas(self) -> None:
-        try:
-            empresas = self._listar_empresas.execute(
-                ativo=True, skip=0, limit=1000
-            )
-        except Exception as e:
-            QMessageBox.warning(
-                self, "Erro", f"Erro ao carregar empresas: {e}"
-            )
-            return
-
-        self._empresas = {e.id: e for e in empresas if e.id is not None}
-
-        self._combo_empresa.blockSignals(True)
-        self._combo_empresa.clear()
-        self._combo_empresa.addItem("Selecione...", None)
-        for emp in empresas:
-            if emp.id is not None:
-                self._combo_empresa.addItem(emp.nome_fantasia, emp.id)
-
-        empresa_ativa = self._contexto_empresa.get_empresa_ativa()
-        if empresa_ativa is not None:
-            idx = self._combo_empresa.findData(empresa_ativa)
-            if idx >= 0:
-                self._combo_empresa.setCurrentIndex(idx)
-
-        self._combo_empresa.blockSignals(False)
-
     def carregar_empresa_ativa(self) -> None:
         """Recarrega o dashboard usando a empresa ativa do contexto global."""
-        empresa_id = self._contexto_empresa.get_empresa_ativa()
-        if empresa_id is None:
-            return
-        idx = self._combo_empresa.findData(empresa_id)
-        if idx >= 0:
-            self._combo_empresa.setCurrentIndex(idx)
         self.atualizar()
 
     def atualizar(self) -> None:
@@ -361,20 +321,39 @@ class DashboardView(QWidget):
         self._atualizar()
 
     def _atualizar(self) -> None:
-        empresa_id = self._combo_empresa.currentData()
+        empresa_id = self._contexto_empresa.get_empresa_ativa()
         if empresa_id is None:
             self._limpar_cards()
             self._grafico.definir_dados([])
             self._tabela_vencidos.setRowCount(0)
             self._titulo.setText("Dashboard Financeiro")
+            self._label_empresa.setText("Nenhuma empresa selecionada")
             return
 
-        empresa = self._empresas.get(empresa_id)
+        try:
+            empresa_repo = SQLiteEmpresaRepository(SessionLocal)
+            obter_empresa = ObterEmpresaUseCase(empresa_repo)
+            empresa = obter_empresa.execute(empresa_id)
+        except Exception:
+            self._limpar_cards()
+            self._grafico.definir_dados([])
+            self._tabela_vencidos.setRowCount(0)
+            self._titulo.setText("Dashboard Financeiro")
+            self._label_empresa.setText("Erro ao carregar empresa")
+            return
+
         if empresa is None:
-            QMessageBox.warning(self, "Erro", "Empresa nao encontrada.")
+            self._limpar_cards()
+            self._grafico.definir_dados([])
+            self._tabela_vencidos.setRowCount(0)
+            self._titulo.setText("Dashboard Financeiro")
+            self._label_empresa.setText("Empresa nao encontrada")
             return
 
-        self._titulo.setText(f"Dashboard Financeiro — {empresa.nome_fantasia}")
+        self._titulo.setText("Dashboard Financeiro")
+        self._label_empresa.setText(
+            f"{empresa.nome_fantasia}  —  CNPJ {self._formatar_cnpj(empresa.cnpj)}"
+        )
 
         try:
             resumo = self._resumo.execute(
@@ -460,3 +439,12 @@ class DashboardView(QWidget):
     @staticmethod
     def _formatar_valor(valor: Decimal) -> str:
         return f"R$ {float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    @staticmethod
+    def _formatar_cnpj(cnpj: str) -> str:
+        if len(cnpj) != 14:
+            return cnpj
+        return (
+            f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/"
+            f"{cnpj[8:12]}-{cnpj[12:]}"
+        )
