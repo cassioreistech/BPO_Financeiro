@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Revisao de coerencia multiempresa concluida: ContasBancariasView, CentrosCustoView e DashboardView agora respeitam empresa ativa; MainWindow repassa contexto e recarrega telas corretamente. Cores por tipo/status aplicadas na tabela de titulos (azul Receber, laranja Pagar, verde Pago). Testes, ruff e mypy limpos. Commits realizados."
-  "current_task": "Contexto global de empresa ativa e modulo de alertas implementados. Fazendo commit e atualizando GSD.",
+  "last_summary": "Fluxo completo de quitacao integral de titulos implementado. Titulo.quitar() valida regras de dominio; QuitarTituloUseCase valida empresa ativa, conta ativa e mesma empresa; QuitacaoDialog com observacao, confirmacao e contas por empresa; TitulosView integra contexto de empresa. Testes unitarios e de integracao SQLite adicionados. pytest, ruff e mypy limpos."
+  "current_task": "Fluxo de quitacao de titulos concluido. Commit realizado.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
@@ -17,19 +17,24 @@
     "Relatorios em PDF gerados por infrastructure/reports/pdf_gerador.py usando fpdf2",
     "Dashboard filtra por escritorio e empresa e exibe resumo, grafico por categoria e vencidos",
     "Contexto global de empresa ativa centralizado em EmpresaContextService",
-    "Alertas de titulos funcionam em modo consolidado (Todas) ou filtrado por empresa ativa"
+    "Alertas de titulos funcionam em modo consolidado (Todas) ou filtrado por empresa ativa",
+    "Quitacao integral: valor pago deve ser igual ao valor do titulo",
+    "Quitacao valida empresa ativa, conta ativa e conta da mesma empresa do titulo",
+    "Quitacao registra observacao_quitacao separada da observacao do titulo"
   ],
   "pending_actions": [
-    "Fazer commit das alteracoes",
-    "Atualizar documentacao GSD"
+    "Atualizar documentacao GSD se necessario"
   ],
   "recent_files": [
-    "src/application/services/empresa_context_service.py",
-    "src/application/dto/contexto_empresa_dto.py",
-    "src/application/use_cases/alerta_titulo_use_cases.py",
-    "src/ui/views/alertas_titulos_view.py",
+    "src/domain/entities/titulo.py",
+    "src/application/dto/titulo_dto.py",
+    "src/application/use_cases/titulo_use_cases.py",
+    "src/ui/views/quitacao_dialog.py",
     "src/ui/views/titulos_view.py",
     "src/ui/main_window.py",
-    "src/infrastructure/database/repositories/sqlite_titulo_repository.py"
+    "src/infrastructure/database/models/titulo_model.py",
+    "src/infrastructure/database/repositories/sqlite_titulo_repository.py",
+    "src/tests/test_quitacao_titulo_use_cases.py",
+    "src/tests/test_quitacao_titulo_repository.py"
   ]
 }
