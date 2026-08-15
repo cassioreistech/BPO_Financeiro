@@ -25,6 +25,7 @@ from application.use_cases.empresa_use_cases import (
     EditarEmpresaUseCase,
 )
 from domain.enums.regime_tributario import RegimeTributario
+from domain.value_objects.cnpj import CNPJ
 
 
 class EmpresaFormView(QDialog):
@@ -159,6 +160,16 @@ class EmpresaFormView(QDialog):
         if not cnpj:
             QMessageBox.warning(
                 self, "Campo obrigatorio", "O CNPJ nao pode ser vazio."
+            )
+            return
+
+        try:
+            CNPJ(cnpj)
+        except ValueError:
+            QMessageBox.warning(
+                self,
+                "CNPJ invalido",
+                "O CNPJ informado e invalido. Verifique os digitos e tente novamente.",
             )
             return
 
