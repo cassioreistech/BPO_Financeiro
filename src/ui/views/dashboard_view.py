@@ -226,9 +226,11 @@ class DashboardView(QWidget):
             "A Pagar", "#c62828", "#ffebee"
         )
         self._cards["recebido"] = self._criar_card(
-            "Recebido", "#2e7d32", "#e8f5e9"
+            "Quitado a Receber", "#2e7d32", "#e8f5e9"
         )
-        self._cards["pago"] = self._criar_card("Pago", "#6a1b9a", "#f3e5f5")
+        self._cards["pago"] = self._criar_card(
+            "Quitado a Pagar", "#6a1b9a", "#f3e5f5"
+        )
         self._cards["vencido_receber"] = self._criar_card(
             "Vencido a Receber", "#ef6c00", "#fff3e0"
         )
@@ -352,6 +354,10 @@ class DashboardView(QWidget):
         idx = self._combo_empresa.findData(empresa_id)
         if idx >= 0:
             self._combo_empresa.setCurrentIndex(idx)
+        self.atualizar()
+
+    def atualizar(self) -> None:
+        """Atualiza os indicadores do dashboard."""
         self._atualizar()
 
     def _atualizar(self) -> None:

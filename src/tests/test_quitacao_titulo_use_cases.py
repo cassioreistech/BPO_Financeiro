@@ -7,10 +7,13 @@ from decimal import Decimal
 
 import pytest
 
-from application.dto.titulo_dto import QuitarTituloDTO
+from application.dto.titulo_dto import EditarTituloDTO, QuitarTituloDTO
 from application.ports.conta_bancaria_repository import ContaBancariaRepository
 from application.ports.titulo_repository import TituloRepository
-from application.use_cases.titulo_use_cases import QuitarTituloUseCase
+from application.use_cases.titulo_use_cases import (
+    EditarTituloUseCase,
+    QuitarTituloUseCase,
+)
 from domain.entities.alerta_titulo import AlertaTitulo
 from domain.entities.conta_bancaria import ContaBancaria
 from domain.entities.titulo import Titulo
@@ -177,6 +180,13 @@ def use_case(
     conta_repo: FakeContaBancariaRepository,
 ) -> QuitarTituloUseCase:
     return QuitarTituloUseCase(titulo_repo, conta_repo)
+
+
+@pytest.fixture
+def editar_use_case(
+    titulo_repo: FakeTituloRepository,
+) -> EditarTituloUseCase:
+    return EditarTituloUseCase(titulo_repo)
 
 
 class TestQuitarTituloUseCase:
@@ -417,3 +427,91 @@ class TestQuitarTituloUseCase:
         resultado = use_case.execute(dto)
         assert resultado.status == "PAGO"
         assert resultado.conta_bancaria_id == 99
+
+
+class TestEdicaoPreservaQuitacao:
+    def test_edicao_preserva_observacao_quitacao(
+        self,
+        use_case: QuitarTituloUseCase,
+        editar_use_case: EditarTituloUseCase,
+        titulo_repo: FakeTituloRepository,
+        conta_repo: FakeContaBancariaRepository,
+    ) -> None:
+        titulo = _criar_titulo(titulo_repo)
+        conta = _criar_conta(conta_repo)
+        assert titulo.id is not None
+        assert conta.id is not None
+
+        use_case.execute(
+            QuitarTituloDTO(
+                id=titulo.id,
+                data_quitacao=date(2026, 8, 15),
+                valor_pago=titulo.valor,
+                conta_bancaria_id=conta.id,
+                forma_pagamento="PIX",
+                observacao_quitacao="Observacao importante",
+            )
+        )
+
+        editado = editar_use_case.execute(
+            EditarTituloDTO(
+                id=titulo.id,
+                escritorio_id=titulo.escritorio_id,
+                empresa_id=titulo.empresa_id,
+                plano_conta_id=titulo.plano_conta_id,
+                descricao="Titulo alterado",
+                tipo=titulo.tipo.value,
+                valor=titulo.valor,
+                data_emissao=titulo.data_emissao,
+                data_vencimento=titulo.data_vencimento,
+                observacao="Nova observacao",
+            )
+        )
+
+        assert editado.descricao == "Titulo alterado"
+        assert editado.observacao == "Nova observacao"
+        assert editado.observacao_quitacao == "Observacao importante"
+        assert editado.status == "PAGO"
+        assert editado.valor_pago == titulo.valor
+        assert editado.data_quitacao == date(2026, 8, 15)
+
+    def test_edicao_preserva_dados_quitacao(
+        self,
+        use_case: QuitarTituloUseCase,
+        editar_use_case: EditarTituloUseCase,
+        titulo_repo: FakeTituloRepository,
+        conta_repo: FakeContaBancariaRepository,
+    ) -> None:
+        titulo = _criar_titulo(titulo_repo)
+        conta = _criar_conta(conta_repo)
+        assert titulo.id is not None
+        assert conta.id is not None
+
+        use_case.execute(
+            QuitarTituloDTO(
+                id=titulo.id,
+                data_quitacao=date(2026, 8, 15),
+                valor_pago=titulo.valor,
+                conta_bancaria_id=conta.id,
+                forma_pagamento="BOLETO",
+            )
+        )
+
+        editado = editar_use_case.execute(
+            EditarTituloDTO(
+                id=titulo.id,
+                escritorio_id=titulo.escritorio_id,
+                empresa_id=titulo.empresa_id,
+                plano_conta_id=titulo.plano_conta_id,
+                descricao="Descricao alterada",
+                tipo=titulo.tipo.value,
+                valor=titulo.valor,
+                data_emissao=titulo.data_emissao,
+                data_vencimento=titulo.data_vencimento,
+            )
+        )
+
+        assert editado.status == "PAGO"
+        assert editado.valor_pago == titulo.valor
+        assert editado.conta_bancaria_id == conta.id
+        assert editado.forma_pagamento == "BOLETO"

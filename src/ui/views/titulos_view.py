@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date
 from decimal import Decimal
 from typing import Any, cast
@@ -54,6 +55,7 @@ from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_titulo import TipoTitulo
 from ui.views.quitacao_dialog import QuitacaoDialog
 from ui.views.relatorio_dialog import RelatorioDialog
+from ui.views.status_formatter import formatar_status_titulo
 from ui.views.table_helpers import (
     configurar_tabela_padrao,
     criar_item_centralizado,
@@ -93,6 +95,7 @@ class TitulosView(QWidget):
         fluxo_caixa: FluxoCaixaUseCase,
         projecao_financeira: ProjecaoFinanceiraUseCase,
         contexto_empresa: EmpresaContextService,
+        on_titulo_quitado: Callable[[], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -111,6 +114,7 @@ class TitulosView(QWidget):
         self._fluxo_caixa = fluxo_caixa
         self._projecao_financeira = projecao_financeira
         self._contexto_empresa = contexto_empresa
+        self._on_titulo_quitado = on_titulo_quitado
         self._mapa_empresa_escritorio: dict[int, int] = {}
         self._montar()
         self.carregar_empresa_ativa()
@@ -215,7 +219,9 @@ class TitulosView(QWidget):
         )
         self._combo_filtro_status.addItem("Todos", None)
         for s in StatusTitulo:
-            self._combo_filtro_status.addItem(s.value, s.value)
+            self._combo_filtro_status.addItem(
+                formatar_status_titulo(s.value), s.value
+            )
         filtros.addWidget(self._combo_filtro_status, 1, 1)
 
         # Coluna 1: Vencimento inicio
@@ -298,6 +304,9 @@ class TitulosView(QWidget):
         self._tabela.customContextMenuRequested.connect(
             self._exibir_menu_contexto
         )
+        self._tabela.itemSelectionChanged.connect(
+            self._atualizar_botoes_acoes
+        )
         layout.addWidget(self._tabela, stretch=1)
 
         botoes = QHBoxLayout()
@@ -305,9 +314,9 @@ class TitulosView(QWidget):
         btn_editar.clicked.connect(self._editar_selecionado)
         botoes.addWidget(btn_editar)
 
-        btn_quitar = QPushButton("Quitar")
-        btn_quitar.clicked.connect(self._quitar_selecionado)
-        botoes.addWidget(btn_quitar)
+        self._btn_quitar = QPushButton("Quitar")
+        self._btn_quitar.clicked.connect(self._quitar_selecionado)
+        botoes.addWidget(self._btn_quitar)
 
         btn_cancelar = QPushButton("Cancelar")
         btn_cancelar.clicked.connect(self._cancelar_selecionado)
@@ -462,7 +471,9 @@ class TitulosView(QWidget):
             )
             self._tabela.setItem(i, 2, QTableWidgetItem(t.descricao))
             self._tabela.setItem(i, 3, QTableWidgetItem(t.tipo))
-            self._tabela.setItem(i, 4, QTableWidgetItem(t.status))
+            self._tabela.setItem(
+                i, 4, QTableWidgetItem(formatar_status_titulo(t.status))
+            )
             self._tabela.setItem(
                 i, 5, criar_item_centralizado(self._formatar_valor(t.valor))
             )
@@ -604,6 +615,12 @@ class TitulosView(QWidget):
             return None
         return self._obter.execute(id_int)
 
+    def _atualizar_botoes_acoes(self) -> None:
+        """Habilita/desabilita acoes conforme o status do titulo selecionado."""
+        titulo = self._obter_selecionado()
+        permite_quitar = titulo is not None and titulo.status == "ABERTO"
+        self._btn_quitar.setEnabled(permite_quitar)
+
     def _obter_opcoes(
         self, listar_use_case: Any, attr_id: str, attr_nome: str
     ) -> list[tuple[int, str]]:
@@ -698,6 +715,7 @@ class TitulosView(QWidget):
             return
 
         opcoes_empresa = self._obter_opcoes_empresa()
+        contas_por_id = self._obter_contas_por_id()
 
         form = TituloFormView(
             criar_use_case=self._criar,
@@ -706,6 +724,7 @@ class TitulosView(QWidget):
             opcoes_empresa=opcoes_empresa,
             plano_conta_id=plano_conta_id,
             empresa_id=empresa_id,
+            contas_por_id=contas_por_id,
             parent=self,
         )
         if form.exec() == TituloFormView.DialogCode.Accepted:
@@ -735,6 +754,7 @@ class TitulosView(QWidget):
             self._listar_escritorios, "id", "nome"
         )
         opcoes_empresa = self._obter_opcoes_empresa()
+        contas_por_id = self._obter_contas_por_id()
 
         form = TituloFormView(
             criar_use_case=self._criar,
@@ -743,6 +763,7 @@ class TitulosView(QWidget):
             opcoes_empresa=opcoes_empresa,
             plano_conta_id=plano_conta_id,
             empresa_id=titulo.empresa_id,
+            contas_por_id=contas_por_id,
             parent=self,
             titulo=titulo,
         )
@@ -757,7 +778,9 @@ class TitulosView(QWidget):
             )
             return
         if titulo.status == "PAGO":
-            QMessageBox.information(self, "Aviso", "Titulo ja esta quitado.")
+            QMessageBox.information(
+                self, "Aviso", "Titulo ja esta quitado."
+            )
             return
         if titulo.status == "CANCELADO":
             QMessageBox.information(
@@ -769,6 +792,7 @@ class TitulosView(QWidget):
         dialogo = QuitacaoDialog(
             titulo=titulo,
             opcoes_conta_bancaria=opcoes_conta,
+            contexto_empresa=self._contexto_empresa,
             parent=self,
         )
         if dialogo.exec() != QuitacaoDialog.DialogCode.Accepted:
@@ -789,6 +813,8 @@ class TitulosView(QWidget):
             )
             self._quitar.execute(dto)
             self.atualizar_lista()
+            if self._on_titulo_quitado is not None:
+                self._on_titulo_quitado()
             QMessageBox.information(
                 self, "Sucesso", "Titulo quitado com sucesso."
             )
@@ -809,6 +835,19 @@ class TitulosView(QWidget):
             ]
         except Exception:
             return []
+
+    def _obter_contas_por_id(self) -> dict[int, str]:
+        try:
+            contas = self._listar_contas_bancarias.execute(
+                skip=0, limit=1000
+            )
+            return {
+                c.id: f"{c.banco_nome} - {c.conta}"
+                for c in contas
+                if c.id is not None
+            }
+        except Exception:
+            return {}
 
     def _cancelar_selecionado(self) -> None:
         titulo = self._obter_selecionado()

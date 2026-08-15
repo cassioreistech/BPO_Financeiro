@@ -312,6 +312,15 @@ class MainWindow(QMainWindow):
             self._view_contas.carregar_empresa_ativa()
         if hasattr(self, "_view_dashboard"):
             self._view_dashboard.carregar_empresa_ativa()
+        if hasattr(self, "_view_alertas"):
+            self._view_alertas.atualizar()
+
+    def _atualizar_dashboard_e_alertas(self) -> None:
+        """Atualiza Dashboard e Alertas apos operacao de titulos."""
+        if hasattr(self, "_view_dashboard"):
+            self._view_dashboard.atualizar()
+        if hasattr(self, "_view_alertas"):
+            self._view_alertas.atualizar()
 
     def _criar_sidebar(self) -> QWidget:
         sidebar = QWidget()
@@ -446,6 +455,7 @@ class MainWindow(QMainWindow):
             fluxo_caixa=self._uc_fluxo_caixa,
             projecao_financeira=self._uc_projecao_financeira,
             contexto_empresa=self._contexto_empresa,
+            on_titulo_quitado=self._atualizar_dashboard_e_alertas,
         )
         self._stack.addWidget(self._view_titulos)
 

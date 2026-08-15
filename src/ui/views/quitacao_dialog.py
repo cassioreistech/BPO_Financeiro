@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from application.dto.titulo_dto import TituloResponseDTO
+from application.services.empresa_context_service import EmpresaContextService
 from domain.enums.forma_pagamento import FormaPagamento
 
 
@@ -35,11 +36,13 @@ class QuitacaoDialog(QDialog):
         self,
         titulo: TituloResponseDTO,
         opcoes_conta_bancaria: list[tuple[int, str]],
+        contexto_empresa: EmpresaContextService | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._titulo = titulo
         self._opcoes_conta_bancaria = opcoes_conta_bancaria
+        self._contexto_empresa = contexto_empresa
         self._configurar_janela()
         self._montar_formulario()
         self._preencher_padrao()
@@ -178,6 +181,18 @@ class QuitacaoDialog(QDialog):
                 "Quitação integral exige valor pago igual ao valor do titulo.",
             )
             return
+
+        if self._contexto_empresa is not None:
+            empresa_ativa = self._contexto_empresa.get_empresa_ativa()
+            if empresa_ativa != self._titulo.empresa_id:
+                QMessageBox.warning(
+                    self,
+                    "Empresa alterada",
+                    "A empresa ativa foi alterada. Feche o dialogo e "
+                    "selecione o titulo novamente na empresa correta.",
+                )
+                self.reject()
+                return
 
         resposta = QMessageBox.question(
             self,

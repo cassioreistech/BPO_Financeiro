@@ -35,6 +35,7 @@ from application.use_cases.alerta_titulo_use_cases import (
 )
 from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
 from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
+from ui.views.status_formatter import formatar_status_titulo
 from ui.views.table_helpers import (
     configurar_tabela_padrao,
     criar_item_centralizado,
@@ -277,6 +278,10 @@ class AlertasTitulosView(QWidget):
                 if idx >= 0:
                     self._combo_empresa.setCurrentIndex(idx)
 
+    def atualizar(self) -> None:
+        """Atualiza os alertas de titulos."""
+        self._atualizar()
+
     def _atualizar(self) -> None:
         escritorio_id = self._obter_escritorio_id()
         if escritorio_id is None:
@@ -392,7 +397,9 @@ class AlertasTitulosView(QWidget):
                 ),
             )
             self._tabela.setItem(
-                i, 6, criar_item_centralizado(item.status)
+                i,
+                6,
+                criar_item_centralizado(formatar_status_titulo(item.status)),
             )
             self._tabela.setItem(
                 i, 7, criar_item_centralizado(self.ROTULOS_GRUPOS[item.urgencia])

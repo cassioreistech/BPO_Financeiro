@@ -190,6 +190,7 @@ class EditarTituloUseCase:
             if existente.forma_pagamento
             else FormaPagamento.OUTRO,
             observacao=dto.observacao.strip() if dto.observacao else None,
+            observacao_quitacao=existente.observacao_quitacao,
         )
 
         salvo = self._repository.update(titulo)

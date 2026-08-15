@@ -23,6 +23,7 @@ from application.use_cases.conta_bancaria_use_cases import (
     DesativarContaBancariaUseCase,
     ListarContasBancariasUseCase,
 )
+from application.use_cases.dashboard_use_cases import ResumoFinanceiroUseCase
 from application.use_cases.titulo_use_cases import (
     CadastrarTituloUseCase,
     QuitarTituloUseCase,
@@ -136,6 +137,13 @@ def listar_contas_use_case(
     conta_repo: SQLiteContaBancariaRepository,
 ) -> ListarContasBancariasUseCase:
     return ListarContasBancariasUseCase(conta_repo)
+
+
+@pytest.fixture
+def resumo_use_case(
+    titulo_repo: SQLiteTituloRepository,
+) -> ResumoFinanceiroUseCase:
+    return ResumoFinanceiroUseCase(titulo_repo)
 
 
 def _criar_titulo(
@@ -342,3 +350,36 @@ class TestQuitacaoTituloRepository:
         assert len(contas_b) == 1
         assert contas_a[0].empresa_id == 1
         assert contas_b[0].empresa_id == 2
+
+    def test_quitacao_atualiza_resumo_do_dashboard(
+        self,
+        quitar_use_case: QuitarTituloUseCase,
+        criar_titulo_use_case: CadastrarTituloUseCase,
+        criar_conta_use_case: CadastrarContaBancariaUseCase,
+        resumo_use_case: ResumoFinanceiroUseCase,
+    ) -> None:
+        titulo = _criar_titulo(criar_titulo_use_case, empresa_id=1)
+        conta = _criar_conta(criar_conta_use_case, empresa_id=1)
+        assert titulo.id is not None
+        assert conta.id is not None
+
+        resumo_antes = resumo_use_case.execute(
+            escritorio_id=1, empresa_id=1
+        )
+        assert resumo_antes.a_pagar == titulo.valor
+        assert resumo_antes.pago == Decimal("0")
+
+        quitar_use_case.execute(
+            QuitarTituloDTO(
+                id=titulo.id,
+                data_quitacao=date(2026, 8, 15),
+                valor_pago=titulo.valor,
+                conta_bancaria_id=conta.id,
+            )
+        )
+
+        resumo_depois = resumo_use_case.execute(
+            escritorio_id=1, empresa_id=1
+        )
+        assert resumo_depois.a_pagar == Decimal("0")
+        assert resumo_depois.pago == titulo.valor
