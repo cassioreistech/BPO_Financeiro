@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Revisao de consistencia e UX do fluxo de quitacao concluida. Status PAGO exibido como QUITADO na interface; TituloFormView bloqueia edicao de titulos quitados e exibe Dados da Quitacao somente leitura; Dashboard e Alertas sao atualizados automaticamente apos quitacao via callback do MainWindow; QuitacaoDialog valida contexto de empresa ativa. Testes adicionados. pytest, ruff e mypy limpos."
-  "current_task": "Revisao de consistencia e UX do fluxo de quitacao concluida. Commit realizado.",
+  "last_summary": "Corrigido erro de schema SQLite: criado mecanismo de upgrade incremental que adiciona colunas faltantes (incluindo observacao_quitacao) em bancos existentes sem perder dados. init_db() agora executa upgrade_database() apos create_all. Testes de upgrade, idempotencia e preservacao de dados adicionados. pytest, ruff e mypy limpos."
+  "current_task": "Correcao de schema SQLite concluida. Commit realizado.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
@@ -23,22 +23,15 @@
     "Quitacao registra observacao_quitacao separada da observacao do titulo",
     "Status interno PAGO e exibido como QUITADO na interface",
     "Titulos quitados abrem em modo visualizacao; edicao comum preserva dados da quitacao",
-    "Dashboard e Alertas sao atualizados automaticamente apos quitacao via callback"
+    "Dashboard e Alertas sao atualizados automaticamente apos quitacao via callback",
+    "Schema SQLite evolui via upgrade incremental em schema_upgrade.py, preservando dados"
   ],
   "pending_actions": [
     "Atualizar documentacao GSD se necessario"
   ],
   "recent_files": [
-    "src/ui/views/status_formatter.py",
-    "src/ui/views/titulo_form_view.py",
-    "src/ui/views/titulos_view.py",
-    "src/ui/views/alertas_titulos_view.py",
-    "src/ui/views/dashboard_view.py",
-    "src/ui/views/quitacao_dialog.py",
-    "src/ui/main_window.py",
-    "src/application/use_cases/titulo_use_cases.py",
-    "src/tests/test_status_formatter.py",
-    "src/tests/test_quitacao_titulo_use_cases.py",
-    "src/tests/test_quitacao_titulo_repository.py"
+    "src/infrastructure/database/__init__.py",
+    "src/infrastructure/database/schema_upgrade.py",
+    "src/tests/test_schema_upgrade.py"
   ]
 }
