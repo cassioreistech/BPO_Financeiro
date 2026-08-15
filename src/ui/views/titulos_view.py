@@ -485,18 +485,26 @@ class TitulosView(QWidget):
                 ),
             )
 
-            if t.status == "PAGO":
-                cor = "#2e7d32"
-            elif t.status == "CANCELADO":
-                cor = "#757575"
-            elif t.data_vencimento < date.today():
-                cor = "#c62828"
-            else:
-                cor = "#000000"
+            cor_texto, cor_fundo = self._cores_linha(t)
             for col in range(len(self.COLUNAS)):
                 item = self._tabela.item(i, col)
                 if item is not None:
-                    item.setForeground(self._cor(cor))
+                    item.setForeground(self._cor(cor_texto))
+                    item.setBackground(self._cor(cor_fundo))
+
+    def _cores_linha(self, titulo: TituloResponseDTO) -> tuple[str, str]:
+        """Retorna (cor_texto, cor_fundo) para a linha do titulo."""
+        if titulo.status == "PAGO":
+            return "#2e7d32", "#e8f5e9"
+        if titulo.status == "CANCELADO":
+            return "#757575", "#eeeeee"
+        if titulo.data_vencimento < date.today():
+            return "#c62828", "#ffebee"
+        if titulo.tipo == "RECEBER":
+            return "#1565c0", "#e3f2fd"
+        if titulo.tipo == "PAGAR":
+            return "#ef6c00", "#fff3e0"
+        return "#000000", "#ffffff"
 
     def _data_filtro_venc_ini(self) -> date | None:
         """Retorna a data inicial do filtro de vencimento ou None se nao definida."""
