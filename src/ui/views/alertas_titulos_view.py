@@ -36,6 +36,7 @@ from application.use_cases.alerta_titulo_use_cases import (
 from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
 from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
 from ui.views.status_formatter import formatar_status_titulo
+from ui.views.table_delegate import SemanticTableDelegate
 from ui.views.table_helpers import (
     configurar_tabela_padrao,
     criar_item_centralizado,
@@ -170,6 +171,7 @@ class AlertasTitulosView(QWidget):
         self._tabela.setColumnCount(len(self.COLUNAS))
         self._tabela.setHorizontalHeaderLabels(self.COLUNAS)
         configurar_tabela_padrao(self._tabela)
+        self._tabela.setItemDelegate(SemanticTableDelegate(self._tabela))
         self._configurar_colunas_tabela()
         layout.addWidget(self._tabela, stretch=1)
 
@@ -405,11 +407,12 @@ class AlertasTitulosView(QWidget):
                 i, 7, criar_item_centralizado(self.ROTULOS_GRUPOS[item.urgencia])
             )
 
-            cor_texto = self.CORES_URGENCIA[item.urgencia][0]
+            cor_texto, cor_fundo = self.CORES_URGENCIA[item.urgencia]
             for col in range(len(self.COLUNAS)):
                 widget_item = self._tabela.item(i, col)
                 if widget_item is not None:
                     widget_item.setForeground(QColor(cor_texto))
+                    widget_item.setBackground(QColor(cor_fundo))
 
     @staticmethod
     def _formatar_valor(valor: Decimal) -> str:

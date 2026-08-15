@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
@@ -322,6 +325,121 @@ class MainWindow(QMainWindow):
         if hasattr(self, "_view_alertas"):
             self._view_alertas.atualizar()
 
+    def _criar_backup(self) -> None:
+        """Cria um backup do banco de dados."""
+        from PySide6.QtWidgets import QMessageBox
+
+        from application.services.backup_service import criar_backup
+
+        try:
+            backup_path = criar_backup()
+            QMessageBox.information(
+                self,
+                "Backup realizado",
+                f"Backup criado com sucesso:\n{backup_path.name}",
+            )
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "Erro no backup",
+                f"Erro ao criar backup:\n{e}",
+            )
+
+    def _restaurar_backup(self) -> None:
+        """Restaura o banco de dados a partir de um backup."""
+        from PySide6.QtWidgets import (
+            QComboBox,
+            QDialog,
+            QHBoxLayout,
+            QLabel,
+            QMessageBox,
+            QPushButton,
+            QVBoxLayout,
+        )
+
+        from application.services.backup_service import (
+            criar_backup,
+            formatar_nome_backup,
+            listar_backups,
+            restaurar_backup,
+        )
+
+        backups = listar_backups()
+        if not backups:
+            QMessageBox.information(
+                self,
+                "Sem backups",
+                "Nenhum backup encontrado para restaurar.",
+            )
+            return
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Restaurar Backup")
+        dialog.setMinimumWidth(350)
+        dialog.setModal(True)
+
+        layout = QVBoxLayout(dialog)
+
+        lbl = QLabel("Selecione o backup para restaurar:")
+        layout.addWidget(lbl)
+
+        combo = QComboBox()
+        for bp in backups:
+            combo.addItem(formatar_nome_backup(bp), str(bp))
+        layout.addWidget(combo)
+
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+
+        btn_cancelar = QPushButton("Cancelar")
+        btn_cancelar.clicked.connect(dialog.reject)
+        btn_layout.addWidget(btn_cancelar)
+
+        btn_restaurar = QPushButton("Restaurar")
+        btn_restaurar.clicked.connect(dialog.accept)
+        btn_layout.addWidget(btn_restaurar)
+
+        layout.addLayout(btn_layout)
+
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        backup_selecionado = Path(combo.currentData())
+        confirmacao = QMessageBox.question(
+            self,
+            "Confirmar restauracao",
+            "ATENÇÃO: Esta acao ira substituir o banco de dados atual.\n"
+            "Um backup do banco atual sera criado antes da restauracao.\n\n"
+            "Deseja continuar?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if confirmacao != QMessageBox.StandardButton.Yes:
+            return
+
+        with contextlib.suppress(Exception):
+            criar_backup()
+
+        try:
+            restaurar_backup(backup_selecionado)
+            QMessageBox.information(
+                self,
+                "Restauracao concluida",
+                "Banco de dados restaurado com sucesso.\n"
+                "O sistema sera reiniciado para aplicar as alteracoes.",
+            )
+            import sys
+
+            from infrastructure.database import engine
+            engine.dispose()
+            import os
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "Erro na restauracao",
+                f"Erro ao restaurar backup:\n{e}",
+            )
+
     def _criar_sidebar(self) -> QWidget:
         sidebar = QWidget()
         sidebar.setObjectName("sidebar")
@@ -395,8 +513,43 @@ class MainWindow(QMainWindow):
             config_layout.addWidget(btn)
             self._botoes_config.append(btn)
 
+        btn_restaurar = QPushButton("    Restaurar Backup")
+        btn_restaurar.setObjectName("navButtonConfig")
+        btn_restaurar.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_restaurar.clicked.connect(self._restaurar_backup)
+        config_layout.addWidget(btn_restaurar)
+
         layout.addWidget(self._config_container)
+
+        # Botão Backup
+        self._btn_backup = QPushButton("  Backup")
+        self._btn_backup.setObjectName("navButton")
+        self._btn_backup.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_backup.clicked.connect(self._criar_backup)
+        layout.addWidget(self._btn_backup)
+
         layout.addStretch()
+
+        # Marca d'água REISTECH (rodapé da sidebar)
+        sep3 = QWidget()
+        sep3.setFixedHeight(1)
+        sep3.setObjectName("separator")
+        layout.addWidget(sep3)
+
+        marca = QLabel("Desenvolvido por\nREISTECH")
+        marca.setObjectName("marcaReistech")
+        marca.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        marca.setStyleSheet(
+            """
+            QLabel#marcaReistech {
+                color: #888888;
+                font-size: 10px;
+                padding: 8px 4px;
+                border: none;
+            }
+            """
+        )
+        layout.addWidget(marca)
 
         return sidebar
 

@@ -60,6 +60,7 @@ from domain.enums.tipo_titulo import TipoTitulo
 from ui.views.quitacao_dialog import QuitacaoDialog
 from ui.views.relatorio_dialog import RelatorioDialog
 from ui.views.status_formatter import formatar_status_titulo
+from ui.views.table_delegate import SemanticTableDelegate
 from ui.views.table_helpers import (
     configurar_tabela_padrao,
     criar_item_centralizado,
@@ -306,6 +307,7 @@ class TitulosView(QWidget):
         self._tabela.setColumnCount(len(self.COLUNAS))
         self._tabela.setHorizontalHeaderLabels(self.COLUNAS)
         configurar_tabela_padrao(self._tabela)
+        self._tabela.setItemDelegate(SemanticTableDelegate(self._tabela))
         self._configurar_colunas_tabela()
         self._tabela.doubleClicked.connect(self._editar_selecionado)
         self._tabela.setContextMenuPolicy(
