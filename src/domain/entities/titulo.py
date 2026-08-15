@@ -57,6 +57,7 @@ class Titulo:
     conta_bancaria_id: int | None = None
     forma_pagamento: FormaPagamento = FormaPagamento.OUTRO
     observacao: str | None = None
+    observacao_quitacao: str | None = None
 
     def __post_init__(self) -> None:
         if self.escritorio_id <= 0:
@@ -89,3 +90,48 @@ class Titulo:
             )
         if self.observacao:
             object.__setattr__(self, "observacao", self.observacao.strip() or None)
+        if self.observacao_quitacao:
+            object.__setattr__(
+                self, "observacao_quitacao", self.observacao_quitacao.strip() or None
+            )
+
+    def quitar(
+        self,
+        data_quitacao: date,
+        valor_pago: Decimal,
+        conta_bancaria_id: int,
+        forma_pagamento: FormaPagamento,
+        observacao_quitacao: str | None = None,
+    ) -> None:
+        """Aplica regras de dominio para quitacao integral do titulo.
+
+        Raises:
+            ValueError: se o titulo nao estiver aberto, valor invalido
+                        ou conta inconsistente.
+        """
+        if self.status != StatusTitulo.ABERTO:
+            if self.status == StatusTitulo.PAGO:
+                raise ValueError("Titulo ja esta quitado.")
+            if self.status == StatusTitulo.CANCELADO:
+                raise ValueError("Nao e possivel quitar um titulo cancelado.")
+            raise ValueError("Titulo nao esta em situacao para quitacao.")
+        if valor_pago <= Decimal("0"):
+            raise ValueError("Valor pago deve ser maior que zero.")
+        if valor_pago != self.valor:
+            raise ValueError(
+                "Quitação integral exige valor pago igual ao valor do titulo."
+            )
+        if conta_bancaria_id <= 0:
+            raise ValueError("Conta bancaria deve ser informada.")
+        if data_quitacao is None:
+            raise ValueError("Data de quitacao deve ser informada.")
+
+        object.__setattr__(self, "status", StatusTitulo.PAGO)
+        object.__setattr__(self, "data_quitacao", data_quitacao)
+        object.__setattr__(self, "valor_pago", valor_pago)
+        object.__setattr__(self, "conta_bancaria_id", conta_bancaria_id)
+        object.__setattr__(self, "forma_pagamento", forma_pagamento)
+        if observacao_quitacao:
+            object.__setattr__(
+                self, "observacao_quitacao", observacao_quitacao.strip() or None
+            )

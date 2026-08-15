@@ -55,6 +55,8 @@ class QuitarTituloDTO:
     valor_pago: Decimal
     conta_bancaria_id: int | None = None
     forma_pagamento: str = "OUTRO"
+    observacao_quitacao: str | None = None
+    empresa_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -80,3 +82,4 @@ class TituloResponseDTO:
     conta_bancaria_id: int | None
     forma_pagamento: str
     observacao: str | None
+    observacao_quitacao: str | None

@@ -57,3 +57,6 @@ class TituloModel(Base):
     forma_pagamento: Mapped[str] = mapped_column(
         String(20), nullable=False, default="OUTRO"
     )
+    observacao_quitacao: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )

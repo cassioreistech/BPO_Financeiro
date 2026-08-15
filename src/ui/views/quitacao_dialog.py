@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -45,7 +46,7 @@ class QuitacaoDialog(QDialog):
 
     def _configurar_janela(self) -> None:
         self.setWindowTitle("Quitar Titulo")
-        self.setMinimumWidth(420)
+        self.setMinimumWidth(460)
         self.setModal(True)
 
     def _montar_formulario(self) -> None:
@@ -56,9 +57,11 @@ class QuitacaoDialog(QDialog):
         layout.addWidget(titulo)
 
         info = QLabel(
+            f"Empresa: {self._titulo.empresa_id or '-'} | "
             f"Valor original: {self._formatar_valor(self._titulo.valor)} | "
             f"Vencimento: {self._titulo.data_vencimento.strftime('%d/%m/%Y')}"
         )
+        info.setWordWrap(True)
         layout.addWidget(info)
 
         form = QFormLayout()
@@ -74,14 +77,19 @@ class QuitacaoDialog(QDialog):
         form.addRow("Valor Pago:*", self._campo_valor_pago)
 
         self._combo_conta_bancaria = QComboBox()
-        self._combo_conta_bancaria.addItem("Nenhuma", None)
+        self._combo_conta_bancaria.addItem("Selecione...", None)
         for cid, nome in self._opcoes_conta_bancaria:
             self._combo_conta_bancaria.addItem(nome, cid)
-        form.addRow("Conta Bancaria:", self._combo_conta_bancaria)
+        form.addRow("Conta Bancaria:*", self._combo_conta_bancaria)
 
         self._combo_forma_pagamento = QComboBox()
         self._combo_forma_pagamento.addItems(self.FORMAS_PAGAMENTO)
         form.addRow("Forma Pagamento:*", self._combo_forma_pagamento)
+
+        self._campo_observacao = QTextEdit()
+        self._campo_observacao.setPlaceholderText("Observacao opcional...")
+        self._campo_observacao.setMaximumHeight(80)
+        form.addRow("Observacao:", self._campo_observacao)
 
         layout.addLayout(form)
 
@@ -128,14 +136,15 @@ class QuitacaoDialog(QDialog):
     def _formatar_valor(valor: Decimal) -> str:
         return f"{valor:.2f}".replace(".", ",")
 
-    def obter_dados(self) -> tuple[date, Decimal, int | None, str]:
+    def obter_dados(self) -> tuple[date, Decimal, int, str, str | None]:
         """Retorna os dados informados pelo usuario."""
         data_quitacao = cast(date, self._date_quitacao.date().toPython())
         valor_texto = self._campo_valor_pago.text().strip().replace(",", ".")
         valor_pago = Decimal(valor_texto)
-        conta_bancaria_id = self._combo_conta_bancaria.currentData()
+        conta_bancaria_id = cast(int, self._combo_conta_bancaria.currentData())
         forma_pagamento = self._combo_forma_pagamento.currentText()
-        return data_quitacao, valor_pago, conta_bancaria_id, forma_pagamento
+        observacao = self._campo_observacao.toPlainText().strip() or None
+        return data_quitacao, valor_pago, conta_bancaria_id, forma_pagamento, observacao
 
     def _confirmar(self) -> None:
         valor_texto = self._campo_valor_pago.text().strip().replace(",", ".")
@@ -151,4 +160,34 @@ class QuitacaoDialog(QDialog):
                 self, "Valor invalido", "Informe um valor numerico valido."
             )
             return
+
+        if self._combo_conta_bancaria.currentData() is None:
+            QMessageBox.warning(
+                self, "Campo obrigatorio", "Selecione a conta bancaria."
+            )
+            return
+
+        data = cast(date, self._date_quitacao.date().toPython())
+        valor = Decimal(valor_texto)
+        forma = self._combo_forma_pagamento.currentText()
+
+        if valor != self._titulo.valor:
+            QMessageBox.warning(
+                self,
+                "Valor invalido",
+                "Quitação integral exige valor pago igual ao valor do titulo.",
+            )
+            return
+
+        resposta = QMessageBox.question(
+            self,
+            "Confirmar quitacao",
+            f"Confirmar quitacao do titulo '{self._titulo.descricao}' "
+            f"no valor de {self._formatar_valor(valor)} "
+            f"via {forma} em {data.strftime('%d/%m/%Y')}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if resposta != QMessageBox.StandardButton.Yes:
+            return
+
         self.accept()

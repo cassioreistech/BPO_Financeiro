@@ -10,6 +10,7 @@ from application.dto.titulo_dto import (
     QuitarTituloDTO,
     TituloResponseDTO,
 )
+from application.ports.conta_bancaria_repository import ContaBancariaRepository
 from application.ports.titulo_repository import TituloRepository
 from domain.entities.titulo import Titulo
 from domain.enums.categoria_titulo import CategoriaTitulo
@@ -40,6 +41,7 @@ def _para_response_dto(titulo: Titulo) -> TituloResponseDTO:
         conta_bancaria_id=titulo.conta_bancaria_id,
         forma_pagamento=titulo.forma_pagamento.value,
         observacao=titulo.observacao,
+        observacao_quitacao=titulo.observacao_quitacao,
     )
 
 
@@ -242,26 +244,47 @@ class ObterTituloUseCase:
 
 
 class QuitarTituloUseCase:
-    """Use case para quitacao de titulo."""
+    """Use case para quitacao integral de titulo."""
 
-    def __init__(self, repository: TituloRepository) -> None:
+    def __init__(
+        self,
+        repository: TituloRepository,
+        conta_repository: ContaBancariaRepository | None = None,
+    ) -> None:
         self._repository = repository
+        self._conta_repository = conta_repository
 
     def execute(self, dto: QuitarTituloDTO) -> TituloResponseDTO:
         """Marca um titulo como pago com dados da quitacao.
 
         Raises:
-            ValueError: se titulo nao existe, ja esta cancelado ou dados invalidos.
+            ValueError: se titulo nao existe, empresa divergente,
+                        conta invalida/inativa/de outra empresa,
+                        valor invalido ou titulo nao estiver aberto.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
             raise ValueError(f"Titulo com ID {dto.id} nao encontrado.")
-        if existente.status == StatusTitulo.CANCELADO:
-            raise ValueError("Nao e possivel quitar um titulo cancelado.")
-        if dto.valor_pago < Decimal("0"):
-            raise ValueError("Valor pago nao pode ser negativo.")
-        if dto.conta_bancaria_id is not None and dto.conta_bancaria_id <= 0:
-            raise ValueError("Conta bancaria ID deve ser um numero positivo.")
+
+        if dto.empresa_id is not None and dto.empresa_id != existente.empresa_id:
+            raise ValueError(
+                "Titulo nao pertence a empresa ativa."
+            )
+
+        if dto.conta_bancaria_id is None or dto.conta_bancaria_id <= 0:
+            raise ValueError("Conta bancaria deve ser informada.")
+
+        conta = None
+        if self._conta_repository is not None:
+            conta = self._conta_repository.get_by_id(dto.conta_bancaria_id)
+            if conta is None:
+                raise ValueError("Conta bancaria nao encontrada.")
+            if conta.empresa_id != existente.empresa_id:
+                raise ValueError(
+                    "Conta bancaria nao pertence a empresa do titulo."
+                )
+            if not conta.ativo:
+                raise ValueError("Conta bancaria esta inativa.")
 
         forma_pagamento = _parse_forma_pagamento(dto.forma_pagamento)
 
@@ -276,15 +299,24 @@ class QuitarTituloUseCase:
             categoria=existente.categoria,
             descricao=existente.descricao,
             tipo=existente.tipo,
-            status=StatusTitulo.PAGO,
+            status=existente.status,
             valor=existente.valor,
-            valor_pago=dto.valor_pago,
+            valor_pago=existente.valor_pago,
             data_emissao=existente.data_emissao,
             data_vencimento=existente.data_vencimento,
+            data_quitacao=existente.data_quitacao,
+            conta_bancaria_id=existente.conta_bancaria_id,
+            forma_pagamento=existente.forma_pagamento,
+            observacao=existente.observacao,
+            observacao_quitacao=existente.observacao_quitacao,
+        )
+
+        titulo.quitar(
             data_quitacao=dto.data_quitacao,
+            valor_pago=dto.valor_pago,
             conta_bancaria_id=dto.conta_bancaria_id,
             forma_pagamento=forma_pagamento,
-            observacao=existente.observacao,
+            observacao_quitacao=dto.observacao_quitacao,
         )
 
         salvo = self._repository.update(titulo)

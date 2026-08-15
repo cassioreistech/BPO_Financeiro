@@ -765,7 +765,7 @@ class TitulosView(QWidget):
             )
             return
 
-        opcoes_conta = self._obter_opcoes_conta_bancaria()
+        opcoes_conta = self._obter_opcoes_conta_bancaria(titulo.empresa_id)
         dialogo = QuitacaoDialog(
             titulo=titulo,
             opcoes_conta_bancaria=opcoes_conta,
@@ -775,13 +775,17 @@ class TitulosView(QWidget):
             return
 
         try:
-            data_quitacao, valor_pago, conta_id, forma = dialogo.obter_dados()
+            data_quitacao, valor_pago, conta_id, forma, observacao = (
+                dialogo.obter_dados()
+            )
             dto = QuitarTituloDTO(
                 id=titulo.id,
                 data_quitacao=data_quitacao,
                 valor_pago=valor_pago,
                 conta_bancaria_id=conta_id,
                 forma_pagamento=forma,
+                observacao_quitacao=observacao,
+                empresa_id=titulo.empresa_id,
             )
             self._quitar.execute(dto)
             self.atualizar_lista()
@@ -791,10 +795,12 @@ class TitulosView(QWidget):
         except ValueError as e:
             QMessageBox.warning(self, "Erro", str(e))
 
-    def _obter_opcoes_conta_bancaria(self) -> list[tuple[int, str]]:
+    def _obter_opcoes_conta_bancaria(
+        self, empresa_id: int | None
+    ) -> list[tuple[int, str]]:
         try:
             contas = self._listar_contas_bancarias.execute(
-                skip=0, limit=1000
+                empresa_id=empresa_id, skip=0, limit=1000
             )
             return [
                 (c.id, f"{c.banco_nome} - {c.conta}")
@@ -862,9 +868,13 @@ class TitulosView(QWidget):
             return
         self._tabela.selectRow(item.row())
 
+        titulo = self._obter_selecionado()
+        permite_quitar = titulo is not None and titulo.status == "ABERTO"
+
         menu = QMenu(self)
         acao_editar = menu.addAction("Editar")
         acao_quitar = menu.addAction("Quitar")
+        acao_quitar.setEnabled(permite_quitar)
         acao_cancelar = menu.addAction("Cancelar")
         menu.addSeparator()
         acao_remover = menu.addAction("Apagar")

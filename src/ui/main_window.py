@@ -199,7 +199,9 @@ class MainWindow(QMainWindow):
         )
         self._uc_criar_titulo = CadastrarTituloUseCase(self._titulo_repo)
         self._uc_editar_titulo = EditarTituloUseCase(self._titulo_repo)
-        self._uc_quitar_titulo = QuitarTituloUseCase(self._titulo_repo)
+        self._uc_quitar_titulo = QuitarTituloUseCase(
+            self._titulo_repo, self._conta_repo
+        )
         self._uc_cancelar_titulo = CancelarTituloUseCase(self._titulo_repo)
         self._uc_remover_titulo = RemoverTituloUseCase(self._titulo_repo)
         self._uc_relatorio_titulos = RelatorioTitulosUseCase(self._titulo_repo)
