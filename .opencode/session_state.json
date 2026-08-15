@@ -2,7 +2,7 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Implementado contexto global de empresa ativa: EmpresaContextService gerencia empresa selecionada; MainWindow exibe seletor global no cabecalho; TitulosView carrega empresa ativa por padrao; AlertasTitulosView mantem modo Todas (padrao) com opcao Usar empresa ativa. Alertas de titulos multiempresa tambem implementados com grupos Vencidos/Hoje/Amanha/Semana. Testes, ruff e mypy limpos. Commit pendente.",
+  "last_summary": "Revisao de coerencia multiempresa concluida: ContasBancariasView, CentrosCustoView e DashboardView agora respeitam empresa ativa; MainWindow repassa contexto e recarrega telas corretamente. Cores por tipo/status aplicadas na tabela de titulos (azul Receber, laranja Pagar, verde Pago). Testes, ruff e mypy limpos. Commits realizados."
   "current_task": "Contexto global de empresa ativa e modulo de alertas implementados. Fazendo commit e atualizando GSD.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
