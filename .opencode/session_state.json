@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Corrigido erro de schema SQLite: criado mecanismo de upgrade incremental que adiciona colunas faltantes (incluindo observacao_quitacao) em bancos existentes sem perder dados. init_db() agora executa upgrade_database() apos create_all. Testes de upgrade, idempotencia e preservacao de dados adicionados. pytest, ruff e mypy limpos."
-  "current_task": "Correcao de schema SQLite concluida. Commit realizado.",
+  "last_summary": "Filtros avancados e busca na tela de Titulos implementados. SituacaoVencimento para filtros rapidos; FiltroTitulosDTO com texto, categoria, tipo, status, periodo vencimento, situacao; list_filtered no repository e use case; TitulosView reorganizada com contagem, limpar mantendo empresa ativa, botoes rapidos. Mapeamento PAGO->QUITADO preservado. Testes unitarios e integracao. pytest, ruff, mypy limpos.",
+  "current_task": "Filtros avancados de Titulos concluidos. Commit realizado.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
@@ -24,14 +24,24 @@
     "Status interno PAGO e exibido como QUITADO na interface",
     "Titulos quitados abrem em modo visualizacao; edicao comum preserva dados da quitacao",
     "Dashboard e Alertas sao atualizados automaticamente apos quitacao via callback",
-    "Schema SQLite evolui via upgrade incremental em schema_upgrade.py, preservando dados"
+    "Schema SQLite evolui via upgrade incremental em schema_upgrade.py, preservando dados",
+    "SituacaoVencimento enum para filtros rapidos de vencimento",
+    "FiltroTitulosDTO centraliza todos os filtros de Titulos",
+    "list_filtered no repository aplica filtros no banco via SQLAlchemy",
+    "TitulosView usa filtros no banco; contagem de resultados; limpar preserva empresa ativa",
+    "Ordenacao padrao: data_vencimento ASC, status ASC, descricao ASC"
   ],
   "pending_actions": [
     "Atualizar documentacao GSD se necessario"
   ],
   "recent_files": [
-    "src/infrastructure/database/__init__.py",
-    "src/infrastructure/database/schema_upgrade.py",
-    "src/tests/test_schema_upgrade.py"
+    "src/domain/enums/situacao_vencimento.py",
+    "src/application/dto/titulo_dto.py",
+    "src/application/use_cases/titulo_use_cases.py",
+    "src/application/ports/titulo_repository.py",
+    "src/infrastructure/database/repositories/sqlite_titulo_repository.py",
+    "src/ui/views/titulos_view.py",
+    "src/tests/test_titulo_filtros_use_cases.py",
+    "src/tests/test_sqlite_titulo_repository_filtros.py"
   ]
 }
