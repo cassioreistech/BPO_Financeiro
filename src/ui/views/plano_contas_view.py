@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -27,6 +25,10 @@ from application.use_cases.plano_conta_use_cases import (
     RemoverPlanoContaUseCase,
 )
 from ui.views.plano_conta_form_view import PlanoContaFormView
+from ui.views.table_helpers import (
+    configurar_tabela_padrao,
+    criar_item_centralizado,
+)
 
 
 class PlanoContasView(QWidget):
@@ -87,15 +89,7 @@ class PlanoContasView(QWidget):
         self._tabela = QTableWidget()
         self._tabela.setColumnCount(len(self.COLUNAS))
         self._tabela.setHorizontalHeaderLabels(self.COLUNAS)
-        self._tabela.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self._tabela.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self._tabela.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self._tabela.setAlternatingRowColors(True)
-        self._tabela.verticalHeader().setVisible(False)
-        self._tabela.horizontalHeader().setStretchLastSection(True)
-        self._tabela.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
-        )
+        configurar_tabela_padrao(self._tabela)
         self._tabela.doubleClicked.connect(self._editar_selecionado)
         layout.addWidget(self._tabela)
 
@@ -134,7 +128,7 @@ class PlanoContasView(QWidget):
         self._tabela.setRowCount(len(contas))
         for i, conta in enumerate(contas):
             self._tabela.setItem(
-                i, 0, self._item_centralizado(str(conta.id or ""))
+                i, 0, criar_item_centralizado(str(conta.id or ""))
             )
             self._tabela.setItem(
                 i, 1, QTableWidgetItem(mapa_esc.get(conta.escritorio_id, "—"))
@@ -143,7 +137,7 @@ class PlanoContasView(QWidget):
             self._tabela.setItem(i, 3, QTableWidgetItem(conta.nome))
             self._tabela.setItem(i, 4, QTableWidgetItem(conta.tipo))
             self._tabela.setItem(
-                i, 5, self._item_centralizado(str(conta.nivel))
+                i, 5, criar_item_centralizado(str(conta.nivel))
             )
             self._tabela.setItem(
                 i, 6, QTableWidgetItem(str(conta.pai_id) if conta.pai_id else "—")
@@ -165,11 +159,6 @@ class PlanoContasView(QWidget):
             if idx >= 0:
                 self._combo_filtro_escritorio.setCurrentIndex(idx)
         self._combo_filtro_escritorio.blockSignals(False)
-
-    def _item_centralizado(self, texto: str) -> QTableWidgetItem:
-        item = QTableWidgetItem(texto)
-        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        return item
 
     def _obter_selecionado(self) -> PlanoContaResponseDTO | None:
         linha = self._tabela.currentRow()

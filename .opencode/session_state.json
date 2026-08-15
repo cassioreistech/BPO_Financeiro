@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Botao Excluir adicionado em Escritorios e Empresas (ExcluirEscritorioUseCase, ExcluirEmpresaUseCase, botoes com estilo btnPerigo, confirmacao via QMessageBox). Contadores, Plano de Contas e Titulos ja tinham. 137 testes passando, ruff e mypy limpos.",
-  "current_task": "Botoes de exclusao em todas as telas de cadastro. Sem tarefas pendentes.",
+  "last_summary": "Padronizacao visual de todas as tabelas QTableWidget: altura de linha padronizada em 36px, cabecalhos e conteudo centralizados, helper table_helpers.py criado. Aplicado em 7 telas (Escritorios, Empresas, Contadores, Contas Bancarias, Centros de Custo, Plano de Contas, Titulos). 137 testes passando, ruff e mypy limpos.",
+  "current_task": "Padronizacao visual de tabelas concluida.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
@@ -42,6 +42,14 @@
     "src/ui/views/titulo_form_view.py",
     "src/application/use_cases/dashboard_use_cases.py",
     "src/ui/views/dashboard_view.py",
-    "src/ui/main_window.py"
+    "src/ui/main_window.py",
+    "src/ui/views/table_helpers.py",
+    "src/ui/views/escritorios_view.py",
+    "src/ui/views/empresas_view.py",
+    "src/ui/views/contadores_view.py",
+    "src/ui/views/contas_bancarias_view.py",
+    "src/ui/views/centros_custo_view.py",
+    "src/ui/views/plano_contas_view.py",
+    "src/ui/views/titulos_view.py"
   ]
 }

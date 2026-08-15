@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -27,6 +25,10 @@ from application.use_cases.centro_custo_use_cases import (
 )
 from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
 from ui.views.centro_custo_form_view import CentroCustoFormView
+from ui.views.table_helpers import (
+    configurar_tabela_padrao,
+    criar_item_centralizado,
+)
 
 
 class CentrosCustoView(QWidget):
@@ -87,15 +89,7 @@ class CentrosCustoView(QWidget):
         self._tabela = QTableWidget()
         self._tabela.setColumnCount(len(self.COLUNAS))
         self._tabela.setHorizontalHeaderLabels(self.COLUNAS)
-        self._tabela.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self._tabela.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self._tabela.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self._tabela.setAlternatingRowColors(True)
-        self._tabela.verticalHeader().setVisible(False)
-        self._tabela.horizontalHeader().setStretchLastSection(True)
-        self._tabela.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
-        )
+        configurar_tabela_padrao(self._tabela)
         self._tabela.doubleClicked.connect(self._editar_selecionado)
         layout.addWidget(self._tabela)
 
@@ -136,7 +130,7 @@ class CentrosCustoView(QWidget):
         self._tabela.setRowCount(len(centros))
         for i, centro in enumerate(centros):
             self._tabela.setItem(
-                i, 0, self._item_centralizado(str(centro.id or ""))
+                i, 0, criar_item_centralizado(str(centro.id or ""))
             )
             self._tabela.setItem(
                 i, 1, QTableWidgetItem(mapa_emp.get(centro.empresa_id, "—"))
@@ -144,7 +138,7 @@ class CentrosCustoView(QWidget):
             self._tabela.setItem(i, 2, QTableWidgetItem(centro.codigo))
             self._tabela.setItem(i, 3, QTableWidgetItem(centro.nome))
             self._tabela.setItem(
-                i, 4, self._item_centralizado("Sim" if centro.ativo else "Nao")
+                i, 4, criar_item_centralizado("Sim" if centro.ativo else "Nao")
             )
 
     def _atualizar_combo_filtro(
@@ -164,11 +158,6 @@ class CentrosCustoView(QWidget):
             if idx >= 0:
                 self._combo_filtro_empresa.setCurrentIndex(idx)
         self._combo_filtro_empresa.blockSignals(False)
-
-    def _item_centralizado(self, texto: str) -> QTableWidgetItem:
-        item = QTableWidgetItem(texto)
-        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        return item
 
     def _obter_selecionado(self) -> CentroCustoResponseDTO | None:
         linha = self._tabela.currentRow()

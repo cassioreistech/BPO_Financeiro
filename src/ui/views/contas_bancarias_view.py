@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -25,6 +23,10 @@ from application.use_cases.conta_bancaria_use_cases import (
 )
 from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
 from ui.views.conta_bancaria_form_view import ContaBancariaFormView
+from ui.views.table_helpers import (
+    configurar_tabela_padrao,
+    criar_item_centralizado,
+)
 
 
 class ContasBancariasView(QWidget):
@@ -86,15 +88,7 @@ class ContasBancariasView(QWidget):
         self._tabela = QTableWidget()
         self._tabela.setColumnCount(len(self.COLUNAS))
         self._tabela.setHorizontalHeaderLabels(self.COLUNAS)
-        self._tabela.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self._tabela.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self._tabela.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self._tabela.setAlternatingRowColors(True)
-        self._tabela.verticalHeader().setVisible(False)
-        self._tabela.horizontalHeader().setStretchLastSection(True)
-        self._tabela.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
-        )
+        configurar_tabela_padrao(self._tabela)
         self._tabela.doubleClicked.connect(self._editar_selecionado)
         layout.addWidget(self._tabela)
 
@@ -124,7 +118,7 @@ class ContasBancariasView(QWidget):
         self._tabela.setRowCount(len(contas))
         for i, conta in enumerate(contas):
             self._tabela.setItem(
-                i, 0, self._item_centralizado(str(conta.id or ""))
+                i, 0, criar_item_centralizado(str(conta.id or ""))
             )
             self._tabela.setItem(
                 i, 1, QTableWidgetItem(mapa_emp.get(conta.empresa_id, "—"))
@@ -135,13 +129,8 @@ class ContasBancariasView(QWidget):
             self._tabela.setItem(i, 5, QTableWidgetItem(conta.tipo))
             self._tabela.setItem(i, 6, QTableWidgetItem(conta.descricao))
             self._tabela.setItem(
-                i, 7, self._item_centralizado("Sim" if conta.ativo else "Nao")
+                i, 7, criar_item_centralizado("Sim" if conta.ativo else "Nao")
             )
-
-    def _item_centralizado(self, texto: str) -> QTableWidgetItem:
-        item = QTableWidgetItem(texto)
-        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        return item
 
     def _obter_selecionado(self) -> ContaBancariaResponseDTO | None:
         linha = self._tabela.currentRow()

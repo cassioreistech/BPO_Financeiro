@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -24,6 +22,10 @@ from application.use_cases.escritorio_use_cases import (
     ObterEscritorioUseCase,
 )
 from ui.views.escritorio_form_view import EscritorioFormView
+from ui.views.table_helpers import (
+    configurar_tabela_padrao,
+    criar_item_centralizado,
+)
 
 
 class EscritoriosView(QWidget):
@@ -74,21 +76,7 @@ class EscritoriosView(QWidget):
         self._tabela = QTableWidget()
         self._tabela.setColumnCount(len(self.COLUNAS))
         self._tabela.setHorizontalHeaderLabels(self.COLUNAS)
-        self._tabela.setSelectionBehavior(
-            QTableWidget.SelectionBehavior.SelectRows
-        )
-        self._tabela.setSelectionMode(
-            QTableWidget.SelectionMode.SingleSelection
-        )
-        self._tabela.setEditTriggers(
-            QTableWidget.EditTrigger.NoEditTriggers
-        )
-        self._tabela.setAlternatingRowColors(True)
-        self._tabela.verticalHeader().setVisible(False)
-        self._tabela.horizontalHeader().setStretchLastSection(True)
-        self._tabela.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
-        )
+        configurar_tabela_padrao(self._tabela)
         self._tabela.doubleClicked.connect(self._editar_selecionado)
         layout.addWidget(self._tabela)
 
@@ -114,16 +102,11 @@ class EscritoriosView(QWidget):
 
         self._tabela.setRowCount(len(escritorios))
         for i, esc in enumerate(escritorios):
-            self._tabela.setItem(i, 0, self._item_centralizado(str(esc.id or "")))
+            self._tabela.setItem(i, 0, criar_item_centralizado(str(esc.id or "")))
             self._tabela.setItem(i, 1, QTableWidgetItem(esc.nome))
             self._tabela.setItem(i, 2, QTableWidgetItem(esc.cnpj_cpf))
             self._tabela.setItem(i, 3, QTableWidgetItem(str(esc.email) if esc.email else ""))
             self._tabela.setItem(i, 4, QTableWidgetItem(str(esc.telefone) if esc.telefone else ""))
-
-    def _item_centralizado(self, texto: str) -> QTableWidgetItem:
-        item = QTableWidgetItem(texto)
-        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        return item
 
     def _obter_selecionado(self) -> EscritorioResponseDTO | None:
         linha = self._tabela.currentRow()

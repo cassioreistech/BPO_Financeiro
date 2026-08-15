@@ -6,12 +6,10 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -38,6 +36,10 @@ from application.use_cases.titulo_use_cases import (
 )
 from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_titulo import TipoTitulo
+from ui.views.table_helpers import (
+    configurar_tabela_padrao,
+    criar_item_centralizado,
+)
 from ui.views.titulo_form_view import TituloFormView
 
 
@@ -139,15 +141,7 @@ class TitulosView(QWidget):
         self._tabela = QTableWidget()
         self._tabela.setColumnCount(len(self.COLUNAS))
         self._tabela.setHorizontalHeaderLabels(self.COLUNAS)
-        self._tabela.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self._tabela.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self._tabela.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self._tabela.setAlternatingRowColors(True)
-        self._tabela.verticalHeader().setVisible(False)
-        self._tabela.horizontalHeader().setStretchLastSection(True)
-        self._tabela.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
-        )
+        configurar_tabela_padrao(self._tabela)
         self._tabela.doubleClicked.connect(self._editar_selecionado)
         layout.addWidget(self._tabela)
 
@@ -241,7 +235,7 @@ class TitulosView(QWidget):
         self._tabela.setRowCount(len(titulos))
         for i, t in enumerate(titulos):
             self._tabela.setItem(
-                i, 0, self._item_centralizado(str(t.id or ""))
+                i, 0, criar_item_centralizado(str(t.id or ""))
             )
             self._tabela.setItem(
                 i, 1, QTableWidgetItem(mapa_esc.get(t.escritorio_id, "—"))
@@ -264,12 +258,12 @@ class TitulosView(QWidget):
             self._tabela.setItem(i, 5, QTableWidgetItem(t.tipo))
             self._tabela.setItem(i, 6, QTableWidgetItem(t.status))
             self._tabela.setItem(
-                i, 7, self._item_centralizado(self._formatar_valor(t.valor))
+                i, 7, criar_item_centralizado(self._formatar_valor(t.valor))
             )
             self._tabela.setItem(
                 i,
                 8,
-                self._item_centralizado(
+                criar_item_centralizado(
                     t.data_vencimento.strftime("%d/%m/%Y")
                 ),
             )
@@ -310,11 +304,6 @@ class TitulosView(QWidget):
     @staticmethod
     def _cor(hex_code: str) -> QColor:
         return QColor(hex_code)
-
-    def _item_centralizado(self, texto: str) -> QTableWidgetItem:
-        item = QTableWidgetItem(texto)
-        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        return item
 
     def _obter_selecionado(self) -> TituloResponseDTO | None:
         linha = self._tabela.currentRow()

@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -25,6 +23,10 @@ from application.use_cases.contador_use_cases import (
 )
 from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
 from ui.views.contador_form_view import ContadorFormView
+from ui.views.table_helpers import (
+    configurar_tabela_padrao,
+    criar_item_centralizado,
+)
 
 
 class ContadoresView(QWidget):
@@ -77,15 +79,7 @@ class ContadoresView(QWidget):
         self._tabela = QTableWidget()
         self._tabela.setColumnCount(len(self.COLUNAS))
         self._tabela.setHorizontalHeaderLabels(self.COLUNAS)
-        self._tabela.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self._tabela.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self._tabela.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self._tabela.setAlternatingRowColors(True)
-        self._tabela.verticalHeader().setVisible(False)
-        self._tabela.horizontalHeader().setStretchLastSection(True)
-        self._tabela.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
-        )
+        configurar_tabela_padrao(self._tabela)
         self._tabela.doubleClicked.connect(self._editar_selecionado)
         layout.addWidget(self._tabela)
 
@@ -115,7 +109,7 @@ class ContadoresView(QWidget):
         self._tabela.setRowCount(len(contadores))
         for i, cont in enumerate(contadores):
             self._tabela.setItem(
-                i, 0, self._item_centralizado(str(cont.id or ""))
+                i, 0, criar_item_centralizado(str(cont.id or ""))
             )
             self._tabela.setItem(
                 i, 1, QTableWidgetItem(mapa_esc.get(cont.escritorio_id, "—"))
@@ -124,11 +118,6 @@ class ContadoresView(QWidget):
             self._tabela.setItem(i, 3, QTableWidgetItem(cont.crc or ""))
             self._tabela.setItem(i, 4, QTableWidgetItem(cont.email or ""))
             self._tabela.setItem(i, 5, QTableWidgetItem(cont.telefone or ""))
-
-    def _item_centralizado(self, texto: str) -> QTableWidgetItem:
-        item = QTableWidgetItem(texto)
-        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        return item
 
     def _obter_selecionado(self) -> ContadorResponseDTO | None:
         linha = self._tabela.currentRow()
