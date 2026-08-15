@@ -69,5 +69,9 @@ module = "ui.main_window"
 disallow_subclassing_any = false
 
 [[tool.mypy.overrides]]
+module = "ui.views.*"
+disallow_subclassing_any = false
+
+[[tool.mypy.overrides]]
 module = "infrastructure.database"
 disallow_subclassing_any = false

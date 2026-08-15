@@ -1,7 +1,6 @@
 """Testes para os use cases de Escritorio."""
 
 import pytest
-from tests.use_cases.fake_repositories import FakeEscritorioRepository
 
 from application.dto.escritorio_dto import CriarEscritorioDTO, EditarEscritorioDTO
 from application.use_cases.escritorio_use_cases import (
@@ -10,6 +9,7 @@ from application.use_cases.escritorio_use_cases import (
     ListarEscritoriosUseCase,
     ObterEscritorioUseCase,
 )
+from tests.use_cases.fake_repositories import FakeEscritorioRepository
 
 
 @pytest.fixture

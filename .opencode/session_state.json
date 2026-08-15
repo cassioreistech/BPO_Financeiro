@@ -2,30 +2,36 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Fundação técnica criada: estrutura hexagonal (domain/application/infrastructure/ui), pyproject.toml, entrypoint src/main.py, MainWindow PySide6 mínima, banco SQLite via SQLAlchemy 2.x com Base declarativa, logging structlog, testes smoke. Imports flat sem prefixo src.",
-  "current_task": "Etapa concluída. Próxima etapa provável: plan-phase da fundação ou definição do domínio (empresas/escritórios).",
+  "last_summary": "Camada infrastructure inicial concluída: models ORM (EscritorioModel, EmpresaModel), repositories SQLite concretos (SQLiteEscritorioRepository, SQLiteEmpresaRepository), bootstrap de tabelas no init_db, 29 testes de integração + e2e (use cases reais). Suíte total: 123 testes passando, ruff e mypy limpos. database.py convertido para pacote database/ (models/ e repositories/).",
+  "current_task": "Infrastructure inicial (escritorio/empresa) concluída. Próximas etapas possíveis: conta bancária/contador no domínio+application, UI de cadastro, ou timestamps/relacionamentos nos models.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain (dependências apontam para dentro)",
     "Imports flat obrigatórios: from domain/application/infrastructure/ui (nunca src.)",
     "Mapeamento setuptools package-dir para instalar pacotes top-level a partir de src/",
     "Banco SQLite local em data/bpo.db, criado automaticamente em runtime",
     "Mypy strict, Ruff + Black com line-length 100, alvo Python 3.12",
-    "Sem regras de negócio, CRUD ou telas completas nesta etapa"
+    "Enums usam StrEnum (Python 3.12), Value Objects são frozen dataclasses",
+    "DTOs são frozen dataclasses simples (sem validação pesada)",
+    "Ports são ABC com abstractmethod (interfaces puras)",
+    "Use Cases validam regras e delegam persistência para repositories",
+    "Testes usam repositories fake em memória (sem banco real)"
   ],
   "pending_actions": [
-    "Instalar deps: python -m venv .venv; .\\.venv\\Scripts\\Activate.ps1; pip install -e \".[dev]\"",
-    "Rodar app: python src/main.py",
-    "Rodar pytest / ruff check . / black . / mypy",
-    "Futuro: gsd-plan-phase para iniciar execução planejada"
+    "Próxima etapa sugerida: conta bancária e contador (domain+application) ou UI de cadastro",
+    "Opcional: timestamps/auditoria e relacionamentos ORM nas próximas fases",
+    "Opcional: opt-in para DeepSeek V4 em https://opencode.ai/workspace/wrk_01KMKERC6AT7TRYSQW4HJK5RJ9/go"
   ],
   "recent_files": [
-    "pyproject.toml",
-    "src/main.py",
-    "src/infrastructure/database.py",
-    "src/infrastructure/logging_config.py",
-    "src/ui/main_window.py",
-    "src/ui/styles.py",
-    "tests/test_smoke.py",
-    "README.md"
+    "src/infrastructure/database/__init__.py",
+    "src/infrastructure/database/models/escritorio_model.py",
+    "src/infrastructure/database/models/empresa_model.py",
+    "src/infrastructure/database/repositories/sqlite_escritorio_repository.py",
+    "src/infrastructure/database/repositories/sqlite_empresa_repository.py",
+    "tests/integration/conftest.py",
+    "tests/integration/test_sqlite_escritorio_repository.py",
+    "tests/integration/test_sqlite_empresa_repository.py",
+    "tests/integration/test_e2e_use_cases.py",
+    "~/.config/opencode/opencode.json",
+    "~/.config/opencode/opencode.jsonc"
   ]
 }

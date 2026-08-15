@@ -1,7 +1,6 @@
 """Testes para os use cases de Empresa."""
 
 import pytest
-from tests.use_cases.fake_repositories import FakeEmpresaRepository
 
 from application.dto.empresa_dto import CadastrarEmpresaDTO, EditarEmpresaDTO
 from application.use_cases.empresa_use_cases import (
@@ -11,6 +10,7 @@ from application.use_cases.empresa_use_cases import (
     ListarEmpresasUseCase,
     ObterEmpresaUseCase,
 )
+from tests.use_cases.fake_repositories import FakeEmpresaRepository
 
 
 @pytest.fixture

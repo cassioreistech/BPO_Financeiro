@@ -5,7 +5,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+DATA_DIR = Path(__file__).resolve().parents[3] / "data"
 DATABASE_PATH = DATA_DIR / "bpo.db"
 
 engine = create_engine(
@@ -21,7 +21,9 @@ class Base(DeclarativeBase):
 
 
 def init_db() -> None:
-    """Garante o diretorio de dados e cria o schema base (vazio por enquanto)."""
+    """Garante o diretorio de dados e cria o schema conhecido pelos models."""
+    # Importacao registra os models no metadata do Base antes do create_all.
+    from infrastructure.database.models import EmpresaModel, EscritorioModel  # noqa: F401
+
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    # TODO(fase futura): importar models do dominio antes do create_all.
     Base.metadata.create_all(bind=engine)
