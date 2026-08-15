@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import re
+
+from PySide6.QtCore import QRegularExpression
+from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -47,6 +51,7 @@ class EmpresaFormView(QDialog):
         self._opcoes_escritorio = opcoes_escritorio
         self._empresa = empresa
         self._editando = empresa is not None
+        self._ignorar_sinal = False
 
         self._configurar_janela()
         self._montar_formulario()
@@ -55,7 +60,7 @@ class EmpresaFormView(QDialog):
     def _configurar_janela(self) -> None:
         titulo = "Editar Empresa" if self._editando else "Nova Empresa"
         self.setWindowTitle(titulo)
-        self.setMinimumWidth(480)
+        self.setMinimumWidth(520)
         self.setModal(True)
 
     def _montar_formulario(self) -> None:
@@ -74,8 +79,12 @@ class EmpresaFormView(QDialog):
         form.addRow("Escritorio:", self._combo_escritorio)
 
         self._campo_cnpj = QLineEdit()
-        self._campo_cnpj.setPlaceholderText("Somente digitos (14 digitos)")
-        self._campo_cnpj.setMaxLength(14)
+        self._campo_cnpj.setPlaceholderText("00.000.000/0000-00")
+        validator = QRegularExpressionValidator(
+            QRegularExpression(r"\d{0,14}")
+        )
+        self._campo_cnpj.setValidator(validator)
+        self._campo_cnpj.textChanged.connect(self._formatar_cnpj)
         form.addRow("CNPJ:", self._campo_cnpj)
 
         self._campo_razao = QLineEdit()
@@ -117,6 +126,34 @@ class EmpresaFormView(QDialog):
 
         layout.addLayout(botoes)
 
+    def _formatar_cnpj(self, texto: str) -> None:
+        if self._ignorar_sinal:
+            return
+        self._ignorar_sinal = True
+        digitos = re.sub(r"\D", "", texto)
+        if len(digitos) > 14:
+            digitos = digitos[:14]
+        formatado = self._aplicar_mascara_cnpj(digitos)
+        self._campo_cnpj.setText(formatado)
+        self._campo_cnpj.setCursorPosition(len(formatado))
+        self._ignorar_sinal = False
+
+    @staticmethod
+    def _aplicar_mascara_cnpj(digitos: str) -> str:
+        tamanho = len(digitos)
+        if tamanho <= 2:
+            return digitos
+        if tamanho <= 5:
+            return f"{digitos[:2]}.{digitos[2:]}"
+        if tamanho <= 8:
+            return f"{digitos[:2]}.{digitos[2:5]}.{digitos[5:]}"
+        if tamanho <= 12:
+            return f"{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/{digitos[8:]}"
+        return f"{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/{digitos[8:12]}-{digitos[12:]}"
+
+    def _obter_cnpj_digitos(self) -> str:
+        return re.sub(r"\D", "", self._campo_cnpj.text())
+
     def _preencher_se_edicao(self) -> None:
         if self._empresa is None:
             return
@@ -125,7 +162,8 @@ class EmpresaFormView(QDialog):
         if idx_esc >= 0:
             self._combo_escritorio.setCurrentIndex(idx_esc)
 
-        self._campo_cnpj.setText(self._empresa.cnpj)
+        digitos = re.sub(r"\D", "", self._empresa.cnpj)
+        self._campo_cnpj.setText(self._aplicar_mascara_cnpj(digitos))
         self._campo_razao.setText(self._empresa.razao_social)
         self._campo_fantasia.setText(self._empresa.nome_fantasia)
 
@@ -140,7 +178,7 @@ class EmpresaFormView(QDialog):
 
     def _salvar(self) -> None:
         escritorio_id = self._combo_escritorio.currentData()
-        cnpj = self._campo_cnpj.text().strip()
+        cnpj = self._obter_cnpj_digitos()
         razao = self._campo_razao.text().strip()
         fantasia = self._campo_fantasia.text().strip()
         regime = self._combo_regime.currentText()
@@ -166,11 +204,13 @@ class EmpresaFormView(QDialog):
         try:
             CNPJ(cnpj)
         except ValueError as e:
-            QMessageBox.warning(
-                self,
-                "CNPJ invalido",
-                f"{e}\n\nVerifique se o CNPJ esta correto com os digitos verificadores.",
-            )
+            msg = f"CNPJ: {cnpj}\n\n{e}"
+            if len(cnpj) >= 12:
+                base = cnpj[:12].ljust(12, "0")
+                dv_corretos = CNPJ.calcular_digitos_verificadores(base)
+                cnpj_correto = base + dv_corretos
+                msg += f"\n\nCNPJ correto: {cnpj_correto}"
+            QMessageBox.warning(self, "CNPJ invalido", msg)
             return
 
         try:
