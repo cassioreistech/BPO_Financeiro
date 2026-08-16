@@ -241,7 +241,9 @@ class TituloFormView(QDialog):
         if self._titulo is None:
             return
 
-        self._label_status.setText(formatar_status_titulo(self._titulo.status))
+        self._label_status.setText(
+            formatar_status_titulo(self._titulo.status, self._titulo.data_vencimento)
+        )
 
         data_quitacao = self._titulo.data_quitacao
         self._label_data_quitacao.setText(

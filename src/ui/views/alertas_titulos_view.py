@@ -401,7 +401,7 @@ class AlertasTitulosView(QWidget):
             self._tabela.setItem(
                 i,
                 6,
-                criar_item_centralizado(formatar_status_titulo(item.status)),
+                criar_item_centralizado(formatar_status_titulo(item.status, item.data_vencimento)),
             )
             self._tabela.setItem(
                 i, 7, criar_item_centralizado(self.ROTULOS_GRUPOS[item.urgencia])

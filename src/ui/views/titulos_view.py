@@ -471,7 +471,7 @@ class TitulosView(QWidget):
             )
             self._tabela.setItem(i, 3, QTableWidgetItem(t.tipo))
             self._tabela.setItem(
-                i, 4, QTableWidgetItem(formatar_status_titulo(t.status))
+                i, 4, QTableWidgetItem(formatar_status_titulo(t.status, t.data_vencimento))
             )
             self._tabela.setItem(
                 i, 5, criar_item_centralizado(self._formatar_valor(t.valor))
