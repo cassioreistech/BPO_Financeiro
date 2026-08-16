@@ -58,8 +58,8 @@ class AlertasTitulosView(QWidget):
     ]
 
     CORES_URGENCIA = {
-        "CRITICO": ("#c62828", "#ffebee"),
-        "ALTO": ("#ef6c00", "#fff3e0"),
+        "CRITICO": ("#b71c1c", "#ffcdd2"),
+        "ALTO": ("#e65100", "#fbe9e7"),
         "MEDIO": ("#1565c0", "#e3f2fd"),
         "INFORMATIVO": ("#2e7d32", "#e8f5e9"),
     }

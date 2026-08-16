@@ -518,11 +518,11 @@ class TitulosView(QWidget):
         if titulo.status == "CANCELADO":
             return "#757575", "#eeeeee"
         if titulo.data_vencimento < date.today():
-            return "#c62828", "#ffebee"
+            return "#b71c1c", "#ffcdd2"
         if titulo.tipo == "RECEBER":
             return "#1565c0", "#e3f2fd"
         if titulo.tipo == "PAGAR":
-            return "#ef6c00", "#fff3e0"
+            return "#e65100", "#fbe9e7"
         return "#000000", "#ffffff"
 
     def _data_filtro_venc_ini(self) -> date | None:
