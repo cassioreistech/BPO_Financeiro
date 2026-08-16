@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro (Python desktop)",
   "version": "1.0",
   "token_saving_mode": true,
-  "last_summary": "Filtros avancados e busca na tela de Titulos implementados. SituacaoVencimento para filtros rapidos; FiltroTitulosDTO com texto, categoria, tipo, status, periodo vencimento, situacao; list_filtered no repository e use case; TitulosView reorganizada com contagem, limpar mantendo empresa ativa, botoes rapidos. Mapeamento PAGO->QUITADO preservado. Testes unitarios e integracao. pytest, ruff, mypy limpos.",
-  "current_task": "Filtros avancados de Titulos concluidos. Commit realizado.",
+  "last_summary": "Varias melhorias de UI/UX: marca dagua REISTECH; backup/restore com dialogs de arquivo; delegate visual com selecao translucida; busca por ID; coluna Pagamento centralizada; status VENCIDO para titulos abertos vencidos; cores semanticas ajustadas (vermelho mais escuro, laranja substituido por azul). Dashboard simplificado sem combo local de empresa. pytest, ruff, mypy limpos.",
+  "current_task": "Melhorias de UI/UX concluidas. Commits realizados.",
   "key_decisions": [
     "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
     "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
@@ -29,19 +29,29 @@
     "FiltroTitulosDTO centraliza todos os filtros de Titulos",
     "list_filtered no repository aplica filtros no banco via SQLAlchemy",
     "TitulosView usa filtros no banco; contagem de resultados; limpar preserva empresa ativa",
-    "Ordenacao padrao: data_vencimento ASC, status ASC, descricao ASC"
+    "Ordenacao padrao: data_vencimento ASC, status ASC, descricao ASC",
+    "Marca dagua REISTECH no rodapé da sidebar",
+    "Backup/Restore com dialogs de arquivo nativo (Salvar como / Abrir)",
+    "SemanticTableDelegate com selecao translucida que preserva cores semanticas",
+    "Status VENCIDO para titulos ABERTOS com vencimento passado (derivado, nao persistido)",
+    "Busca por ID na tela de Titulos (se texto for inteiro, busca ID exato)",
+    "Coluna Pagamento centralizada na tabela de Titulos",
+    "Cores semanticas: verde forte QUITADO, vermelho escuro VENCIDO, azul ABERTO, cinza CANCELADO",
+    "Dashboard sem combo local de empresa; usa EmpresaContextService global"
   ],
   "pending_actions": [
     "Atualizar documentacao GSD se necessario"
   ],
   "recent_files": [
-    "src/domain/enums/situacao_vencimento.py",
-    "src/application/dto/titulo_dto.py",
-    "src/application/use_cases/titulo_use_cases.py",
-    "src/application/ports/titulo_repository.py",
-    "src/infrastructure/database/repositories/sqlite_titulo_repository.py",
+    "src/ui/views/status_formatter.py",
+    "src/ui/views/table_delegate.py",
     "src/ui/views/titulos_view.py",
-    "src/tests/test_titulo_filtros_use_cases.py",
-    "src/tests/test_sqlite_titulo_repository_filtros.py"
+    "src/ui/views/alertas_titulos_view.py",
+    "src/ui/views/dashboard_view.py",
+    "src/ui/views/titulo_form_view.py",
+    "src/ui/main_window.py",
+    "src/application/services/backup_service.py",
+    "src/infrastructure/database/repositories/sqlite_titulo_repository.py",
+    "src/tests/test_status_formatter.py"
   ]
 }
