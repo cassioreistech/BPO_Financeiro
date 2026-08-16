@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Sistema BPO Financeiro
 
 Sistema **desktop** de BPO Financeiro para escritórios de contabilidade no Brasil.
@@ -89,3 +90,7 @@ mypy            # typecheck
 
 O banco SQLite é criado automaticamente em `data/bpo.db` na primeira execução
 (o diretório `data/` também é criado automaticamente).
+=======
+# BPO_Financeiro
+Programa Financeiro para Contabilidade pequeno porte.
+>>>>>>> 14a19c1ac5b2789b85407126b2d671cb25004234
