@@ -522,7 +522,7 @@ class TitulosView(QWidget):
         if titulo.tipo == "RECEBER":
             return "#0d47a1", "#bbdefb"
         if titulo.tipo == "PAGAR":
-            return "#bf360c", "#ffab91"
+            return "#0d47a1", "#bbdefb"
         return "#000000", "#ffffff"
 
     def _data_filtro_venc_ini(self) -> date | None:
