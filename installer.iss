@@ -1,9 +1,12 @@
 ; Inno Setup Script para Sistema BPO Financeiro
 ; Gera instalador Windows com atalho na área de trabalho
 ; Mitigações para SmartScreen e antivírus
+; Uso: iscc /DMyAppVersion=1.0.1 installer.iss
 
 #define MyAppName "Sistema BPO Financeiro"
-#define MyAppVersion "1.0.0"
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.0"
+#endif
 #define MyAppPublisher "Sistema BPO Financeiro"
 #define MyAppURL "https://sistema-bpo-financeiro.com"
 #define MyAppExeName "SistemaBPOFinanceiro.exe"

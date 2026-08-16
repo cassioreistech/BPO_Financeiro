@@ -1,0 +1,155 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  APP_NAME: SistemaBPOFinanceiro
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pyinstaller
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller --clean --noconfirm build.spec
+
+      - name: Verify executable exists
+        run: |
+          if (Test-Path "dist\${{ env.APP_NAME }}.exe") {
+            Write-Host "Executavel encontrado: dist\${{ env.APP_NAME }}.exe"
+            $size = (Get-Item "dist\${{ env.APP_NAME }}.exe").Length
+            Write-Host "Tamanho: $([math]::Round($size/1MB, 2)) MB"
+          } else {
+            Write-Error "Executavel NAO encontrado!"
+            exit 1
+          }
+
+      - name: Install Inno Setup
+        run: |
+          $url = "https://files.jrsoftware.org/is/6/isetup-6.2.2.exe"
+          $installer = "$env:TEMP\isetup.exe"
+          Invoke-WebRequest -Uri $url -OutFile $installer
+          $args = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-"
+          Start-Process -FilePath $installer -ArgumentList $args -Wait
+          Remove-Item $installer -Force
+
+      - name: Add Inno Setup to PATH
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (Test-Path $iscc) {
+            echo "$iscc" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          } else {
+            Write-Error "ISCC.exe nao encontrado apos instalacao"
+            exit 1
+          }
+
+      - name: Build installer with Inno Setup
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          iscc /DMyAppVersion=$version installer.iss
+
+      - name: Verify installer
+        run: |
+          $installerPath = "dist\installer\${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe"
+          if (Test-Path $installerPath) {
+            $size = (Get-Item $installerPath).Length
+            Write-Host "Instalador: $installerPath"
+            Write-Host "Tamanho: $([math]::Round($size/1MB, 2)) MB"
+            echo "INSTALLER_PATH=$installerPath" >> $env:GITHUB_ENV
+          } else {
+            Write-Error "Instalador NAO encontrado!"
+            Get-ChildItem dist\installer\ -Recurse
+            exit 1
+          }
+
+      - name: Create checksums
+        run: |
+          $exePath = "dist\${{ env.APP_NAME }}.exe"
+          $instPath = $env:INSTALLER_PATH
+          
+          $exeHash = Get-FileHash -Algorithm SHA256 $exePath
+          $instHash = Get-FileHash -Algorithm SHA256 $instPath
+          
+          "SHA256 (${{ env.APP_NAME }}.exe) = $($exeHash.Hash)" | Out-File -FilePath "dist\SHA256SUMS.txt" -Encoding utf8
+          "SHA256 (${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe) = $($instHash.Hash)" | Out-File -FilePath "dist\SHA256SUMS.txt" -Encoding utf8 -Append
+          
+          Get-Content "dist\SHA256SUMS.txt"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ env.APP_NAME }} ${{ github.ref_name }}
+          body: |
+            ## ${{ env.APP_NAME }} ${{ github.ref_name }}
+            
+            ### Downloads
+            - **Instalador Windows** (recomendado): `${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe`
+            - **Executável standalone**: `${{ env.APP_NAME }}.exe`
+            
+            ### Verificação de integridade
+            ```
+            $(Get-Content dist\SHA256SUMS.txt)
+            ```
+            
+            ### Instalação
+            1. Baixe o instalador
+            2. Execute como administrador (necessário para Program Files)
+            3. Marque "Criar atalho na área de trabalho" se desejar
+            4. O sistema remove automaticamente o aviso do SmartScreen
+            
+            ### Para desenvolvedores
+            - Build reproduzível via GitHub Actions
+            - Assinado pelo GitHub (reputação SmartScreen)
+            - SHA256 disponível para verificação
+          draft: false
+          prerelease: false
+          files: |
+            dist/${{ env.APP_NAME }}.exe
+            dist/installer/${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe
+            dist/SHA256SUMS.txt
+
+      - name: Upload artifacts (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ github.event.inputs.version }}
+          path: |
+            dist/${{ env.APP_NAME }}.exe
+            dist/installer/${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe
+            dist/SHA256SUMS.txt
+          retention-days: 30
