@@ -496,14 +496,13 @@ class MainWindow(QMainWindow):
         btn_restaurar.clicked.connect(self._restaurar_backup)
         config_layout.addWidget(btn_restaurar)
 
-        layout.addWidget(self._config_container)
+        btn_backup = QPushButton("    Backup")
+        btn_backup.setObjectName("navButtonConfig")
+        btn_backup.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_backup.clicked.connect(self._criar_backup)
+        config_layout.addWidget(btn_backup)
 
-        # Botão Backup
-        self._btn_backup = QPushButton("  Backup")
-        self._btn_backup.setObjectName("navButton")
-        self._btn_backup.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._btn_backup.clicked.connect(self._criar_backup)
-        layout.addWidget(self._btn_backup)
+        layout.addWidget(self._config_container)
 
         layout.addStretch()
 

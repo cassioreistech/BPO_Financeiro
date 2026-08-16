@@ -514,15 +514,15 @@ class TitulosView(QWidget):
     def _cores_linha(self, titulo: TituloResponseDTO) -> tuple[str, str]:
         """Retorna (cor_texto, cor_fundo) para a linha do titulo."""
         if titulo.status == "PAGO":
-            return "#2e7d32", "#e8f5e9"
+            return "#1b5e20", "#a5d6a7"
         if titulo.status == "CANCELADO":
             return "#757575", "#eeeeee"
         if titulo.data_vencimento < date.today():
             return "#b71c1c", "#ffcdd2"
         if titulo.tipo == "RECEBER":
-            return "#1565c0", "#e3f2fd"
+            return "#0d47a1", "#bbdefb"
         if titulo.tipo == "PAGAR":
-            return "#e65100", "#fbe9e7"
+            return "#bf360c", "#ffab91"
         return "#000000", "#ffffff"
 
     def _data_filtro_venc_ini(self) -> date | None:
