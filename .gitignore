@@ -13,3 +13,9 @@ venv/
 # Dados locais
 data/
 *.db
+
+# Build artifacts
+build/
+dist/
+*.exe
+*.msi
