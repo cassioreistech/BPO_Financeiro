@@ -16,8 +16,12 @@ def _garantir_diretorio_backup() -> None:
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def criar_backup() -> Path:
+def criar_backup(destino: Path | None = None) -> Path:
     """Cria um backup do banco de dados.
+
+    Args:
+        destino: caminho completo do arquivo de destino.
+                 Se None, salva no diretorio padrao com timestamp.
 
     Returns:
         Path do arquivo de backup criado.
@@ -28,11 +32,14 @@ def criar_backup() -> Path:
     if not DATABASE_PATH.exists():
         raise FileNotFoundError("Banco de dados nao encontrado para backup.")
 
-    _garantir_diretorio_backup()
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = BACKUP_DIR / f"bpo_backup_{timestamp}.db"
-    shutil.copy2(DATABASE_PATH, backup_path)
-    return backup_path
+    if destino is None:
+        _garantir_diretorio_backup()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        destino = BACKUP_DIR / f"bpo_backup_{timestamp}.db"
+
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(DATABASE_PATH, destino)
+    return destino
 
 
 def listar_backups() -> list[Path]:

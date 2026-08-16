@@ -326,17 +326,34 @@ class MainWindow(QMainWindow):
             self._view_alertas.atualizar()
 
     def _criar_backup(self) -> None:
-        """Cria um backup do banco de dados."""
-        from PySide6.QtWidgets import QMessageBox
+        """Cria um backup do banco de dados pedindo onde salvar."""
+        from datetime import datetime
+
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
 
         from application.services.backup_service import criar_backup
 
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nome_padrao = f"bpo_backup_{timestamp}.db"
+
+        arquivo, _ = QFileDialog.getSaveFileName(
+            self,
+            "Salvar Backup",
+            nome_padrao,
+            "Banco de dados (*.db);;Todos os arquivos (*)",
+        )
+        if not arquivo:
+            return
+
+        if not arquivo.endswith(".db"):
+            arquivo += ".db"
+
         try:
-            backup_path = criar_backup()
+            backup_path = criar_backup(Path(arquivo))
             QMessageBox.information(
                 self,
                 "Backup realizado",
-                f"Backup criado com sucesso:\n{backup_path.name}",
+                f"Backup criado com sucesso:\n{backup_path}",
             )
         except Exception as e:
             QMessageBox.warning(
@@ -346,65 +363,25 @@ class MainWindow(QMainWindow):
             )
 
     def _restaurar_backup(self) -> None:
-        """Restaura o banco de dados a partir de um backup."""
-        from PySide6.QtWidgets import (
-            QComboBox,
-            QDialog,
-            QHBoxLayout,
-            QLabel,
-            QMessageBox,
-            QPushButton,
-            QVBoxLayout,
-        )
+        """Restaura o banco de dados a partir de um arquivo de backup."""
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
 
         from application.services.backup_service import (
             criar_backup,
-            formatar_nome_backup,
-            listar_backups,
             restaurar_backup,
         )
 
-        backups = listar_backups()
-        if not backups:
-            QMessageBox.information(
-                self,
-                "Sem backups",
-                "Nenhum backup encontrado para restaurar.",
-            )
+        arquivo, _ = QFileDialog.getOpenFileName(
+            self,
+            "Selecionar Backup para Restaurar",
+            "",
+            "Banco de dados (*.db);;Todos os arquivos (*)",
+        )
+        if not arquivo:
             return
 
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Restaurar Backup")
-        dialog.setMinimumWidth(350)
-        dialog.setModal(True)
+        backup_selecionado = Path(arquivo)
 
-        layout = QVBoxLayout(dialog)
-
-        lbl = QLabel("Selecione o backup para restaurar:")
-        layout.addWidget(lbl)
-
-        combo = QComboBox()
-        for bp in backups:
-            combo.addItem(formatar_nome_backup(bp), str(bp))
-        layout.addWidget(combo)
-
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
-
-        btn_cancelar = QPushButton("Cancelar")
-        btn_cancelar.clicked.connect(dialog.reject)
-        btn_layout.addWidget(btn_cancelar)
-
-        btn_restaurar = QPushButton("Restaurar")
-        btn_restaurar.clicked.connect(dialog.accept)
-        btn_layout.addWidget(btn_restaurar)
-
-        layout.addLayout(btn_layout)
-
-        if dialog.exec() != QDialog.DialogCode.Accepted:
-            return
-
-        backup_selecionado = Path(combo.currentData())
         confirmacao = QMessageBox.question(
             self,
             "Confirmar restauracao",

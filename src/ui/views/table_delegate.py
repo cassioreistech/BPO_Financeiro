@@ -10,10 +10,10 @@ from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 class SemanticTableDelegate(QStyledItemDelegate):
     """Delegate que preserva cores semanticas e aplica selecao translucida."""
 
-    # Cores de seleção translucida
-    SELECTION_BG = QColor(33, 150, 243, 50)
-    SELECTION_BG_HOVER = QColor(33, 150, 243, 70)
-    SELECTION_BORDER = QColor(33, 150, 243, 180)
+    # Cores de seleção translucida (mais transparente)
+    SELECTION_BG = QColor(33, 150, 243, 25)
+    SELECTION_BG_HOVER = QColor(33, 150, 243, 40)
+    SELECTION_BORDER = QColor(33, 150, 243, 100)
 
     def paint(
         self,
