@@ -2,6 +2,8 @@ name: Build Windows Installer
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -76,14 +78,41 @@ jobs:
             exit 1
           }
 
+      - name: Determine version
+        id: version
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $ver = "${{ github.event.inputs.version }}".TrimStart('v')
+            echo "version=$ver" >> $env:GITHUB_OUTPUT
+            echo "tag_name=v$ver" >> $env:GITHUB_OUTPUT
+            echo "release_name=$ver" >> $env:GITHUB_OUTPUT
+            echo "is_prerelease=false" >> $env:GITHUB_OUTPUT
+          } elseif ("${{ github.ref_type }}" -eq "tag") {
+            $ver = "${{ github.ref_name }}".TrimStart('v')
+            echo "version=$ver" >> $env:GITHUB_OUTPUT
+            echo "tag_name=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
+            echo "release_name=$ver" >> $env:GITHUB_OUTPUT
+            echo "is_prerelease=false" >> $env:GITHUB_OUTPUT
+          } else {
+            # main branch push - use commit short SHA + date
+            $date = Get-Date -Format "yyyyMMdd"
+            $sha = "${{ github.sha }}".Substring(0, 7)
+            $ver = "nightly-$date-$sha"
+            echo "version=$ver" >> $env:GITHUB_OUTPUT
+            echo "tag_name=nightly-latest" >> $env:GITHUB_OUTPUT
+            echo "release_name=Nightly Build $date" >> $env:GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $env:GITHUB_OUTPUT
+          }
+
       - name: Build installer with Inno Setup
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
+          $version = "${{ steps.version.outputs.version }}"
           iscc /DMyAppVersion=$version installer.iss
 
       - name: Verify installer
         run: |
-          $installerPath = "dist\installer\${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe"
+          $version = "${{ steps.version.outputs.version }}"
+          $installerPath = "dist\installer\${{ env.APP_NAME }}_Setup_$version.exe"
           if (Test-Path $installerPath) {
             $size = (Get-Item $installerPath).Length
             Write-Host "Instalador: $installerPath"
@@ -104,21 +133,25 @@ jobs:
           $instHash = Get-FileHash -Algorithm SHA256 $instPath
           
           "SHA256 (${{ env.APP_NAME }}.exe) = $($exeHash.Hash)" | Out-File -FilePath "dist\SHA256SUMS.txt" -Encoding utf8
-          "SHA256 (${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe) = $($instHash.Hash)" | Out-File -FilePath "dist\SHA256SUMS.txt" -Encoding utf8 -Append
+          "SHA256 (${{ env.APP_NAME }}_Setup_${{ steps.version.outputs.version }}.exe) = $($instHash.Hash)" | Out-File -FilePath "dist\SHA256SUMS.txt" -Encoding utf8 -Append
           
           Get-Content "dist\SHA256SUMS.txt"
 
-      - name: Create Release
+      - name: Create/Update Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ env.APP_NAME }} ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          name: ${{ env.APP_NAME }} ${{ steps.version.outputs.release_name }}
           body: |
-            ## ${{ env.APP_NAME }} ${{ github.ref_name }}
+            ## ${{ env.APP_NAME }} ${{ steps.version.outputs.release_name }}
+            
+            **Build:** `${{ steps.version.outputs.version }}`
+            **Commit:** `${{ github.sha }}`
+            **Branch:** `${{ github.ref_name }}`
+            **Data:** ${{ steps.version.outputs.version != 'nightly' && github.event.head_commit.timestamp || '' }}
             
             ### Downloads
-            - **Instalador Windows** (recomendado): `${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe`
+            - **Instalador Windows** (recomendado): `${{ env.APP_NAME }}_Setup_${{ steps.version.outputs.version }}.exe`
             - **Executável standalone**: `${{ env.APP_NAME }}.exe`
             
             ### Verificação de integridade
@@ -137,10 +170,11 @@ jobs:
             - Assinado pelo GitHub (reputação SmartScreen)
             - SHA256 disponível para verificação
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.version.outputs.is_prerelease }}
+          make_latest: ${{ steps.version.outputs.is_prerelease != 'true' }}
           files: |
             dist/${{ env.APP_NAME }}.exe
-            dist/installer/${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe
+            dist/installer/${{ env.APP_NAME }}_Setup_${{ steps.version.outputs.version }}.exe
             dist/SHA256SUMS.txt
 
       - name: Upload artifacts (manual trigger)
@@ -150,6 +184,6 @@ jobs:
           name: ${{ env.APP_NAME }}-${{ github.event.inputs.version }}
           path: |
             dist/${{ env.APP_NAME }}.exe
-            dist/installer/${{ env.APP_NAME }}_Setup_${{ github.ref_name }}.exe
+            dist/installer/${{ env.APP_NAME }}_Setup_${{ steps.version.outputs.version }}.exe
             dist/SHA256SUMS.txt
           retention-days: 30
