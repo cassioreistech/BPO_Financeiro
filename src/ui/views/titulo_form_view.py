@@ -6,8 +6,10 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import cast
 
+from dateutil.relativedelta import relativedelta
 from PySide6.QtCore import QDate
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDateEdit,
     QDialog,
@@ -17,6 +19,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QSpinBox,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -155,6 +158,27 @@ class TituloFormView(QDialog):
         self._campo_observacao.setPlaceholderText("Observacoes opcionais")
         form.addRow("Observacao:", self._campo_observacao)
 
+        # Secao de replicacao (apenas para novo titulo)
+        self._check_replicar = QCheckBox("Replicar lancamento mensal")
+        self._check_replicar.setCursor(Qt.CursorShape.PointingHandCursor)
+        form.addRow("", self._check_replicar)
+
+        replica_layout = QHBoxLayout()
+        replica_layout.setSpacing(8)
+        lbl_vezes = QLabel("Vezes:")
+        self._spin_vezes = QSpinBox()
+        self._spin_vezes.setRange(2, 60)
+        self._spin_vezes.setValue(12)
+        self._spin_vezes.setSuffix("x")
+        self._spin_vezes.setMinimumWidth(80)
+        self._spin_vezes.setEnabled(False)
+        replica_layout.addWidget(lbl_vezes)
+        replica_layout.addWidget(self._spin_vezes)
+        replica_layout.addStretch()
+        form.addRow("", replica_layout)
+
+        self._check_replicar.toggled.connect(self._spin_vezes.setEnabled)
+
         # Secao de dados da quitacao (somente leitura)
         self._secao_quitacao = QWidget()
         form_quitacao = QFormLayout(self._secao_quitacao)
@@ -206,6 +230,10 @@ class TituloFormView(QDialog):
         if self._titulo is None:
             self._secao_quitacao.setVisible(False)
             return
+
+        self._check_replicar.setVisible(False)
+        self._spin_vezes.setVisible(False)
+        self._check_replicar.setChecked(False)
 
         self._selecionar_por_id(self._combo_empresa, self._titulo.empresa_id)
 
@@ -381,25 +409,43 @@ class TituloFormView(QDialog):
                     self, "Sucesso", "Titulo atualizado com sucesso."
                 )
             else:
-                dto_criar = CadastrarTituloDTO(
-                    escritorio_id=escritorio_id,
-                    empresa_id=empresa_id,
-                    plano_conta_id=self._plano_conta_id,
-                    centro_custo_id=None,
-                    numero_documento=numero_documento,
-                    codigo_barras=codigo_barras,
-                    categoria=categoria,
-                    descricao=descricao,
-                    tipo=tipo,
-                    valor=valor,
-                    data_emissao=data_emissao,
-                    data_vencimento=data_vencimento,
-                    observacao=observacao,
-                )
-                self._criar.execute(dto_criar)
-                QMessageBox.information(
-                    self, "Sucesso", "Titulo criado com sucesso."
-                )
+                replicar = self._check_replicar.isChecked()
+                vezes = self._spin_vezes.value() if replicar else 1
+
+                for i in range(vezes):
+                    venc = data_vencimento + relativedelta(months=i)
+                    desc = descricao
+                    if vezes > 1:
+                        seq = f" ({i + 1:02d}/{vezes:02d})"
+                        desc = f"{descricao}{seq}"
+
+                    dto_criar = CadastrarTituloDTO(
+                        escritorio_id=escritorio_id,
+                        empresa_id=empresa_id,
+                        plano_conta_id=self._plano_conta_id,
+                        centro_custo_id=None,
+                        numero_documento=numero_documento,
+                        codigo_barras=codigo_barras,
+                        categoria=categoria,
+                        descricao=desc,
+                        tipo=tipo,
+                        valor=valor,
+                        data_emissao=data_emissao,
+                        data_vencimento=venc,
+                        observacao=observacao,
+                    )
+                    self._criar.execute(dto_criar)
+
+                if vezes > 1:
+                    QMessageBox.information(
+                        self,
+                        "Sucesso",
+                        f"{vezes} titulos criados com sucesso.",
+                    )
+                else:
+                    QMessageBox.information(
+                        self, "Sucesso", "Titulo criado com sucesso."
+                    )
             self.accept()
         except ValueError as e:
             QMessageBox.warning(self, "Erro", str(e))
