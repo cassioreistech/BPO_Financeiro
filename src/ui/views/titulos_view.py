@@ -7,7 +7,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, cast
 
-from PySide6.QtCore import QDate, Qt
+from PySide6.QtCore import QDate, QTimer, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
@@ -309,6 +309,20 @@ class TitulosView(QWidget):
         # Stretch na ultima coluna para empurrar tudo para a esquerda
         filtros.setColumnStretch(9, 1)
 
+        # Auto-atualizar ao alterar filtros
+        self._timer_filtro = QTimer(self)
+        self._timer_filtro.setSingleShot(True)
+        self._timer_filtro.setInterval(300)
+        self._timer_filtro.timeout.connect(self.atualizar_lista)
+
+        self._campo_busca.textChanged.connect(self._agendar_atualizacao)
+        self._combo_filtro_status.currentIndexChanged.connect(self.atualizar_lista)
+        self._combo_filtro_categoria.currentIndexChanged.connect(self.atualizar_lista)
+        self._combo_filtro_tipo.currentIndexChanged.connect(self.atualizar_lista)
+        self._date_filtro_venc_ini.dateChanged.connect(self.atualizar_lista)
+        self._date_filtro_venc_fim.dateChanged.connect(self.atualizar_lista)
+        self._combo_filtro_situacao.currentIndexChanged.connect(self.atualizar_lista)
+
         layout.addLayout(filtros)
 
         self._tabela = QTableWidget()
@@ -512,6 +526,10 @@ class TitulosView(QWidget):
                     item.setBackground(self._cor(cor_fundo))
 
         self._atualizar_label_resultados(len(titulos))
+
+    def _agendar_atualizacao(self) -> None:
+        """Reinicia o timer para auto-atualizar apos 300ms de inatividade."""
+        self._timer_filtro.start()
 
     def _atualizar_label_resultados(self, quantidade: int) -> None:
         """Atualiza o label de contagem de resultados."""
