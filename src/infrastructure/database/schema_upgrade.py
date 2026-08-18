@@ -35,6 +35,7 @@ def _upgrade_titulos(engine: Engine) -> None:
         "conta_bancaria_id": "INTEGER",
         "forma_pagamento": "VARCHAR(20) DEFAULT 'OUTRO'",
         "observacao_quitacao": "VARCHAR(500)",
+        "emitente": "VARCHAR(255)",
     }
 
     with engine.begin() as conn:

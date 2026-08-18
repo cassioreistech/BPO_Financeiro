@@ -60,3 +60,6 @@ class TituloModel(Base):
     observacao_quitacao: Mapped[str | None] = mapped_column(
         String(500), nullable=True
     )
+    emitente: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )

@@ -44,6 +44,7 @@ def _para_model(titulo: Titulo) -> TituloModel:
         conta_bancaria_id=titulo.conta_bancaria_id,
         forma_pagamento=titulo.forma_pagamento.value,
         observacao_quitacao=titulo.observacao_quitacao,
+        emitente=titulo.emitente,
     )
 
 
@@ -70,6 +71,7 @@ def _para_entidade(model: TituloModel) -> Titulo:
         forma_pagamento=FormaPagamento(model.forma_pagamento),
         observacao=model.observacao,
         observacao_quitacao=model.observacao_quitacao,
+        emitente=model.emitente,
     )
 
 
@@ -122,6 +124,7 @@ class SQLiteTituloRepository(TituloRepository):
             model.conta_bancaria_id = titulo.conta_bancaria_id
             model.forma_pagamento = titulo.forma_pagamento.value
             model.observacao_quitacao = titulo.observacao_quitacao
+            model.emitente = titulo.emitente
 
             session.commit()
             session.refresh(model)

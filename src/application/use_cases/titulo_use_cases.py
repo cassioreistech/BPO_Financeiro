@@ -43,6 +43,7 @@ def _para_response_dto(titulo: Titulo) -> TituloResponseDTO:
         forma_pagamento=titulo.forma_pagamento.value,
         observacao=titulo.observacao,
         observacao_quitacao=titulo.observacao_quitacao,
+        emitente=titulo.emitente,
     )
 
 
@@ -137,6 +138,7 @@ class CadastrarTituloUseCase:
             data_emissao=dto.data_emissao,
             data_vencimento=dto.data_vencimento,
             observacao=dto.observacao.strip() if dto.observacao else None,
+            emitente=dto.emitente.strip() if dto.emitente else None,
         )
 
         salvo = self._repository.create(titulo)
@@ -192,6 +194,7 @@ class EditarTituloUseCase:
             else FormaPagamento.OUTRO,
             observacao=dto.observacao.strip() if dto.observacao else None,
             observacao_quitacao=existente.observacao_quitacao,
+            emitente=dto.emitente.strip() if dto.emitente else None,
         )
 
         salvo = self._repository.update(titulo)
@@ -329,6 +332,7 @@ class QuitarTituloUseCase:
             forma_pagamento=existente.forma_pagamento,
             observacao=existente.observacao,
             observacao_quitacao=existente.observacao_quitacao,
+            emitente=existente.emitente,
         )
 
         titulo.quitar(
@@ -379,6 +383,7 @@ class CancelarTituloUseCase:
             conta_bancaria_id=None,
             forma_pagamento=FormaPagamento.OUTRO,
             observacao=existente.observacao,
+            emitente=existente.emitente,
         )
 
         salvo = self._repository.update(titulo)

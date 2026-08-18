@@ -36,6 +36,7 @@ class Titulo:
         conta_bancaria_id: conta bancaria utilizada na quitacao (opcional)
         forma_pagamento: forma de pagamento/recebimento da quitacao
         observacao: observacoes extras (opcional)
+        emitente: nome do emitente/fornecedor do titulo (opcional)
     """
 
     escritorio_id: int
@@ -58,6 +59,7 @@ class Titulo:
     forma_pagamento: FormaPagamento = FormaPagamento.OUTRO
     observacao: str | None = None
     observacao_quitacao: str | None = None
+    emitente: str | None = None
 
     def __post_init__(self) -> None:
         if self.escritorio_id <= 0:

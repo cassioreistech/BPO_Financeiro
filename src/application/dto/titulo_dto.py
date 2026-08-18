@@ -38,6 +38,7 @@ class CadastrarTituloDTO:
     codigo_barras: str | None = None
     categoria: str = "OUTRO"
     observacao: str | None = None
+    emitente: str | None = None
 
 
 @dataclass(frozen=True)
@@ -58,6 +59,7 @@ class EditarTituloDTO:
     codigo_barras: str | None = None
     categoria: str = "OUTRO"
     observacao: str | None = None
+    emitente: str | None = None
 
 
 @dataclass(frozen=True)
@@ -97,3 +99,4 @@ class TituloResponseDTO:
     forma_pagamento: str
     observacao: str | None
     observacao_quitacao: str | None
+    emitente: str | None = None

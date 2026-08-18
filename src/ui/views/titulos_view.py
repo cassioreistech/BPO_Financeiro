@@ -75,6 +75,7 @@ class TitulosView(QWidget):
         "ID",
         "Categoria",
         "Descricao",
+        "Emitente",
         "Tipo",
         "Status",
         "Valor",
@@ -359,12 +360,12 @@ class TitulosView(QWidget):
         # Larguras fixas para colunas pequenas
         larguras_fixas = {
             0: 60,   # ID
-            3: 80,   # Tipo
-            4: 90,   # Status
-            5: 110,  # Valor
-            6: 110,  # Valor Pago
-            7: 130,  # Forma Pagamento
-            8: 100,  # Vencimento
+            4: 80,   # Tipo
+            5: 90,   # Status
+            6: 110,  # Valor
+            7: 110,  # Valor Pago
+            8: 130,  # Forma Pagamento
+            9: 100,  # Vencimento
         }
         for coluna, largura in larguras_fixas.items():
             header.setSectionResizeMode(coluna, QHeaderView.ResizeMode.Fixed)
@@ -372,6 +373,9 @@ class TitulosView(QWidget):
 
         # Categoria ajusta ao conteudo
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+
+        # Emitente ajusta ao conteudo
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
 
         # Descricao ocupa o espaco restante
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
@@ -471,12 +475,15 @@ class TitulosView(QWidget):
             self._tabela.setItem(
                 i, 2, criar_item_centralizado(t.descricao)
             )
-            self._tabela.setItem(i, 3, QTableWidgetItem(t.tipo))
             self._tabela.setItem(
-                i, 4, QTableWidgetItem(formatar_status_titulo(t.status, t.data_vencimento))
+                i, 3, criar_item_centralizado(t.emitente or "")
+            )
+            self._tabela.setItem(i, 4, QTableWidgetItem(t.tipo))
+            self._tabela.setItem(
+                i, 5, QTableWidgetItem(formatar_status_titulo(t.status, t.data_vencimento))
             )
             self._tabela.setItem(
-                i, 5, criar_item_centralizado(self._formatar_valor(t.valor))
+                i, 6, criar_item_centralizado(self._formatar_valor(t.valor))
             )
             valor_pago_texto = (
                 self._formatar_valor(t.valor_pago)
@@ -484,14 +491,14 @@ class TitulosView(QWidget):
                 else "—"
             )
             self._tabela.setItem(
-                i, 6, criar_item_centralizado(valor_pago_texto)
+                i, 7, criar_item_centralizado(valor_pago_texto)
             )
             self._tabela.setItem(
-                i, 7, criar_item_centralizado(t.forma_pagamento)
+                i, 8, criar_item_centralizado(t.forma_pagamento)
             )
             self._tabela.setItem(
                 i,
-                8,
+                9,
                 criar_item_centralizado(
                     t.data_vencimento.strftime("%d/%m/%Y")
                 ),

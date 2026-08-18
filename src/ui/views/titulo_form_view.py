@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from typing import cast
 
 from dateutil.relativedelta import relativedelta
-from PySide6.QtCore import QDate, Qt
+from PySide6.QtCore import QDate, QEvent, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -76,10 +76,25 @@ class TituloFormView(QDialog):
 
         self._configurar_janela()
         self._montar_formulario()
+        self._instalar_event_filter_datas()
         self._preencher_se_edicao()
         self._selecionar_escritorio_inicial(empresa_id)
         if self._somente_leitura:
             self._configurar_somente_leitura()
+
+    def eventFilter(self, obj: QWidget, event: QEvent) -> bool:
+        if isinstance(obj, QDateEdit) and event.type() in (
+            QEvent.Type.MouseButtonPress,
+            QEvent.Type.MouseButtonRelease,
+        ):
+            obj.setCalendarPopup(True)
+            obj.showPopup()
+            return True
+        return super().eventFilter(obj, event)
+
+    def _instalar_event_filter_datas(self) -> None:
+        self._date_emissao.installEventFilter(self)
+        self._date_vencimento.installEventFilter(self)
 
     def _configurar_janela(self) -> None:
         if self._somente_leitura:
@@ -142,6 +157,10 @@ class TituloFormView(QDialog):
         self._campo_valor = QLineEdit()
         self._campo_valor.setPlaceholderText("0,00")
         form.addRow("Valor:*", self._campo_valor)
+
+        self._campo_emitente = QLineEdit()
+        self._campo_emitente.setPlaceholderText("Nome do emitente/fornecedor")
+        form.addRow("Emitente:", self._campo_emitente)
 
         self._date_emissao = QDateEdit()
         self._date_emissao.setCalendarPopup(True)
@@ -254,6 +273,8 @@ class TituloFormView(QDialog):
             self._combo_tipo.setCurrentIndex(idx_tipo)
 
         self._campo_valor.setText(self._formatar_valor(self._titulo.valor))
+        if self._titulo.emitente:
+            self._campo_emitente.setText(self._titulo.emitente)
         self._date_emissao.setDate(self._to_qdate(self._titulo.data_emissao))
         self._date_vencimento.setDate(self._to_qdate(self._titulo.data_vencimento))
         if self._titulo.observacao:
@@ -325,6 +346,7 @@ class TituloFormView(QDialog):
             self._campo_descricao,
             self._combo_tipo,
             self._campo_valor,
+            self._campo_emitente,
             self._date_emissao,
             self._date_vencimento,
             self._campo_observacao,
@@ -361,6 +383,7 @@ class TituloFormView(QDialog):
         data_emissao = cast(date, self._date_emissao.date().toPython())
         data_vencimento = cast(date, self._date_vencimento.date().toPython())
         observacao = self._campo_observacao.toPlainText().strip() or None
+        emitente = self._campo_emitente.text().strip() or None
 
         if empresa_id is None:
             QMessageBox.warning(
@@ -403,6 +426,7 @@ class TituloFormView(QDialog):
                     data_emissao=data_emissao,
                     data_vencimento=data_vencimento,
                     observacao=observacao,
+                    emitente=emitente,
                 )
                 self._editar.execute(dto_editar)
                 QMessageBox.information(
@@ -433,6 +457,7 @@ class TituloFormView(QDialog):
                         data_emissao=data_emissao,
                         data_vencimento=venc,
                         observacao=observacao,
+                        emitente=emitente,
                     )
                     self._criar.execute(dto_criar)
 
