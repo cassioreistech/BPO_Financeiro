@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from typing import cast
 
 from dateutil.relativedelta import relativedelta
-from PySide6.QtCore import QDate
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
