@@ -168,6 +168,7 @@ class TitulosView(QWidget):
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
         self._combo_filtro_empresa.addItem("Selecione...", None)
+        self._combo_filtro_empresa.setEnabled(False)
         filtros.addWidget(self._combo_filtro_empresa, 0, 1)
 
         # Coluna 1: Busca textual
@@ -291,15 +292,21 @@ class TitulosView(QWidget):
         btn_limpar.clicked.connect(self._limpar_filtros)
         filtros.addWidget(btn_limpar, 2, 6)
 
-        # Botao Filtrar
+        # Botoes Filtrar e Atualizar
         btn_filtrar = QPushButton("Filtrar")
         btn_filtrar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_filtrar.clicked.connect(self.atualizar_lista)
         btn_filtrar.setFixedWidth(100)
         filtros.addWidget(btn_filtrar, 2, 7, Qt.AlignmentFlag.AlignRight)
 
+        btn_atualizar = QPushButton("Atualizar")
+        btn_atualizar.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_atualizar.clicked.connect(self.atualizar_lista)
+        btn_atualizar.setFixedWidth(100)
+        filtros.addWidget(btn_atualizar, 2, 8, Qt.AlignmentFlag.AlignRight)
+
         # Stretch na ultima coluna para empurrar tudo para a esquerda
-        filtros.setColumnStretch(8, 1)
+        filtros.setColumnStretch(9, 1)
 
         layout.addLayout(filtros)
 
@@ -390,24 +397,19 @@ class TitulosView(QWidget):
         }
 
         self._combo_filtro_empresa.blockSignals(True)
-        atual = self._combo_filtro_empresa.currentData()
         self._combo_filtro_empresa.clear()
-        self._combo_filtro_empresa.addItem("Selecione...", None)
-        for emp in empresas:
-            if emp.id is not None:
-                self._combo_filtro_empresa.addItem(
-                    emp.razao_social, emp.id
-                )
 
         empresa_ativa = self._contexto_empresa.get_empresa_ativa()
         if empresa_ativa is not None:
-            idx = self._combo_filtro_empresa.findData(empresa_ativa)
-            if idx >= 0:
-                self._combo_filtro_empresa.setCurrentIndex(idx)
-        elif atual is not None:
-            idx = self._combo_filtro_empresa.findData(atual)
-            if idx >= 0:
-                self._combo_filtro_empresa.setCurrentIndex(idx)
+            emp = next((e for e in empresas if e.id == empresa_ativa), None)
+            if emp is not None:
+                self._combo_filtro_empresa.addItem(emp.razao_social, emp.id)
+                self._combo_filtro_empresa.setCurrentIndex(0)
+            else:
+                self._combo_filtro_empresa.addItem("Selecione...", None)
+        else:
+            self._combo_filtro_empresa.addItem("Selecione...", None)
+
         self._combo_filtro_empresa.blockSignals(False)
 
     def carregar_empresa_ativa(self) -> None:

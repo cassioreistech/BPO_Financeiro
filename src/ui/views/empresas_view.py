@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -50,6 +52,7 @@ class EmpresasView(QWidget):
         editar: EditarEmpresaUseCase,
         excluir: ExcluirEmpresaUseCase,
         listar_escritorios: ListarEscritoriosUseCase,
+        on_empresas_alteradas: Callable[[], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -59,8 +62,14 @@ class EmpresasView(QWidget):
         self._editar = editar
         self._excluir = excluir
         self._listar_escritorios = listar_escritorios
+        self._on_empresas_alteradas = on_empresas_alteradas
         self._montar()
         self.atualizar_lista()
+
+    def _notificar_alteracao(self) -> None:
+        self.atualizar_lista()
+        if self._on_empresas_alteradas is not None:
+            self._on_empresas_alteradas()
 
     def _montar(self) -> None:
         layout = QVBoxLayout(self)
@@ -169,7 +178,7 @@ class EmpresasView(QWidget):
             parent=self,
         )
         if form.exec() == EmpresaFormView.DialogCode.Accepted:
-            self.atualizar_lista()
+            self._notificar_alteracao()
 
     def _editar_selecionado(self) -> None:
         emp = self._obter_selecionado()
@@ -187,7 +196,7 @@ class EmpresasView(QWidget):
             empresa=emp,
         )
         if form.exec() == EmpresaFormView.DialogCode.Accepted:
-            self.atualizar_lista()
+            self._notificar_alteracao()
 
     def _excluir_selecionado(self) -> None:
         emp = self._obter_selecionado()
@@ -205,7 +214,7 @@ class EmpresasView(QWidget):
         if resposta == QMessageBox.StandardButton.Yes:
             try:
                 self._excluir.execute(emp.id)
-                self.atualizar_lista()
+                self._notificar_alteracao()
                 QMessageBox.information(self, "Sucesso", "Empresa excluida com sucesso.")
             except ValueError as e:
                 QMessageBox.warning(self, "Erro", str(e))

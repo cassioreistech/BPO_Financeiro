@@ -88,6 +88,28 @@ class MainWindow(QMainWindow):
                 primeira_id, self._empresas[primeira_id]
             )
 
+    def _recarregar_empresas(self) -> None:
+        """Recarrega as empresas e o combo global apos alteracoes."""
+        self._carregar_empresas_iniciais()
+        if hasattr(self, "_combo_empresa_ativa"):
+            self._combo_empresa_ativa.blockSignals(True)
+            self._combo_empresa_ativa.clear()
+            self._combo_empresa_ativa.addItem("Selecione...", None)
+            for empresa in self._empresas.values():
+                texto = (
+                    f"{empresa.nome_fantasia} "
+                    f"({self._formatar_cnpj(empresa.cnpj)})"
+                )
+                self._combo_empresa_ativa.addItem(texto, empresa.id)
+            empresa_ativa = self._contexto_empresa.get_empresa_ativa()
+            if empresa_ativa is not None:
+                idx = self._combo_empresa_ativa.findData(empresa_ativa)
+                if idx >= 0:
+                    self._combo_empresa_ativa.setCurrentIndex(idx)
+            self._combo_empresa_ativa.blockSignals(False)
+            self._atualizar_label_empresa_ativa()
+        self._recarregar_telas_operacionais()
+
     def _configurar_repositories(self) -> None:
         self._esc_repo = SQLiteEscritorioRepository(SessionLocal)
         self._emp_repo = SQLiteEmpresaRepository(SessionLocal)
@@ -615,6 +637,7 @@ class MainWindow(QMainWindow):
             editar=self._uc_editar_emp,
             excluir=self._uc_excluir_emp,
             listar_escritorios=self._uc_listar_esc,
+            on_empresas_alteradas=self._recarregar_empresas,
         )
         self._stack.addWidget(self._view_empresas)
 
