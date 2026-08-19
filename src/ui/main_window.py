@@ -260,6 +260,9 @@ class MainWindow(QMainWindow):
         principal.addLayout(corpo)
         self._atualizar_label_empresa_ativa()
 
+        # Conectar mudanca de pagina para ocultar/mostrar seletor empresa
+        self._stack.currentChanged.connect(self._ao_trocar_pagina)
+
         # Timer para auto-refresh dos alertas (a cada 5 minutos)
         self._timer_alertas = QTimer(self)
         self._timer_alertas.timeout.connect(self._atualizar_alertas_seguranca)
@@ -281,7 +284,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._label_empresa_ativa)
         layout.addStretch()
 
-        layout.addWidget(QLabel("Trocar empresa:"))
+        self._lbl_trocar_empresa = QLabel("Trocar empresa:")
+        layout.addWidget(self._lbl_trocar_empresa)
         self._combo_empresa_ativa = QComboBox()
         self._combo_empresa_ativa.setMinimumWidth(300)
         self._combo_empresa_ativa.addItem("Selecione...", None)
@@ -349,6 +353,13 @@ class MainWindow(QMainWindow):
         if hasattr(self, "_view_alertas"):
             self._view_alertas.atualizar()
         self._atualizar_badge_alertas()
+
+    def _ao_trocar_pagina(self, indice: int) -> None:
+        """Oculta seletor de empresa quando na tela de Alertas (indice 2)."""
+        ocultar = indice == 2
+        self._lbl_trocar_empresa.setVisible(not ocultar)
+        self._combo_empresa_ativa.setVisible(not ocultar)
+        self._label_empresa_ativa.setVisible(not ocultar)
 
     def _atualizar_alertas_seguranca(self) -> None:
         """Atualiza alertas periodicamente (timer de 5 min)."""
