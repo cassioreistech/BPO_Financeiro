@@ -55,6 +55,8 @@ QWidget {
 /* === Conteudo === */
 #contentArea {
     background-color: #f8f9fa;
+    padding: 0px;
+    margin: 0px;
 }
 
 /* === Titulos === */

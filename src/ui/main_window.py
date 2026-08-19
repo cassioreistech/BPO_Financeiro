@@ -56,14 +56,14 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Sistema BPO Financeiro")
-        self.resize(1200, 720)
-        self.showMaximized()
+        self.setMinimumSize(1024, 600)
 
         self._contexto_empresa = EmpresaContextService()
         self._configurar_repositories()
         self._carregar_empresas_iniciais()
         self._montar_ui()
         self._navegar(1)  # Abre na tela de Alertas
+        QTimer.singleShot(100, self.showMaximized)
 
     def _carregar_empresas_iniciais(self) -> None:
         """Carrega empresas e define a primeira como ativa, se houver."""
@@ -260,9 +260,6 @@ class MainWindow(QMainWindow):
         principal.addLayout(corpo)
         self._atualizar_label_empresa_ativa()
 
-        # Conectar mudanca de pagina para ocultar/mostrar seletor empresa
-        self._stack.currentChanged.connect(self._ao_trocar_pagina)
-
         # Timer para auto-refresh dos alertas (a cada 5 minutos)
         self._timer_alertas = QTimer(self)
         self._timer_alertas.timeout.connect(self._atualizar_alertas_seguranca)
@@ -353,13 +350,6 @@ class MainWindow(QMainWindow):
         if hasattr(self, "_view_alertas"):
             self._view_alertas.atualizar()
         self._atualizar_badge_alertas()
-
-    def _ao_trocar_pagina(self, indice: int) -> None:
-        """Oculta seletor de empresa quando na tela de Alertas (indice 1)."""
-        ocultar = indice == 1
-        self._lbl_trocar_empresa.setVisible(not ocultar)
-        self._combo_empresa_ativa.setVisible(not ocultar)
-        self._label_empresa_ativa.setVisible(not ocultar)
 
     def _atualizar_alertas_seguranca(self) -> None:
         """Atualiza alertas periodicamente (timer de 5 min)."""
