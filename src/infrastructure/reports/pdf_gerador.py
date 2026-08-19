@@ -1,4 +1,8 @@
-"""Gerador de relatorios em PDF para titulos financeiros."""
+"""Gerador de relatorios em PDF para titulos financeiros.
+
+Relatorio de Titulos usa ReportLab (via PDFReportGenerator).
+Fluxo de Caixa e Projecao Financeira usam fpdf.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +17,7 @@ from application.use_cases.relatorio_titulos_use_cases import (
     ProjecaoFinanceiraDTO,
     RelatorioTitulosDTO,
 )
+from infrastructure.reports.pdf_report_generator import PDFReportGenerator, _formatar_moeda
 
 
 class _PDF(FPDF):
@@ -30,7 +35,7 @@ class _PDF(FPDF):
 
 
 def _formatar_valor(valor: Decimal) -> str:
-    return f"R$ {float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return _formatar_moeda(valor)
 
 
 def gerar_relatorio_titulos(
@@ -39,8 +44,15 @@ def gerar_relatorio_titulos(
     titulo_relatorio: str = "Relatorio de Titulos",
     data_inicio: date | None = None,
     data_fim: date | None = None,
+    empresa_nome: str | None = None,
+    empresa_cnpj: str | None = None,
+    escritorio_nome: str | None = None,
+    escritorio_cnpj: str | None = None,
 ) -> Path:
-    """Gera PDF com a listagem de titulos e totais.
+    """Gera PDF profissional com a listagem de titulos e totais.
+
+    Usa ReportLab via PDFReportGenerator para layout profissional
+    com design tokens, tabelas zebradas e cabecalho com info grid.
 
     Args:
         dados: Dados do relatorio.
@@ -48,65 +60,91 @@ def gerar_relatorio_titulos(
         titulo_relatorio: Titulo exibido no PDF.
         data_inicio: Data inicial do filtro.
         data_fim: Data final do filtro.
+        empresa_nome: Nome fantasia ou razao social da empresa.
+        empresa_cnpj: CNPJ da empresa.
+        escritorio_nome: Nome do escritorio.
+        escritorio_cnpj: CNPJ/CPF do escritorio.
 
     Returns:
         Caminho do PDF gerado.
     """
-    pdf = _PDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 10, titulo_relatorio, align="C", ln=True)
-    pdf.set_font("Arial", "", 10)
-
+    # Subtitulo com periodo
+    subtitulo = "Sistema BPO Financeiro"
     if data_inicio and data_fim:
-        pdf.cell(
-            0,
-            8,
-            f"Periodo: {data_inicio.strftime('%d/%m/%Y')} a "
-            f"{data_fim.strftime('%d/%m/%Y')}",
-            align="C",
-            ln=True,
-        )
-    pdf.ln(5)
+        subtitulo = f"Periodo: {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
 
-    # Totais
-    pdf.set_font("Arial", "B", 11)
-    pdf.cell(0, 8, "Resumo", ln=True)
-    pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 6, f"Total a receber: {_formatar_valor(dados.total_receber)}", ln=True)
-    pdf.cell(0, 6, f"Total a pagar: {_formatar_valor(dados.total_pagar)}", ln=True)
-    pdf.cell(0, 6, f"Total recebido: {_formatar_valor(dados.total_recebido)}", ln=True)
-    pdf.cell(0, 6, f"Total pago: {_formatar_valor(dados.total_pago)}", ln=True)
-    pdf.ln(5)
+    # Info grid do cabecalho
+    info_grid: list[list[str]] = []
+    if empresa_nome:
+        info_grid.append(["Empresa", empresa_nome])
+    if empresa_cnpj:
+        info_grid.append(["CNPJ", empresa_cnpj])
+    if escritorio_nome:
+        info_grid.append(["Escritorio", escritorio_nome])
+    if escritorio_cnpj:
+        info_grid.append(["Doc. Escritorio", escritorio_cnpj])
+    if data_inicio and data_fim:
+        periodo = f"{data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
+        info_grid.append(["Periodo", periodo])
 
-    # Tabela
-    pdf.set_font("Arial", "B", 9)
-    colunas = ["Venc.", "Descricao", "Tipo", "Status", "Valor", "Valor Pago"]
-    larguras = [22, 75, 22, 22, 28, 28]
-    for col, lar in zip(colunas, larguras, strict=True):
-        pdf.cell(lar, 8, col, border=1, align="C")
-    pdf.ln()
+    # Tabela de resumo financeiro
+    resumo_dados = [
+        [
+            _formatar_moeda(dados.total_receber),
+            _formatar_moeda(dados.total_pagar),
+            _formatar_moeda(dados.total_recebido),
+            _formatar_moeda(dados.total_pago),
+        ]
+    ]
 
-    pdf.set_font("Arial", "", 8)
+    # Tabela de titulos
+    titulos_linhas: list[list[str]] = []
     for t in dados.titulos:
-        valor = _formatar_valor(t.valor)
-        valor_pago = (
-            _formatar_valor(t.valor_pago)
-            if t.valor_pago is not None
-            else "—"
-        )
         venc = t.data_vencimento.strftime("%d/%m/%Y")
-        descricao = t.descricao[:40]
-        pdf.cell(22, 6, venc, border=1, align="C")
-        pdf.cell(75, 6, descricao, border=1)
-        pdf.cell(22, 6, t.tipo, border=1, align="C")
-        pdf.cell(22, 6, t.status, border=1, align="C")
-        pdf.cell(28, 6, valor, border=1, align="R")
-        pdf.cell(28, 6, valor_pago, border=1, align="R")
-        pdf.ln()
+        descricao = t.descricao[:50]
+        categoria = t.categoria.value if hasattr(t.categoria, "value") else str(t.categoria)
+        tipo = t.tipo.value if hasattr(t.tipo, "value") else str(t.tipo)
+        status = t.status.value if hasattr(t.status, "value") else str(t.status)
+        valor = _formatar_moeda(t.valor)
+        valor_pago = _formatar_moeda(t.valor_pago) if t.valor_pago is not None else "--"
+        titulos_linhas.append([venc, descricao, categoria, tipo, status, valor, valor_pago])
 
-    caminho.parent.mkdir(parents=True, exist_ok=True)
-    pdf.output(str(caminho))
+    # Montar dados para o gerador
+    dados_relatorio = {
+        "info_grid": info_grid,
+        "tabelas": [
+            {
+                "titulo": "RESUMO FINANCEIRO",
+                "colunas": ["A Receber", "A Pagar", "Recebido", "Pago"],
+                "dados": resumo_dados,
+                "larguras": [0.25, 0.25, 0.25, 0.25],
+                "titulo_centralizado": True,
+                "coluna_colorida": None,
+            },
+            {
+                "titulo": "TITULOS",
+                "colunas": [
+                    "Venc.", "Descricao", "Categoria",
+                    "Tipo", "Status", "Valor", "Valor Pago",
+                ],
+                "dados": titulos_linhas,
+                "larguras": [0.12, 0.30, 0.13, 0.10, 0.10, 0.13, 0.12],
+                "titulo_centralizado": True,
+                "coluna_colorida": 5,
+            },
+        ],
+    }
+
+    # Gerar PDF
+    generator = PDFReportGenerator()
+    generator.generate(
+        titulo=titulo_relatorio.upper(),
+        subtitulo=subtitulo,
+        dados=dados_relatorio,
+        output_dir=caminho.parent,
+        filename=caminho.name,
+    )
+
     return caminho
 
 

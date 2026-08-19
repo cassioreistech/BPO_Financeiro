@@ -10,7 +10,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, cast
 
-from PySide6.QtCore import QDate, QTimer, Qt
+from PySide6.QtCore import QDate, Qt, QTimer
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
@@ -764,8 +764,35 @@ class TitulosView(QWidget):
                 data_fim=data_fim,
             )
 
+            # Buscar dados da empresa e escritorio para o cabecalho
+            empresa_nome: str | None = None
+            empresa_cnpj: str | None = None
+            escritorio_nome_rel: str | None = None
+            escritorio_cnpj: str | None = None
+
+            try:
+                empresas = self._listar_empresas.execute(skip=0, limit=1000)
+                for emp in empresas:
+                    if emp.id == empresa_id:
+                        empresa_nome = emp.nome_fantasia or emp.razao_social
+                        empresa_cnpj = str(emp.cnpj) if emp.cnpj else None
+                        break
+            except Exception:
+                pass
+
+            try:
+                escritorios = self._listar_escritorios.execute(skip=0, limit=1000)
+                for esc in escritorios:
+                    if esc.id == escritorio_id:
+                        escritorio_nome_rel = esc.nome
+                        escritorio_cnpj = esc.cnpj_cpf if esc.cnpj_cpf else None
+                        break
+            except Exception:
+                pass
+
             # Gerar nome do arquivo
-            nome_arquivo = f"relatorio_titulos_{data_inicio.strftime('%Y%m%d')}_{data_fim.strftime('%Y%m%d')}.pdf"
+            data_str = f"{data_inicio.strftime('%Y%m%d')}_{data_fim.strftime('%Y%m%d')}"
+            nome_arquivo = f"relatorio_titulos_{data_str}.pdf"
             downloads_dir = Path.home() / "Downloads"
             caminho = downloads_dir / nome_arquivo
 
@@ -776,6 +803,10 @@ class TitulosView(QWidget):
                 titulo_relatorio="Relatorio de Titulos",
                 data_inicio=data_inicio,
                 data_fim=data_fim,
+                empresa_nome=empresa_nome,
+                empresa_cnpj=empresa_cnpj,
+                escritorio_nome=escritorio_nome_rel,
+                escritorio_cnpj=escritorio_cnpj,
             )
 
             # Abrir o arquivo automaticamente

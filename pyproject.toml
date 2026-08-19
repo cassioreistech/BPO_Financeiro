@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.0",
     "structlog>=24.0",
     "fpdf2>=2.8",
+    "reportlab>=4.0",
 ]
 
 [project.optional-dependencies]
@@ -63,6 +64,7 @@ module = [
     "sqlalchemy.orm.*",
     "structlog.*",
     "fpdf.*",
+    "reportlab.*",
 ]
 ignore_missing_imports = true
 
@@ -80,4 +82,8 @@ disallow_subclassing_any = false
 
 [[tool.mypy.overrides]]
 module = "infrastructure.reports.pdf_gerador"
+disallow_subclassing_any = false
+
+[[tool.mypy.overrides]]
+module = "infrastructure.reports.pdf_report_generator"
 disallow_subclassing_any = false
