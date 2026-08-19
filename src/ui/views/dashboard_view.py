@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QEnterEvent, QFont, QMouseEvent, QPainter, QPen
+from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
@@ -33,147 +33,11 @@ from ui.views.table_helpers import (
     configurar_tabela_padrao,
     criar_item_centralizado,
 )
-
-
-class GraficoBarrasWidget(QWidget):
-    """Widget customizado que desenha um grafico de barras simples."""
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self._dados: list[tuple[str, Decimal, QColor]] = []
-        self.setMinimumHeight(280)
-
-    def definir_dados(self, dados: list[tuple[str, Decimal, QColor]]) -> None:
-        self._dados = dados
-        self.update()
-
-    def enterEvent(self, event: QEnterEvent) -> None:  # noqa: ARG002
-        super().enterEvent(event)
-
-    def _mapear_posicao_barra(self, i: int) -> tuple[int, int, int, int]:
-        rect = self.rect().adjusted(50, 40, -30, -60)
-        bar_count = len(self._dados)
-        spacing = 20
-        bar_width = max(30, (rect.width() - spacing * (bar_count + 1)) // bar_count)
-        x = rect.left() + spacing + i * (bar_width + spacing)
-        return x, bar_width, rect.bottom(), rect.height()
-
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if not self._dados:
-            return
-        for i, (rotulo, valor, _) in enumerate(self._dados):
-            x, bar_width, y_base, height = self._mapear_posicao_barra(i)
-            maximo = max([float(v) for _, v, _ in self._dados]) or 1.0
-            altura = (float(valor) / maximo) * height
-            y = y_base - int(altura)
-            if x <= event.x() <= x + bar_width and y <= event.y() <= y_base:
-                QToolTip.showText(
-                    event.globalPosition().toPoint(),
-                    f"{rotulo}: {self._formatar_valor(valor)}",
-                )
-                return
-        return super().mouseMoveEvent(event)
-
-    def paintEvent(self, event: object) -> None:  # noqa: ARG002
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        rect = self.rect().adjusted(50, 40, -30, -60)
-        painter.fillRect(rect, QColor("#ffffff"))
-
-        if not self._dados:
-            painter.setPen(QPen(QColor("#999999")))
-            font = QFont()
-            font.setPointSize(11)
-            painter.setFont(font)
-            painter.drawText(
-                self.rect(),
-                Qt.AlignmentFlag.AlignCenter,
-                "Sem dados para exibir",
-            )
-            return
-
-        valores = [float(v) for _, v, _ in self._dados]
-        maximo = max(valores) if max(valores) > 0 else 1.0
-        bar_count = len(self._dados)
-        spacing = 20
-        bar_width = max(30, (rect.width() - spacing * (bar_count + 1)) // bar_count)
-
-        painter.setPen(QPen(QColor("#cccccc"), 1))
-        gridlines = 5
-        for g in range(1, gridlines + 1):
-            y = rect.bottom() - int((rect.height() / gridlines) * g)
-            painter.drawLine(rect.left(), y, rect.right(), y)
-            valor_label = maximo * (g / gridlines)
-            painter.setPen(QPen(QColor("#888888")))
-            painter.setFont(QFont("Arial", 8))
-            painter.drawText(
-                rect.left() - 34,
-                y - 6,
-                30,
-                12,
-                Qt.AlignmentFlag.AlignRight,
-                self._formatar_valor(Decimal(str(valor_label))),
-            )
-
-        painter.setPen(QPen(QColor("#333333")))
-        painter.setFont(QFont("Arial", 9))
-        painter.drawLine(rect.bottomLeft(), rect.bottomRight())
-
-        label_font = QFont("Arial", 9, QFont.Weight.Bold)
-        valor_font = QFont("Arial", 9, QFont.Weight.Bold)
-
-        for i, (rotulo, valor, cor) in enumerate(self._dados):
-            altura = (float(valor) / maximo) * rect.height()
-            x = rect.left() + spacing + i * (bar_width + spacing)
-            y = rect.bottom() - int(altura)
-
-            painter.setBrush(cor)
-            painter.setPen(QPen(Qt.GlobalColor.black, 0, Qt.PenStyle.SolidLine))
-            painter.drawRect(x, y, bar_width, int(altura))
-
-            cor_borda = cor.darker(130)
-            painter.setPen(QPen(cor_borda, 1))
-            painter.drawRect(x, y, bar_width, int(altura))
-
-            valor_texto = self._formatar_valor(valor)
-            painter.setPen(QPen(QColor("#333333")))
-            painter.setFont(valor_font)
-            painter.drawText(
-                x,
-                y - 18,
-                bar_width,
-                16,
-                Qt.AlignmentFlag.AlignHCenter,
-                valor_texto,
-            )
-            painter.setFont(label_font)
-            painter.drawText(
-                x,
-                rect.bottom() + 8,
-                bar_width,
-                24,
-                Qt.AlignmentFlag.AlignHCenter
-                | Qt.TextFlag.TextWordWrap,
-                rotulo,
-            )
-
-    @staticmethod
-    def _formatar_valor(valor: Decimal) -> str:
-        return f"R$ {float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+from ui.views.table_delegate import SemanticTableDelegate
 
 
 class DashboardView(QWidget):
-    """Dashboard financeiro com cards de indicadores e grafico."""
-
-    CORES_CATEGORIA = [
-        QColor("#1565c0"),
-        QColor("#c62828"),
-        QColor("#2e7d32"),
-        QColor("#6a1b9a"),
-        QColor("#ef6c00"),
-        QColor("#ad1457"),
-    ]
+    """Dashboard financeiro com cards de indicadores."""
 
     def __init__(
         self,
@@ -252,16 +116,9 @@ class DashboardView(QWidget):
 
         layout.addLayout(grid)
 
-        grafico_titulo = QLabel("A Pagar/Receber por Categoria")
-        grafico_titulo.setObjectName("sectionTitle")
         font = QFont()
         font.setPointSize(12)
         font.setBold(True)
-        grafico_titulo.setFont(font)
-        layout.addWidget(grafico_titulo)
-
-        self._grafico = GraficoBarrasWidget()
-        layout.addWidget(self._grafico)
 
         vencidos_titulo = QLabel("Titulos Vencidos (top 10)")
         vencidos_titulo.setObjectName("sectionTitle")
@@ -271,9 +128,10 @@ class DashboardView(QWidget):
         self._tabela_vencidos = QTableWidget()
         self._tabela_vencidos.setColumnCount(5)
         self._tabela_vencidos.setHorizontalHeaderLabels(
-            ["Vencimento", "Descricao", "Tipo", "Valor", "Dias"]
+            ["Vencimento", "Descricao", "Tipo", "Valor", "Dias Vencidos"]
         )
         configurar_tabela_padrao(self._tabela_vencidos)
+        self._tabela_vencidos.setItemDelegate(SemanticTableDelegate(self._tabela_vencidos))
         layout.addWidget(self._tabela_vencidos)
 
     def _criar_card(self, titulo: str, cor_texto: str, cor_fundo: str) -> QLabel:
@@ -324,7 +182,6 @@ class DashboardView(QWidget):
         empresa_id = self._contexto_empresa.get_empresa_ativa()
         if empresa_id is None:
             self._limpar_cards()
-            self._grafico.definir_dados([])
             self._tabela_vencidos.setRowCount(0)
             self._titulo.setText("Dashboard Financeiro")
             self._label_empresa.setText("Nenhuma empresa selecionada")
@@ -336,7 +193,6 @@ class DashboardView(QWidget):
             empresa = obter_empresa.execute(empresa_id)
         except Exception:
             self._limpar_cards()
-            self._grafico.definir_dados([])
             self._tabela_vencidos.setRowCount(0)
             self._titulo.setText("Dashboard Financeiro")
             self._label_empresa.setText("Erro ao carregar empresa")
@@ -344,7 +200,6 @@ class DashboardView(QWidget):
 
         if empresa is None:
             self._limpar_cards()
-            self._grafico.definir_dados([])
             self._tabela_vencidos.setRowCount(0)
             self._titulo.setText("Dashboard Financeiro")
             self._label_empresa.setText("Empresa nao encontrada")
@@ -357,9 +212,6 @@ class DashboardView(QWidget):
 
         try:
             resumo = self._resumo.execute(
-                escritorio_id=empresa.escritorio_id, empresa_id=empresa_id
-            )
-            por_categoria = self._resumo.resumo_por_categoria(
                 escritorio_id=empresa.escritorio_id, empresa_id=empresa_id
             )
             vencidos = self._resumo.titulos_vencidos(
@@ -386,12 +238,6 @@ class DashboardView(QWidget):
             "mes_pagar", "Total do Mes a Pagar", resumo.total_mes_pagar
         )
 
-        dados_grafico = [
-            (item.categoria, item.total, self._cor_categoria(i))
-            for i, item in enumerate(por_categoria)
-        ]
-        self._grafico.definir_dados(dados_grafico)
-
         self._atualizar_vencidos(vencidos)
 
     def _atualizar_vencidos(self, vencidos: list[Titulo]) -> None:
@@ -406,21 +252,29 @@ class DashboardView(QWidget):
                     t.data_vencimento.strftime("%d/%m/%Y")
                 ),
             )
-            self._tabela_vencidos.setItem(i, 1, QTableWidgetItem(t.descricao))
+            item_desc = QTableWidgetItem(t.descricao.upper())
+            item_desc.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_desc = item_desc.font()
+            font_desc.setBold(True)
+            item_desc.setFont(font_desc)
+            self._tabela_vencidos.setItem(i, 1, item_desc)
             self._tabela_vencidos.setItem(
                 i, 2, criar_item_centralizado(t.tipo.value)
             )
-            self._tabela_vencidos.setItem(
-                i,
-                3,
-                criar_item_centralizado(self._formatar_valor(t.valor)),
-            )
-            self._tabela_vencidos.setItem(
-                i, 4, criar_item_centralizado(str(dias))
-            )
-
-    def _cor_categoria(self, indice: int) -> QColor:
-        return self.CORES_CATEGORIA[indice % len(self.CORES_CATEGORIA)]
+            item_valor = QTableWidgetItem(self._formatar_valor(t.valor))
+            item_valor.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_valor = item_valor.font()
+            font_valor.setBold(True)
+            font_valor.setPointSize(font_valor.pointSize() + 2)
+            item_valor.setFont(font_valor)
+            self._tabela_vencidos.setItem(i, 3, item_valor)
+            item_dias = QTableWidgetItem(str(dias))
+            item_dias.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_dias.setForeground(QColor("#c62828"))
+            font_dias = item_dias.font()
+            font_dias.setBold(True)
+            item_dias.setFont(font_dias)
+            self._tabela_vencidos.setItem(i, 4, item_dias)
 
     def _atualizar_card(self, chave: str, titulo: str, valor: Decimal) -> None:
         valor_formatado = self._formatar_valor(valor)

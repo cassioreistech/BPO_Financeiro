@@ -82,12 +82,6 @@ class MainWindow(QMainWindow):
                     cnpj=emp.cnpj,
                 )
 
-        if self._empresas:
-            primeira_id = next(iter(self._empresas))
-            self._contexto_empresa.set_empresa_ativa(
-                primeira_id, self._empresas[primeira_id]
-            )
-
     def _recarregar_empresas(self) -> None:
         """Recarrega as empresas e o combo global apos alteracoes."""
         self._carregar_empresas_iniciais()

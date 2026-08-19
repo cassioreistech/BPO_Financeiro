@@ -1,57 +1,35 @@
-{
-  "project_name": "Sistema BPO Financeiro (Python desktop)",
-  "version": "1.0",
-  "token_saving_mode": true,
-  "last_summary": "Varias melhorias de UI/UX: marca dagua REISTECH; backup/restore com dialogs de arquivo; delegate visual com selecao translucida; busca por ID; coluna Pagamento centralizada; status VENCIDO para titulos abertos vencidos; cores semanticas ajustadas (vermelho mais escuro, laranja substituido por azul). Dashboard simplificado sem combo local de empresa. pytest, ruff, mypy limpos.",
-  "current_task": "Melhorias de UI/UX concluidas. Commits realizados.",
-  "key_decisions": [
-    "Arquitetura hexagonal: ui -> infrastructure -> application -> domain",
-    "Imports flat obrigatorios: from domain/application/infrastructure/ui (nunca src.)",
-    "PlanoConta: codigo, nome, tipo (RECEITA/DESPESA/OUTRO), nivel, pai_id",
-    "CentroCusto: codigo, nome, ativo, ligado a empresa",
-    "UI mantem padrao visual existente",
-    "Conta padrao '0.00 - Lancamentos diversos' e criada automaticamente para titulos simplificados",
-    "Titulo possui numero_documento, codigo_barras e categoria para controle simplificado",
-    "Quitacao registra data, valor_pago, conta_bancaria e forma_pagamento",
-    "Filtros de titulos aplicados na UI para agilidade, sem alterar repository",
-    "Relatorios em PDF gerados por infrastructure/reports/pdf_gerador.py usando fpdf2",
-    "Dashboard filtra por escritorio e empresa e exibe resumo, grafico por categoria e vencidos",
-    "Contexto global de empresa ativa centralizado em EmpresaContextService",
-    "Alertas de titulos funcionam em modo consolidado (Todas) ou filtrado por empresa ativa",
-    "Quitacao integral: valor pago deve ser igual ao valor do titulo",
-    "Quitacao valida empresa ativa, conta ativa e conta da mesma empresa do titulo",
-    "Quitacao registra observacao_quitacao separada da observacao do titulo",
-    "Status interno PAGO e exibido como QUITADO na interface",
-    "Titulos quitados abrem em modo visualizacao; edicao comum preserva dados da quitacao",
-    "Dashboard e Alertas sao atualizados automaticamente apos quitacao via callback",
-    "Schema SQLite evolui via upgrade incremental em schema_upgrade.py, preservando dados",
-    "SituacaoVencimento enum para filtros rapidos de vencimento",
-    "FiltroTitulosDTO centraliza todos os filtros de Titulos",
-    "list_filtered no repository aplica filtros no banco via SQLAlchemy",
-    "TitulosView usa filtros no banco; contagem de resultados; limpar preserva empresa ativa",
-    "Ordenacao padrao: data_vencimento ASC, status ASC, descricao ASC",
-    "Marca dagua REISTECH no rodapé da sidebar",
-    "Backup/Restore com dialogs de arquivo nativo (Salvar como / Abrir)",
-    "SemanticTableDelegate com selecao translucida que preserva cores semanticas",
-    "Status VENCIDO para titulos ABERTOS com vencimento passado (derivado, nao persistido)",
-    "Busca por ID na tela de Titulos (se texto for inteiro, busca ID exato)",
-    "Coluna Pagamento centralizada na tabela de Titulos",
-    "Cores semanticas: verde forte QUITADO, vermelho escuro VENCIDO, azul ABERTO, cinza CANCELADO",
-    "Dashboard sem combo local de empresa; usa EmpresaContextService global"
-  ],
-  "pending_actions": [
-    "Atualizar documentacao GSD se necessario"
-  ],
-  "recent_files": [
-    "src/ui/views/status_formatter.py",
-    "src/ui/views/table_delegate.py",
-    "src/ui/views/titulos_view.py",
-    "src/ui/views/alertas_titulos_view.py",
-    "src/ui/views/dashboard_view.py",
-    "src/ui/views/titulo_form_view.py",
-    "src/ui/main_window.py",
-    "src/application/services/backup_service.py",
-    "src/infrastructure/database/repositories/sqlite_titulo_repository.py",
-    "src/tests/test_status_formatter.py"
-  ]
-}
+# Session State
+
+## Project
+- **Name**: Sistema BPO Financeiro
+- **Path**: C:\Users\cassi\OneDrive\Documentos\Sistema BPO_controle_financeiro
+- **Architecture**: hexagonal (ui → infrastructure → application → domain)
+- **Stack**: PySide6, SQLAlchemy, SQLite, pytest
+
+## Last Summary
+Removido gráfico de barras do dashboard financeiro. Seção "Titulos Vencidos" movida para logo abaixo dos cards.
+
+## Current Task
+Aguardando próxima instrução do usuário.
+
+## Key Decisions
+- Flat imports mandatory (`from src.` prohibited)
+- Commit messages in Portuguese
+- Auto-refresh on titulo operations via callback
+- Replicação mensal implemented in titulo form
+- Campo Emitente added full-stack
+- Valor Pago column hidden in titulos table
+- Combo Empresa locked to active company
+- Auto-update on filters via QTimer
+- Empresa sync across views via callback
+- Dashboard simplified without chart
+
+## Pending Actions
+- Próximo pedido do usuário
+
+## Recent Files
+- src/ui/views/dashboard_view.py (gráfico removido)
+- src/ui/views/titulos_view.py
+- src/ui/views/titulo_form_view.py
+- src/ui/views/alertas_titulos_view.py
+- src/ui/main_window.py
