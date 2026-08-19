@@ -4,8 +4,8 @@
 
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 0, 0),
-    prodvers=(1, 0, 0, 0),
+    filevers=(1, 0, 1, 0),
+    prodvers=(1, 0, 1, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -20,13 +20,13 @@ VSVersionInfo(
         [
           StringStruct(u'CompanyName', u'Sistema BPO Financeiro'),
           StringStruct(u'FileDescription', u'Sistema BPO Financeiro - Controle financeiro para escritórios de contabilidade'),
-          StringStruct(u'FileVersion', u'1.0.0.0'),
+          StringStruct(u'FileVersion', u'1.0.1.0'),
           StringStruct(u'InternalName', u'SistemaBPOFinanceiro'),
           StringStruct(u'LegalCopyright', u'Copyright © 2024 Sistema BPO Financeiro. Todos os direitos reservados.'),
           StringStruct(u'OriginalFilename', u'SistemaBPOFinanceiro.exe'),
           StringStruct(u'ProductName', u'Sistema BPO Financeiro'),
-          StringStruct(u'ProductVersion', u'1.0.0.0'),
-          StringStruct(u'Assembly Version', u'1.0.0.0'),
+          StringStruct(u'ProductVersion', u'1.0.1.0'),
+          StringStruct(u'Assembly Version', u'1.0.1.0'),
         ]
       )
     ]),

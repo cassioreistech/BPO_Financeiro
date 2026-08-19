@@ -69,6 +69,7 @@ class TituloFormView(QDialog):
         self._plano_conta_id = plano_conta_id
         self._titulo = titulo
         self._editando = titulo is not None
+        self._empresa_id_fixo = empresa_id
         self._contas_por_id = contas_por_id or {}
         self._somente_leitura = (
             self._editando and self._titulo is not None
@@ -77,6 +78,7 @@ class TituloFormView(QDialog):
 
         self._configurar_janela()
         self._montar_formulario()
+        self._instalar_pular_com_enter()
         self._instalar_event_filter_datas()
         self._preencher_se_edicao()
         self._selecionar_escritorio_inicial(empresa_id)
@@ -91,7 +93,35 @@ class TituloFormView(QDialog):
             obj.setCalendarPopup(True)
             obj.showPopup()
             return True
+        # Leitor USB ou tecla Enter: pula para o proximo campo (como Tab).
+        if (
+            event.type() == QEvent.Type.KeyPress
+            and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)
+            and obj in self._campos_pular_com_enter
+        ):
+            self.focusNextChild()
+            return True
         return super().eventFilter(obj, event)
+
+    def _instalar_pular_com_enter(self) -> None:
+        """Enter avanca para o proximo campo em vez de acionar Salvar."""
+        self._campos_pular_com_enter = {
+            self._combo_escritorio,
+            self._combo_categoria,
+            self._campo_numero_documento,
+            self._campo_codigo_barras,
+            self._campo_descricao,
+            self._combo_tipo,
+            self._campo_valor,
+            self._campo_emitente,
+            self._date_emissao,
+            self._date_vencimento,
+            self._spin_vezes,
+        }
+        if self._combo_empresa is not None:
+            self._campos_pular_com_enter.add(self._combo_empresa)
+        for campo in self._campos_pular_com_enter:
+            campo.installEventFilter(self)
 
     def _instalar_event_filter_datas(self) -> None:
         self._date_emissao.installEventFilter(self)
@@ -106,6 +136,7 @@ class TituloFormView(QDialog):
             titulo = "Novo Titulo"
         self.setWindowTitle(titulo)
         self.setMinimumWidth(520)
+        self.resize(560, 640)
         self.setModal(True)
 
     def _montar_formulario(self) -> None:
@@ -122,14 +153,17 @@ class TituloFormView(QDialog):
         for eid, nome in self._opcoes_escritorio:
             self._combo_escritorio.addItem(nome, eid)
 
-        self._combo_empresa = QComboBox()
-        self._combo_empresa.addItem("Selecione...", None)
-        for eid, nome, _ in self._opcoes_empresa:
-            self._combo_empresa.addItem(nome, eid)
-        self._combo_empresa.currentIndexChanged.connect(
-            self._empresa_alterada
-        )
-        form.addRow("Empresa:*", self._combo_empresa)
+        # Empresa fixa (do filtro da tela) no Novo Titulo; selecionavel na edicao.
+        self._combo_empresa: QComboBox | None = None
+        if self._editando:
+            self._combo_empresa = QComboBox()
+            self._combo_empresa.addItem("Selecione...", None)
+            for eid, nome, _ in self._opcoes_empresa:
+                self._combo_empresa.addItem(nome, eid)
+            self._combo_empresa.currentIndexChanged.connect(
+                self._empresa_alterada
+            )
+            form.addRow("Empresa:*", self._combo_empresa)
 
         self._combo_categoria = QComboBox()
         self._combo_categoria.addItems(self.CATEGORIAS)
@@ -145,6 +179,7 @@ class TituloFormView(QDialog):
         self._campo_codigo_barras.setPlaceholderText(
             "Codigo de barras do boleto"
         )
+        self._campo_codigo_barras.installEventFilter(self)
         form.addRow("Cod. Barras:", self._campo_codigo_barras)
 
         self._campo_descricao = QLineEdit()
@@ -174,7 +209,8 @@ class TituloFormView(QDialog):
         form.addRow("Data Vencimento:*", self._date_vencimento)
 
         self._campo_observacao = QTextEdit()
-        self._campo_observacao.setMaximumHeight(80)
+        self._campo_observacao.setMaximumHeight(60)
+        self._campo_observacao.setMinimumHeight(40)
         self._campo_observacao.setPlaceholderText("Observações opcionais")
         form.addRow("Observação:", self._campo_observacao)
 
@@ -386,12 +422,17 @@ class TituloFormView(QDialog):
         self._btn_salvar.clicked.connect(self.accept)
 
     def _selecionar_escritorio_inicial(self, empresa_id: int | None) -> None:
-        if empresa_id is not None:
-            self._selecionar_por_id(self._combo_empresa, empresa_id)
-        self._empresa_alterada()
+        if self._combo_empresa is not None:
+            if empresa_id is not None:
+                self._selecionar_por_id(self._combo_empresa, empresa_id)
+            self._empresa_alterada()
+        elif empresa_id is not None:
+            # Novo titulo: empresa fixa vem do filtro da tela.
+            escritorio_id = self._mapa_empresa_escritorio.get(empresa_id)
+            self._selecionar_por_id(self._combo_escritorio, escritorio_id)
 
     def _empresa_alterada(self) -> None:
-        empresa_id = self._combo_empresa.currentData()
+        empresa_id = self._combo_empresa.currentData() if self._combo_empresa else None
         if empresa_id is not None:
             escritorio_id = self._mapa_empresa_escritorio.get(empresa_id)
             self._selecionar_por_id(self._combo_escritorio, escritorio_id)
@@ -400,7 +441,10 @@ class TituloFormView(QDialog):
 
     def _salvar(self) -> None:
         escritorio_id = self._combo_escritorio.currentData()
-        empresa_id = self._combo_empresa.currentData()
+        if self._combo_empresa is not None:
+            empresa_id = self._combo_empresa.currentData()
+        else:
+            empresa_id = self._empresa_id_fixo
         categoria = self._combo_categoria.currentText()
         numero_documento = self._campo_numero_documento.text().strip() or None
         codigo_barras = self._campo_codigo_barras.text().strip() or None
