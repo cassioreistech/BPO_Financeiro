@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
         self._configurar_repositories()
         self._carregar_empresas_iniciais()
         self._montar_ui()
-        self._navegar(1)  # Abre na tela de Alertas
+        self._navegar(0)  # Abre na tela de Alertas
         QTimer.singleShot(100, self.showMaximized)
 
     def _carregar_empresas_iniciais(self) -> None:
@@ -260,6 +260,9 @@ class MainWindow(QMainWindow):
         principal.addLayout(corpo)
         self._atualizar_label_empresa_ativa()
 
+        # Conectar mudanca de pagina para ocultar/mostrar seletor empresa
+        self._stack.currentChanged.connect(self._ao_trocar_pagina)
+
         # Timer para auto-refresh dos alertas (a cada 5 minutos)
         self._timer_alertas = QTimer(self)
         self._timer_alertas.timeout.connect(self._atualizar_alertas_seguranca)
@@ -272,6 +275,7 @@ class MainWindow(QMainWindow):
         """Cria o cabecalho superior com seletor de empresa ativa."""
         header = QWidget()
         header.setObjectName("headerEmpresa")
+        header.setFixedHeight(48)
         layout = QHBoxLayout(header)
         layout.setContentsMargins(16, 8, 16, 8)
         layout.setSpacing(12)
@@ -350,6 +354,13 @@ class MainWindow(QMainWindow):
         if hasattr(self, "_view_alertas"):
             self._view_alertas.atualizar()
         self._atualizar_badge_alertas()
+
+    def _ao_trocar_pagina(self, indice: int) -> None:
+        """Oculta seletor de empresa quando na tela de Alertas (indice 0)."""
+        ocultar = indice == 0
+        self._lbl_trocar_empresa.setVisible(not ocultar)
+        self._combo_empresa_ativa.setVisible(not ocultar)
+        self._label_empresa_ativa.setVisible(not ocultar)
 
     def _atualizar_alertas_seguranca(self) -> None:
         """Atualiza alertas periodicamente (timer de 5 min)."""
@@ -511,8 +522,8 @@ class MainWindow(QMainWindow):
 
         # Itens principais (operacionais)
         main_items = [
-            ("  Dashboard", 0),
-            ("  Alertas", 1),
+            ("  Alertas", 0),
+            ("  Dashboard", 1),
             ("  Titulos", 2),
         ]
 
@@ -523,7 +534,7 @@ class MainWindow(QMainWindow):
             btn.clicked.connect(lambda checked, i=indice: self._navegar(i))
             layout.addWidget(btn)
             self._botoes_nav.append(btn)
-            if indice == 1:
+            if indice == 0:
                 self._btn_alertas = btn
 
         # Separador antes de Configurações
@@ -631,20 +642,20 @@ class MainWindow(QMainWindow):
             btn.style().polish(btn)
 
     def _criar_paginas(self) -> None:
-        # 0: Dashboard
-        self._view_dashboard = DashboardView(
-            listar_titulos=self._uc_listar_titulo,
-            contexto_empresa=self._contexto_empresa,
-        )
-        self._stack.addWidget(self._view_dashboard)
-
-        # 1: Alertas
+        # 0: Alertas
         self._view_alertas = AlertasTitulosView(
             dashboard_use_case=self._uc_dashboard_alertas,
             listar_escritorios=self._uc_listar_esc,
             contexto_empresa=self._contexto_empresa,
         )
         self._stack.addWidget(self._view_alertas)
+
+        # 1: Dashboard
+        self._view_dashboard = DashboardView(
+            listar_titulos=self._uc_listar_titulo,
+            contexto_empresa=self._contexto_empresa,
+        )
+        self._stack.addWidget(self._view_dashboard)
 
         # 2: Titulos
         self._view_titulos = TitulosView(
