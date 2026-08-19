@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
 from collections.abc import Callable
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, cast
 
 from PySide6.QtCore import QDate, QTimer, Qt
@@ -57,8 +60,8 @@ from domain.enums.categoria_titulo import CategoriaTitulo
 from domain.enums.situacao_vencimento import SituacaoVencimento
 from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_titulo import TipoTitulo
+from infrastructure.reports.pdf_gerador import gerar_relatorio_titulos
 from ui.views.quitacao_dialog import QuitacaoDialog
-from ui.views.relatorio_dialog import RelatorioDialog
 from ui.views.status_formatter import formatar_status_titulo
 from ui.views.table_delegate import SemanticTableDelegate
 from ui.views.table_helpers import (
@@ -139,11 +142,6 @@ class TitulosView(QWidget):
         topo.addWidget(titulo)
         topo.addStretch()
 
-        btn_relatorio = QPushButton("Relatorios")
-        btn_relatorio.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_relatorio.clicked.connect(self._abrir_relatorios)
-        topo.addWidget(btn_relatorio)
-
         layout.addLayout(topo)
 
         # --- Linha 2: Filtros (grid alinhado) ---
@@ -191,6 +189,12 @@ class TitulosView(QWidget):
                 formatar_status_titulo(s.value), s.value
             )
         filtros.addWidget(self._combo_filtro_status, 0, 7)
+
+        # Coluna 8: Botao Relatorios
+        btn_relatorio = QPushButton("Relatorios")
+        btn_relatorio.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_relatorio.clicked.connect(self._abrir_relatorios)
+        filtros.addWidget(btn_relatorio, 0, 8)
 
         # Linha 1
         # Coluna 0: Categoria
@@ -739,15 +743,55 @@ class TitulosView(QWidget):
             )
             return
 
-        dialogo = RelatorioDialog(
-            relatorio_use_case=self._relatorio_titulos,
-            fluxo_caixa_use_case=self._fluxo_caixa,
-            projecao_use_case=self._projecao_financeira,
-            escritorio_id=escritorio_id,
-            empresa_id=empresa_id,
-            parent=self,
-        )
-        dialogo.exec()
+        # Obter datas dos filtros
+        data_inicio = self._date_filtro_venc_ini.date().toPython()
+        data_fim = self._date_filtro_venc_fim.date().toPython()
+
+        # Se as datas sao as padroes (sem limite), usar mes atual
+        hoje = date.today()
+        if data_inicio == self._date_filtro_venc_ini.minimumDate().toPython():
+            data_inicio = date(hoje.year, hoje.month, 1)
+        if data_fim == self._date_filtro_venc_fim.minimumDate().toPython():
+            import calendar
+            ultimo_dia = calendar.monthrange(hoje.year, hoje.month)[1]
+            data_fim = date(hoje.year, hoje.month, ultimo_dia)
+
+        try:
+            dados = self._relatorio_titulos.execute(
+                escritorio_id=escritorio_id,
+                empresa_id=empresa_id,
+                data_inicio=data_inicio,
+                data_fim=data_fim,
+            )
+
+            # Gerar nome do arquivo
+            nome_arquivo = f"relatorio_titulos_{data_inicio.strftime('%Y%m%d')}_{data_fim.strftime('%Y%m%d')}.pdf"
+            downloads_dir = Path.home() / "Downloads"
+            caminho = downloads_dir / nome_arquivo
+
+            # Gerar PDF
+            gerar_relatorio_titulos(
+                dados=dados,
+                caminho=caminho,
+                titulo_relatorio="Relatorio de Titulos",
+                data_inicio=data_inicio,
+                data_fim=data_fim,
+            )
+
+            # Abrir o arquivo automaticamente
+            if os.name == 'nt':  # Windows
+                os.startfile(str(caminho))
+            elif os.name == 'posix':  # macOS ou Linux
+                subprocess.run(['open', str(caminho)], check=False)
+
+            QMessageBox.information(
+                self,
+                "Sucesso",
+                f"Relatorio gerado e aberto:\n{caminho}",
+            )
+
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", f"Erro ao gerar relatorio: {e}")
 
     def _novo(self) -> None:
         opcoes_escritorio = self._obter_opcoes(
@@ -861,7 +905,7 @@ class TitulosView(QWidget):
             return
         if titulo.status == "CANCELADO":
             QMessageBox.information(
-                self, "Aviso", "Nao e possivel quitar um titulo cancelado."
+                self, "Aviso", "Não é possível quitar um titulo cancelado."
             )
             return
 
