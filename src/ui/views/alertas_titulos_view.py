@@ -217,6 +217,25 @@ class AlertasTitulosView(QWidget):
         """Atualiza os alertas de titulos."""
         self._atualizar()
 
+    def obter_contagem_criticos(self) -> int:
+        """Retorna a quantidade de titulos vencidos (criticos)."""
+        try:
+            filtro = FiltroAlertasTitulosDTO(
+                empresa_id=None,
+                data_referencia=date.today(),
+                incluir_vencidos=True,
+            )
+            escritorios = self._listar_escritorios.execute(skip=0, limit=1)
+            if not escritorios:
+                return 0
+            dashboard = self._dashboard_uc.execute(
+                escritorio_id=escritorios[0].id,
+                filtro=filtro,
+            )
+            return dashboard.vencidos.quantidade
+        except Exception:
+            return 0
+
     def _atualizar(self) -> None:
         filtro = FiltroAlertasTitulosDTO(
             empresa_id=None,
@@ -288,9 +307,11 @@ class AlertasTitulosView(QWidget):
 
         self._tabela.setRowCount(len(itens))
         for i, item in enumerate(itens):
-            self._tabela.setItem(
-                i, 0, QTableWidgetItem(item.empresa_nome)
-            )
+            item_empresa = QTableWidgetItem(item.empresa_nome.upper())
+            font_empresa = item_empresa.font()
+            font_empresa.setBold(True)
+            item_empresa.setFont(font_empresa)
+            self._tabela.setItem(i, 0, item_empresa)
             self._tabela.setItem(i, 1, QTableWidgetItem(item.descricao))
             self._tabela.setItem(
                 i, 2, criar_item_centralizado(item.categoria)

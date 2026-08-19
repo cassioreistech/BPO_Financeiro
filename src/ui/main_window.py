@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -260,6 +260,14 @@ class MainWindow(QMainWindow):
         principal.addLayout(corpo)
         self._atualizar_label_empresa_ativa()
 
+        # Timer para auto-refresh dos alertas (a cada 5 minutos)
+        self._timer_alertas = QTimer(self)
+        self._timer_alertas.timeout.connect(self._atualizar_alertas_seguranca)
+        self._timer_alertas.start(300000)  # 5 minutos
+
+        # Verificar alertas criticos na abertura
+        QTimer.singleShot(1000, self._verificar_alertas_abertura)
+
     def _criar_header_empresa(self) -> QWidget:
         """Cria o cabecalho superior com seletor de empresa ativa."""
         header = QWidget()
@@ -340,6 +348,52 @@ class MainWindow(QMainWindow):
             self._view_dashboard.atualizar()
         if hasattr(self, "_view_alertas"):
             self._view_alertas.atualizar()
+        self._atualizar_badge_alertas()
+
+    def _atualizar_alertas_seguranca(self) -> None:
+        """Atualiza alertas periodicamente (timer de 5 min)."""
+        if hasattr(self, "_view_alertas"):
+            self._view_alertas.atualizar()
+            self._atualizar_badge_alertas()
+
+    def _atualizar_badge_alertas(self) -> None:
+        """Atualiza o badge de contagem no botao Alertas."""
+        if not hasattr(self, "_btn_alertas") or not hasattr(self, "_view_alertas"):
+            return
+        try:
+            criticos = self._view_alertas.obter_contagem_criticos()
+            if criticos > 0:
+                self._btn_alertas.setText(f"  Alertas ({criticos})")
+                self._btn_alertas.setStyleSheet(
+                    "background-color: #c62828; color: white; font-weight: bold;"
+                )
+            else:
+                self._btn_alertas.setText("  Alertas")
+                self._btn_alertas.setStyleSheet("")
+        except Exception:
+            pass
+
+    def _verificar_alertas_abertura(self) -> None:
+        """Verifica alertas criticos na abertura do sistema."""
+        if not hasattr(self, "_view_alertas"):
+            return
+        try:
+            criticos = self._view_alertas.obter_contagem_criticos()
+            self._atualizar_badge_alertas()
+            if criticos > 0:
+                from PySide6.QtWidgets import QMessageBox
+
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setWindowTitle("Atenção: Titulos Vencidos")
+                msg.setText(
+                    f"Existem {criticos} titulo(s) VENCIDO(S)!\n\n"
+                    "Verifique a tela de Alertas para mais detalhes."
+                )
+                msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg.exec()
+        except Exception:
+            pass
 
     def _criar_backup(self) -> None:
         """Cria um backup do banco de dados pedindo onde salvar."""
@@ -468,6 +522,8 @@ class MainWindow(QMainWindow):
             btn.clicked.connect(lambda checked, i=indice: self._navegar(i))
             layout.addWidget(btn)
             self._botoes_nav.append(btn)
+            if indice == 2:
+                self._btn_alertas = btn
 
         # Separador antes de Configurações
         sep2 = QWidget()
