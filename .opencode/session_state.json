@@ -7,10 +7,10 @@
 - **Stack**: PySide6, SQLAlchemy, SQLite, pytest
 
 ## Last Summary
-Removido gráfico de barras do dashboard financeiro. Seção "Titulos Vencidos" movida para logo abaixo dos cards.
+Sessão concluída em 18/08/2026. Dashboard com filtro de período, alertas multiempresa, campos com copiar/colar, installer gerado.
 
 ## Current Task
-Aguardando próxima instrução do usuário.
+Aguardando próxima sessão.
 
 ## Key Decisions
 - Flat imports mandatory (`from src.` prohibited)
@@ -23,13 +23,25 @@ Aguardando próxima instrução do usuário.
 - Auto-update on filters via QTimer
 - Empresa sync across views via callback
 - Dashboard simplified without chart
+- Alertas multiempresa (empresa_id=None)
+- Seletor de empresa oculto na tela de Alertas
+- Sidebar: Dashboard, Alertas, Titulos
+- Sistema abre na tela de Alertas
+- Cards do Dashboard calculados pelo período selecionado
+- CNPJ aceita alfanumérico (preparação legislação futura)
+- Campos aceitam copiar/colar de qualquer fonte
+- Sistema abre maximizado
 
 ## Pending Actions
-- Próximo pedido do usuário
+- Próxima sessão: verificar pendências e novos pedidos
 
 ## Recent Files
-- src/ui/views/dashboard_view.py (gráfico removido)
-- src/ui/views/titulos_view.py
-- src/ui/views/titulo_form_view.py
-- src/ui/views/alertas_titulos_view.py
-- src/ui/main_window.py
+- src/ui/views/dashboard_view.py (filtro período, cards por período)
+- src/ui/views/alertas_titulos_view.py (multiempresa, cards formato dashboard)
+- src/ui/views/titulos_view.py (botão Todos)
+- src/ui/views/formatadores.py (novo - CNPJ, CPF, telefone)
+- src/ui/views/empresa_form_view.py (copiar/colar)
+- src/ui/views/escritorio_form_view.py (copiar/colar)
+- src/ui/main_window.py (sidebar, badge, auto-refresh, maximizado)
+- build.spec (formatadores adicionado)
+- installer.iss (configuração Inno Setup)
