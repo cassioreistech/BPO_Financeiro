@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-import re
-
-from PySide6.QtCore import QRegularExpression
-from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -17,6 +13,12 @@ from PySide6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QWidget,
+)
+from ui.views.formatadores import (
+    aplicar_formatacao_campo,
+    formatar_cnpj,
+    formatar_telefone,
+    limpar_documento,
 )
 
 from application.dto.empresa_dto import (
@@ -51,7 +53,6 @@ class EmpresaFormView(QDialog):
         self._opcoes_escritorio = opcoes_escritorio
         self._empresa = empresa
         self._editando = empresa is not None
-        self._ignorar_sinal = False
 
         self._configurar_janela()
         self._montar_formulario()
@@ -79,12 +80,9 @@ class EmpresaFormView(QDialog):
         form.addRow("Escritorio:", self._combo_escritorio)
 
         self._campo_cnpj = QLineEdit()
-        self._campo_cnpj.setPlaceholderText("00.000.000/0000-00")
-        validator = QRegularExpressionValidator(
-            QRegularExpression(r"\d{0,14}")
-        )
-        self._campo_cnpj.setValidator(validator)
-        self._campo_cnpj.textChanged.connect(self._formatar_cnpj)
+        self._campo_cnpj.setPlaceholderText("Cole o CNPJ aqui (com ou sem pontuacao)")
+        self._campo_cnpj.setMaxLength(18)
+        self._campo_cnpj.textChanged.connect(self._ao_mudar_cnpj)
         form.addRow("CNPJ:", self._campo_cnpj)
 
         self._campo_razao = QLineEdit()
@@ -105,7 +103,8 @@ class EmpresaFormView(QDialog):
 
         self._campo_telefone = QLineEdit()
         self._campo_telefone.setPlaceholderText("(XX) XXXXX-XXXX")
-        self._campo_telefone.setMaxLength(11)
+        self._campo_telefone.setMaxLength(16)
+        self._campo_telefone.textChanged.connect(self._ao_mudar_telefone)
         form.addRow("Telefone Financeiro:", self._campo_telefone)
 
         layout.addLayout(form)
@@ -126,33 +125,16 @@ class EmpresaFormView(QDialog):
 
         layout.addLayout(botoes)
 
-    def _formatar_cnpj(self, texto: str) -> None:
-        if self._ignorar_sinal:
-            return
-        self._ignorar_sinal = True
-        digitos = re.sub(r"\D", "", texto)
-        if len(digitos) > 14:
-            digitos = digitos[:14]
-        formatado = self._aplicar_mascara_cnpj(digitos)
-        self._campo_cnpj.setText(formatado)
-        self._campo_cnpj.setCursorPosition(len(formatado))
-        self._ignorar_sinal = False
+    def _ao_mudar_cnpj(self, texto: str) -> None:
+        """Formata CNPJ automaticamente ao digitar ou colar."""
+        aplicar_formatacao_campo(self._campo_cnpj, formatar_cnpj, texto)
 
-    @staticmethod
-    def _aplicar_mascara_cnpj(digitos: str) -> str:
-        tamanho = len(digitos)
-        if tamanho <= 2:
-            return digitos
-        if tamanho <= 5:
-            return f"{digitos[:2]}.{digitos[2:]}"
-        if tamanho <= 8:
-            return f"{digitos[:2]}.{digitos[2:5]}.{digitos[5:]}"
-        if tamanho <= 12:
-            return f"{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/{digitos[8:]}"
-        return f"{digitos[:2]}.{digitos[2:5]}.{digitos[5:8]}/{digitos[8:12]}-{digitos[12:]}"
+    def _ao_mudar_telefone(self, texto: str) -> None:
+        """Formata telefone automaticamente ao digitar ou colar."""
+        aplicar_formatacao_campo(self._campo_telefone, formatar_telefone, texto)
 
     def _obter_cnpj_digitos(self) -> str:
-        return re.sub(r"\D", "", self._campo_cnpj.text())
+        return limpar_documento(self._campo_cnpj.text())
 
     def _preencher_se_edicao(self) -> None:
         if self._empresa is None:
@@ -162,8 +144,7 @@ class EmpresaFormView(QDialog):
         if idx_esc >= 0:
             self._combo_escritorio.setCurrentIndex(idx_esc)
 
-        digitos = re.sub(r"\D", "", self._empresa.cnpj)
-        self._campo_cnpj.setText(self._aplicar_mascara_cnpj(digitos))
+        self._campo_cnpj.setText(formatar_cnpj(self._empresa.cnpj))
         self._campo_razao.setText(self._empresa.razao_social)
         self._campo_fantasia.setText(self._empresa.nome_fantasia)
 
@@ -174,7 +155,7 @@ class EmpresaFormView(QDialog):
         if self._empresa.email_financeiro:
             self._campo_email.setText(self._empresa.email_financeiro)
         if self._empresa.telefone_financeiro:
-            self._campo_telefone.setText(self._empresa.telefone_financeiro)
+            self._campo_telefone.setText(formatar_telefone(self._empresa.telefone_financeiro))
 
     def _salvar(self) -> None:
         escritorio_id = self._combo_escritorio.currentData()

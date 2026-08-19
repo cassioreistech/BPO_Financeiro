@@ -23,6 +23,11 @@ from application.use_cases.escritorio_use_cases import (
     CriarEscritorioUseCase,
     EditarEscritorioUseCase,
 )
+from ui.views.formatadores import (
+    aplicar_formatacao_campo,
+    formatar_cnpj_cpf,
+    formatar_telefone,
+)
 
 
 class EscritorioFormView(QDialog):
@@ -66,8 +71,8 @@ class EscritorioFormView(QDialog):
         form.addRow("Nome:", self._campo_nome)
 
         self._campo_cnpj = QLineEdit()
-        self._campo_cnpj.setPlaceholderText("Somente digitos")
-        self._campo_cnpj.setMaxLength(14)
+        self._campo_cnpj.setPlaceholderText("Cole o CNPJ/CPF aqui (com ou sem pontuacao)")
+        self._campo_cnpj.textChanged.connect(self._ao_mudar_cnpj_cpf)
         form.addRow("CNPJ/CPF:", self._campo_cnpj)
 
         self._campo_email = QLineEdit()
@@ -76,7 +81,8 @@ class EscritorioFormView(QDialog):
 
         self._campo_telefone = QLineEdit()
         self._campo_telefone.setPlaceholderText("(XX) XXXXX-XXXX")
-        self._campo_telefone.setMaxLength(11)
+        self._campo_telefone.setMaxLength(16)
+        self._campo_telefone.textChanged.connect(self._ao_mudar_telefone)
         form.addRow("Telefone:", self._campo_telefone)
 
         layout.addLayout(form)
@@ -97,15 +103,23 @@ class EscritorioFormView(QDialog):
 
         layout.addLayout(botoes)
 
+    def _ao_mudar_cnpj_cpf(self, texto: str) -> None:
+        """Formata CNPJ/CPF automaticamente ao digitar ou colar."""
+        aplicar_formatacao_campo(self._campo_cnpj, formatar_cnpj_cpf, texto)
+
+    def _ao_mudar_telefone(self, texto: str) -> None:
+        """Formata telefone automaticamente ao digitar ou colar."""
+        aplicar_formatacao_campo(self._campo_telefone, formatar_telefone, texto)
+
     def _preencher_se_edicao(self) -> None:
         if self._escritorio is None:
             return
         self._campo_nome.setText(self._escritorio.nome)
-        self._campo_cnpj.setText(self._escritorio.cnpj_cpf)
+        self._campo_cnpj.setText(formatar_cnpj_cpf(self._escritorio.cnpj_cpf))
         if self._escritorio.email:
             self._campo_email.setText(self._escritorio.email)
         if self._escritorio.telefone:
-            self._campo_telefone.setText(self._escritorio.telefone)
+            self._campo_telefone.setText(formatar_telefone(self._escritorio.telefone))
 
     def _salvar(self) -> None:
         nome = self._campo_nome.text().strip()
