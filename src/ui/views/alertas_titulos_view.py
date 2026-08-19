@@ -9,8 +9,6 @@ from typing import cast
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
-    QCheckBox,
-    QComboBox,
     QDateEdit,
     QGridLayout,
     QHBoxLayout,
@@ -33,7 +31,6 @@ from application.services.empresa_context_service import EmpresaContextService
 from application.use_cases.alerta_titulo_use_cases import (
     ObterDashboardAlertasTitulosUseCase,
 )
-from application.use_cases.empresa_use_cases import ListarEmpresasUseCase
 from application.use_cases.escritorio_use_cases import ListarEscritoriosUseCase
 from ui.views.status_formatter import formatar_status_titulo
 from ui.views.table_delegate import SemanticTableDelegate
@@ -74,22 +71,18 @@ class AlertasTitulosView(QWidget):
     def __init__(
         self,
         dashboard_use_case: ObterDashboardAlertasTitulosUseCase,
-        listar_empresas: ListarEmpresasUseCase,
         listar_escritorios: ListarEscritoriosUseCase,
         contexto_empresa: EmpresaContextService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._dashboard_uc = dashboard_use_case
-        self._listar_empresas = listar_empresas
         self._listar_escritorios = listar_escritorios
         self._contexto_empresa = contexto_empresa
-        self._mapa_empresas: dict[int, str] = {}
         self._cards: dict[
             str, tuple[QWidget, tuple[QLabel, QLabel]]
         ] = {}
         self._montar()
-        self._carregar_empresas()
         self._atualizar()
 
     def _montar(self) -> None:
@@ -104,27 +97,13 @@ class AlertasTitulosView(QWidget):
         cabecalho.addWidget(titulo)
         cabecalho.addStretch()
 
-        cabecalho.addWidget(QLabel("Empresa:"))
-        self._combo_empresa = QComboBox()
-        self._combo_empresa.setMinimumWidth(280)
-        cabecalho.addWidget(self._combo_empresa)
-
-        self._check_empresa_ativa = QCheckBox("Usar empresa ativa")
-        self._check_empresa_ativa.stateChanged.connect(
-            self._empresa_ativa_marcada
-        )
-        cabecalho.addWidget(self._check_empresa_ativa)
-
         cabecalho.addWidget(QLabel("Data referencia:"))
         self._date_referencia = QDateEdit()
         self._date_referencia.setCalendarPopup(True)
         hoje = date.today()
         self._date_referencia.setDate(QDate(hoje.year, hoje.month, hoje.day))
+        self._date_referencia.dateChanged.connect(self._atualizar)
         cabecalho.addWidget(self._date_referencia)
-
-        btn_atualizar = QPushButton("Atualizar")
-        btn_atualizar.clicked.connect(self._atualizar)
-        cabecalho.addWidget(btn_atualizar)
 
         layout.addLayout(cabecalho)
 
@@ -245,41 +224,6 @@ class AlertasTitulosView(QWidget):
         self._tabela.verticalHeader().setMinimumSectionSize(38)
         self._tabela.setMinimumHeight(300)
 
-    def _carregar_empresas(self) -> None:
-        try:
-            empresas = self._listar_empresas.execute(skip=0, limit=1000)
-        except Exception as erro:
-            QMessageBox.warning(
-                self, "Erro", f"Erro ao carregar empresas: {erro}"
-            )
-            return
-
-        self._mapa_empresas = {
-            emp.id: emp.nome_fantasia or emp.razao_social
-            for emp in empresas
-            if emp.id is not None
-        }
-
-        self._combo_empresa.blockSignals(True)
-        self._combo_empresa.clear()
-        self._combo_empresa.addItem("Todas as empresas", None)
-        for emp in empresas:
-            if emp.id is not None:
-                self._combo_empresa.addItem(
-                    emp.nome_fantasia or emp.razao_social, emp.id
-                )
-        self._combo_empresa.blockSignals(False)
-
-    def _empresa_ativa_marcada(self) -> None:
-        usar_empresa_ativa = self._check_empresa_ativa.isChecked()
-        self._combo_empresa.setEnabled(not usar_empresa_ativa)
-        if usar_empresa_ativa:
-            empresa_ativa = self._contexto_empresa.get_empresa_ativa()
-            if empresa_ativa is not None:
-                idx = self._combo_empresa.findData(empresa_ativa)
-                if idx >= 0:
-                    self._combo_empresa.setCurrentIndex(idx)
-
     def atualizar(self) -> None:
         """Atualiza os alertas de titulos."""
         self._atualizar()
@@ -290,10 +234,7 @@ class AlertasTitulosView(QWidget):
             self._limpar_dashboard()
             return
 
-        if self._check_empresa_ativa.isChecked():
-            empresa_id = self._contexto_empresa.get_empresa_ativa()
-        else:
-            empresa_id = self._combo_empresa.currentData()
+        empresa_id = self._contexto_empresa.get_empresa_ativa()
 
         data_referencia = cast(
             date, self._date_referencia.date().toPython()

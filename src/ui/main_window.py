@@ -611,7 +611,6 @@ class MainWindow(QMainWindow):
         # 2: Alertas
         self._view_alertas = AlertasTitulosView(
             dashboard_use_case=self._uc_dashboard_alertas,
-            listar_empresas=self._uc_listar_emp,
             listar_escritorios=self._uc_listar_esc,
             contexto_empresa=self._contexto_empresa,
         )
