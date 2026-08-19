@@ -116,7 +116,7 @@ def test_atualizar_escritorio_inexistente_raise(
 ) -> None:
     """Atualizar escritorio inexistente levanta ValueError."""
     alvo = Escritorio(id=9999, nome="X", cnpj_cpf=CNPJ_VALIDO_1)
-    with pytest.raises(ValueError, match="nao encontrado"):
+    with pytest.raises(ValueError, match="não encontrado"):
         escritorio_repo.update(alvo)
 
 

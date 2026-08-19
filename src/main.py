@@ -20,7 +20,6 @@ def main() -> int:
     app.setStyleSheet(APP_STYLESHEET)
 
     janela = MainWindow()
-    janela.show()
 
     return app.exec()
 

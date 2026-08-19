@@ -43,11 +43,11 @@ class TestEscritorio:
         assert esc.telefone.valor == "11999998888"
 
     def test_escritorio_nome_vazio(self) -> None:
-        with pytest.raises(ValueError, match="Nome do escritorio nao pode ser vazio"):
+        with pytest.raises(ValueError, match="Nome do escritorio não pode ser vazio"):
             Escritorio(nome="", cnpj_cpf="12345678901234")
 
     def test_escritorio_cnpj_vazio(self) -> None:
-        with pytest.raises(ValueError, match="CNPJ/CPF do escritorio nao pode ser vazio"):
+        with pytest.raises(ValueError, match="CNPJ/CPF do escritorio não pode ser vazio"):
             Escritorio(nome="Teste", cnpj_cpf="")
 
     def test_escritorio_strip_nome(self) -> None:
@@ -78,7 +78,7 @@ class TestContador:
         assert cont.crc.valor == "01-123456/O"
 
     def test_contador_nome_vazio(self) -> None:
-        with pytest.raises(ValueError, match="Nome do contador nao pode ser vazio"):
+        with pytest.raises(ValueError, match="Nome do contador não pode ser vazio"):
             Contador(escritorio_id=1, nome="")
 
     def test_contador_escritorio_invalido(self) -> None:
@@ -112,7 +112,7 @@ class TestEmpresa:
         assert emp.ativo == StatusEmpresa.ATIVA
 
     def test_empresa_razao_social_vazia(self) -> None:
-        with pytest.raises(ValueError, match="Razao social nao pode ser vazia"):
+        with pytest.raises(ValueError, match="Razao social não pode ser vazia"):
             Empresa(
                 escritorio_id=1,
                 cnpj=CNPJ("11222333000181"),
@@ -122,7 +122,7 @@ class TestEmpresa:
             )
 
     def test_empresa_nome_fantasia_vazio(self) -> None:
-        with pytest.raises(ValueError, match="Nome fantasia nao pode ser vazio"):
+        with pytest.raises(ValueError, match="Nome fantasia não pode ser vazio"):
             Empresa(
                 escritorio_id=1,
                 cnpj=CNPJ("11222333000181"),
@@ -172,7 +172,7 @@ class TestContaBancaria:
         assert conta.ativo is True
 
     def test_conta_bancaria_banco_vazio(self) -> None:
-        with pytest.raises(ValueError, match="Nome do banco nao pode ser vazio"):
+        with pytest.raises(ValueError, match="Nome do banco não pode ser vazio"):
             ContaBancaria(
                 empresa_id=1,
                 banco_nome="",
@@ -183,7 +183,7 @@ class TestContaBancaria:
             )
 
     def test_conta_bancaria_agencia_vazia(self) -> None:
-        with pytest.raises(ValueError, match="Agencia nao pode ser vazia"):
+        with pytest.raises(ValueError, match="Agencia não pode ser vazia"):
             ContaBancaria(
                 empresa_id=1,
                 banco_nome="Itau",
@@ -194,7 +194,7 @@ class TestContaBancaria:
             )
 
     def test_conta_bancaria_conta_vazia(self) -> None:
-        with pytest.raises(ValueError, match="Conta nao pode ser vazia"):
+        with pytest.raises(ValueError, match="Conta não pode ser vazia"):
             ContaBancaria(
                 empresa_id=1,
                 banco_nome="Itau",

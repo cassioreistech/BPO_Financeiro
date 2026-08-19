@@ -64,7 +64,7 @@ class SQLitePlanoContaRepository(PlanoContaRepository):
             model = session.get(PlanoContaModel, plano.id)
             if model is None:
                 raise ValueError(
-                    f"Plano de conta com ID {plano.id} nao encontrado para atualizacao."
+                    f"Plano de conta com ID {plano.id} não encontrado para atualizacao."
                 )
 
             model.escritorio_id = plano.escritorio_id

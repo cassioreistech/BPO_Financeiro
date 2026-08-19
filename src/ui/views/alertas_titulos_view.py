@@ -88,13 +88,10 @@ class AlertasTitulosView(QWidget):
         layout.setSpacing(16)
 
         # Cabecalho
-        cabecalho = QHBoxLayout()
-        titulo = QLabel("Alertas de Titulos")
+        titulo = QLabel("ALERTAS DE TITULOS - TODAS EMPRESAS")
         titulo.setObjectName("viewTitulo")
-        cabecalho.addWidget(titulo)
-        cabecalho.addStretch()
-
-        layout.addLayout(cabecalho)
+        titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(titulo)
 
         # Cards de resumo
         grid = QGridLayout()

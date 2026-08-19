@@ -64,7 +64,7 @@ class SQLiteContadorRepository(ContadorRepository):
             model = session.get(ContadorModel, contador.id)
             if model is None:
                 raise ValueError(
-                    f"Contador com ID {contador.id} nao encontrado para atualizacao."
+                    f"Contador com ID {contador.id} não encontrado para atualizacao."
                 )
 
             model.escritorio_id = contador.escritorio_id

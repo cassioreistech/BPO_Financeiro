@@ -138,7 +138,7 @@ class TestEditarContador:
         self, editar_uc: EditarContadorUseCase
     ) -> None:
         dto = EditarContadorDTO(id=999, escritorio_id=1, nome="Teste")
-        with pytest.raises(ValueError, match="nao encontrado"):
+        with pytest.raises(ValueError, match="não encontrado"):
             editar_uc.execute(dto)
 
 
@@ -166,7 +166,7 @@ class TestObterContador:
         assert obtido.nome == "Joao"
 
     def test_obter_inexistente(self, obter_uc: ObterContadorUseCase) -> None:
-        with pytest.raises(ValueError, match="nao encontrado"):
+        with pytest.raises(ValueError, match="não encontrado"):
             obter_uc.execute(999)
 
 
@@ -183,5 +183,5 @@ class TestExcluirContador:
         assert repo.get_by_id(criado.id) is None
 
     def test_excluir_inexistente(self, excluir_uc: ExcluirContadorUseCase) -> None:
-        with pytest.raises(ValueError, match="nao encontrado"):
+        with pytest.raises(ValueError, match="não encontrado"):
             excluir_uc.execute(999)

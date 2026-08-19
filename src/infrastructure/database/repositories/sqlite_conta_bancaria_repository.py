@@ -69,7 +69,7 @@ class SQLiteContaBancariaRepository(ContaBancariaRepository):
             model = session.get(ContaBancariaModel, conta.id)
             if model is None:
                 raise ValueError(
-                    f"Conta bancaria com ID {conta.id} nao encontrada para atualizacao."
+                    f"Conta bancaria com ID {conta.id} não encontrada para atualizacao."
                 )
 
             model.empresa_id = conta.empresa_id

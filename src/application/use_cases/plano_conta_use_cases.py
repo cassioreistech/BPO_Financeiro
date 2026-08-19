@@ -80,9 +80,9 @@ class CadastrarPlanoContaUseCase:
             ValueError: se dados invalidos ou codigo duplicado.
         """
         if not dto.codigo or not dto.codigo.strip():
-            raise ValueError("Codigo da conta nao pode ser vazio.")
+            raise ValueError("Codigo da conta não pode ser vazio.")
         if not dto.nome or not dto.nome.strip():
-            raise ValueError("Nome da conta nao pode ser vazio.")
+            raise ValueError("Nome da conta não pode ser vazio.")
         if dto.escritorio_id <= 0:
             raise ValueError("Escritorio ID deve ser um numero positivo.")
 
@@ -124,16 +124,16 @@ class EditarPlanoContaUseCase:
         """Executa a edicao de uma conta.
 
         Raises:
-            ValueError: se conta nao existe ou dados invalidos.
+            ValueError: se conta não existe ou dados invalidos.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
-            raise ValueError(f"Conta com ID {dto.id} nao encontrada.")
+            raise ValueError(f"Conta com ID {dto.id} não encontrada.")
 
         if not dto.codigo or not dto.codigo.strip():
-            raise ValueError("Codigo da conta nao pode ser vazio.")
+            raise ValueError("Codigo da conta não pode ser vazio.")
         if not dto.nome or not dto.nome.strip():
-            raise ValueError("Nome da conta nao pode ser vazio.")
+            raise ValueError("Nome da conta não pode ser vazio.")
 
         conflito = self._repository.get_by_codigo(dto.escritorio_id, dto.codigo)
         if conflito is not None and conflito.id != dto.id:
@@ -190,11 +190,11 @@ class ObterPlanoContaUseCase:
         """Obtem conta por ID.
 
         Raises:
-            ValueError: se conta nao existe.
+            ValueError: se conta não existe.
         """
         plano = self._repository.get_by_id(id)
         if plano is None:
-            raise ValueError(f"Conta com ID {id} nao encontrada.")
+            raise ValueError(f"Conta com ID {id} não encontrada.")
         return _para_response_dto(plano)
 
 
@@ -208,9 +208,9 @@ class RemoverPlanoContaUseCase:
         """Remove uma conta por ID.
 
         Raises:
-            ValueError: se conta nao existe.
+            ValueError: se conta não existe.
         """
         existente = self._repository.get_by_id(id)
         if existente is None:
-            raise ValueError(f"Conta com ID {id} nao encontrada.")
+            raise ValueError(f"Conta com ID {id} não encontrada.")
         self._repository.delete(id)

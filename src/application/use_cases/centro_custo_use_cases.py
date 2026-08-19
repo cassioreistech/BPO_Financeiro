@@ -35,9 +35,9 @@ class CadastrarCentroCustoUseCase:
             ValueError: se dados invalidos ou codigo duplicado.
         """
         if not dto.codigo or not dto.codigo.strip():
-            raise ValueError("Codigo do centro de custo nao pode ser vazio.")
+            raise ValueError("Codigo do centro de custo não pode ser vazio.")
         if not dto.nome or not dto.nome.strip():
-            raise ValueError("Nome do centro de custo nao pode ser vazio.")
+            raise ValueError("Nome do centro de custo não pode ser vazio.")
         if dto.empresa_id <= 0:
             raise ValueError("Empresa ID deve ser um numero positivo.")
 
@@ -67,16 +67,16 @@ class EditarCentroCustoUseCase:
         """Executa a edicao de um centro de custo.
 
         Raises:
-            ValueError: se centro nao existe ou dados invalidos.
+            ValueError: se centro não existe ou dados invalidos.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
-            raise ValueError(f"Centro de custo com ID {dto.id} nao encontrado.")
+            raise ValueError(f"Centro de custo com ID {dto.id} não encontrado.")
 
         if not dto.codigo or not dto.codigo.strip():
-            raise ValueError("Codigo do centro de custo nao pode ser vazio.")
+            raise ValueError("Codigo do centro de custo não pode ser vazio.")
         if not dto.nome or not dto.nome.strip():
-            raise ValueError("Nome do centro de custo nao pode ser vazio.")
+            raise ValueError("Nome do centro de custo não pode ser vazio.")
 
         conflito = self._repository.get_by_codigo(dto.empresa_id, dto.codigo)
         if conflito is not None and conflito.id != dto.id:
@@ -126,11 +126,11 @@ class ObterCentroCustoUseCase:
         """Obtem centro de custo por ID.
 
         Raises:
-            ValueError: se centro nao existe.
+            ValueError: se centro não existe.
         """
         centro = self._repository.get_by_id(id)
         if centro is None:
-            raise ValueError(f"Centro de custo com ID {id} nao encontrado.")
+            raise ValueError(f"Centro de custo com ID {id} não encontrado.")
         return _para_response_dto(centro)
 
 
@@ -144,11 +144,11 @@ class DesativarCentroCustoUseCase:
         """Desativa um centro de custo.
 
         Raises:
-            ValueError: se centro nao existe.
+            ValueError: se centro não existe.
         """
         existente = self._repository.get_by_id(id)
         if existente is None:
-            raise ValueError(f"Centro de custo com ID {id} nao encontrado.")
+            raise ValueError(f"Centro de custo com ID {id} não encontrado.")
 
         centro = CentroCusto(
             id=existente.id,

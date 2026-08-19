@@ -28,9 +28,9 @@ class Escritorio:
 
     def __post_init__(self) -> None:
         if not self.nome or not self.nome.strip():
-            raise ValueError("Nome do escritorio nao pode ser vazio.")
+            raise ValueError("Nome do escritorio não pode ser vazio.")
         if not self.cnpj_cpf or not self.cnpj_cpf.strip():
-            raise ValueError("CNPJ/CPF do escritorio nao pode ser vazio.")
+            raise ValueError("CNPJ/CPF do escritorio não pode ser vazio.")
 
         object.__setattr__(self, "nome", self.nome.strip())
         object.__setattr__(self, "cnpj_cpf", self.cnpj_cpf.strip())

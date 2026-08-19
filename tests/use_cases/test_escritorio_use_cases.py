@@ -49,7 +49,7 @@ class TestCriarEscritorio:
         uc = CriarEscritorioUseCase(repo)
         dto = CriarEscritorioDTO(nome="", cnpj_cpf="12345678901234")
 
-        with pytest.raises(ValueError, match="Nome do escritorio nao pode ser vazio"):
+        with pytest.raises(ValueError, match="Nome do escritorio não pode ser vazio"):
             uc.execute(dto)
 
     def test_criar_cnpj_duplicado_erro(self, repo: FakeEscritorioRepository) -> None:
@@ -99,7 +99,7 @@ class TestEditarEscritorio:
             cnpj_cpf="12345678901234",
         )
 
-        with pytest.raises(ValueError, match="nao encontrado"):
+        with pytest.raises(ValueError, match="não encontrado"):
             uc.execute(dto)
 
     def test_editar_cnpj_duplicado_erro(self, repo: FakeEscritorioRepository) -> None:
@@ -146,5 +146,5 @@ class TestListarObterEscritorios:
     def test_obter_inexistente_erro(self, repo: FakeEscritorioRepository) -> None:
         uc = ObterEscritorioUseCase(repo)
 
-        with pytest.raises(ValueError, match="nao encontrado"):
+        with pytest.raises(ValueError, match="não encontrado"):
             uc.execute(999)

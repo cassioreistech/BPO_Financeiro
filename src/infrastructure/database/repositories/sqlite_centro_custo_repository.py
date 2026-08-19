@@ -59,7 +59,7 @@ class SQLiteCentroCustoRepository(CentroCustoRepository):
             model = session.get(CentroCustoModel, centro.id)
             if model is None:
                 raise ValueError(
-                    f"Centro de custo com ID {centro.id} nao encontrado para atualizacao."
+                    f"Centro de custo com ID {centro.id} não encontrado para atualizacao."
                 )
 
             model.empresa_id = centro.empresa_id

@@ -88,7 +88,7 @@ class SQLiteEmpresaRepository(EmpresaRepository):
             model = session.get(EmpresaModel, empresa.id)
             if model is None:
                 raise ValueError(
-                    f"Empresa com ID {empresa.id} nao encontrada para atualizacao."
+                    f"Empresa com ID {empresa.id} não encontrada para atualizacao."
                 )
 
             model.escritorio_id = empresa.escritorio_id

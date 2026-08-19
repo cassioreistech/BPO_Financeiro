@@ -193,7 +193,7 @@ def test_atualizar_empresa_inexistente_raise(
         nome_fantasia="Y",
         regime_tributario=RegimeTributario.SIMPLES,
     )
-    with pytest.raises(ValueError, match="nao encontrada"):
+    with pytest.raises(ValueError, match="não encontrada"):
         empresa_repo.update(alvo)
 
 

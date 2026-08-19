@@ -41,13 +41,13 @@ class CadastrarContaBancariaUseCase:
             ValueError: se dados invalidos.
         """
         if not dto.banco_nome or not dto.banco_nome.strip():
-            raise ValueError("Nome do banco nao pode ser vazio.")
+            raise ValueError("Nome do banco não pode ser vazio.")
         if not dto.agencia or not dto.agencia.strip():
-            raise ValueError("Agencia nao pode ser vazia.")
+            raise ValueError("Agencia não pode ser vazia.")
         if not dto.conta or not dto.conta.strip():
-            raise ValueError("Conta nao pode ser vazia.")
+            raise ValueError("Conta não pode ser vazia.")
         if not dto.descricao or not dto.descricao.strip():
-            raise ValueError("Descricao nao pode ser vazia.")
+            raise ValueError("Descricao não pode ser vazia.")
         if dto.empresa_id <= 0:
             raise ValueError("Empresa ID deve ser um numero positivo.")
 
@@ -86,20 +86,20 @@ class EditarContaBancariaUseCase:
         """Executa a edicao de uma conta bancaria.
 
         Raises:
-            ValueError: se conta nao existe ou dados invalidos.
+            ValueError: se conta não existe ou dados invalidos.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
-            raise ValueError(f"Conta bancaria com ID {dto.id} nao encontrada.")
+            raise ValueError(f"Conta bancaria com ID {dto.id} não encontrada.")
 
         if not dto.banco_nome or not dto.banco_nome.strip():
-            raise ValueError("Nome do banco nao pode ser vazio.")
+            raise ValueError("Nome do banco não pode ser vazio.")
         if not dto.agencia or not dto.agencia.strip():
-            raise ValueError("Agencia nao pode ser vazia.")
+            raise ValueError("Agencia não pode ser vazia.")
         if not dto.conta or not dto.conta.strip():
-            raise ValueError("Conta nao pode ser vazia.")
+            raise ValueError("Conta não pode ser vazia.")
         if not dto.descricao or not dto.descricao.strip():
-            raise ValueError("Descricao nao pode ser vazia.")
+            raise ValueError("Descricao não pode ser vazia.")
 
         try:
             tipo = TipoContaBancaria(dto.tipo)
@@ -154,11 +154,11 @@ class ObterContaBancariaUseCase:
         """Obtem conta bancaria por ID.
 
         Raises:
-            ValueError: se conta nao existe.
+            ValueError: se conta não existe.
         """
         conta = self._repository.get_by_id(id)
         if conta is None:
-            raise ValueError(f"Conta bancaria com ID {id} nao encontrada.")
+            raise ValueError(f"Conta bancaria com ID {id} não encontrada.")
         return _para_response_dto(conta)
 
 
@@ -172,11 +172,11 @@ class DesativarContaBancariaUseCase:
         """Desativa uma conta bancaria (marca como inativa).
 
         Raises:
-            ValueError: se conta nao existe.
+            ValueError: se conta não existe.
         """
         existente = self._repository.get_by_id(id)
         if existente is None:
-            raise ValueError(f"Conta bancaria com ID {id} nao encontrada.")
+            raise ValueError(f"Conta bancaria com ID {id} não encontrada.")
 
         from domain.enums.tipo_conta_bancaria import TipoContaBancaria
 

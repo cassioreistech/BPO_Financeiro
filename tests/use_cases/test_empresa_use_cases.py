@@ -62,7 +62,7 @@ class TestCadastrarEmpresa:
             nome_fantasia="Teste",
             regime_tributario="SIMPLES",
         )
-        with pytest.raises(ValueError, match="Razao social nao pode ser vazia"):
+        with pytest.raises(ValueError, match="Razao social não pode ser vazia"):
             uc.execute(dto)
 
     def test_cadastrar_nome_fantasia_vazio_erro(
@@ -76,7 +76,7 @@ class TestCadastrarEmpresa:
             nome_fantasia="",
             regime_tributario="SIMPLES",
         )
-        with pytest.raises(ValueError, match="Nome fantasia nao pode ser vazio"):
+        with pytest.raises(ValueError, match="Nome fantasia não pode ser vazio"):
             uc.execute(dto)
 
     def test_cadastrar_cnpj_duplicado_erro(self, repo: FakeEmpresaRepository) -> None:
@@ -149,7 +149,7 @@ class TestEditarEmpresa:
             nome_fantasia="Nao",
             regime_tributario="SIMPLES",
         )
-        with pytest.raises(ValueError, match="nao encontrada"):
+        with pytest.raises(ValueError, match="não encontrada"):
             uc.execute(dto)
 
     def test_editar_cnpj_duplicado_erro(self, repo: FakeEmpresaRepository) -> None:
@@ -206,7 +206,7 @@ class TestDesativarEmpresa:
 
     def test_desativar_inexistente_erro(self, repo: FakeEmpresaRepository) -> None:
         uc = DesativarEmpresaUseCase(repo)
-        with pytest.raises(ValueError, match="nao encontrada"):
+        with pytest.raises(ValueError, match="não encontrada"):
             uc.execute(999)
 
 
@@ -285,5 +285,5 @@ class TestListarObterEmpresas:
 
     def test_obter_inexistente_erro(self, repo: FakeEmpresaRepository) -> None:
         uc = ObterEmpresaUseCase(repo)
-        with pytest.raises(ValueError, match="nao encontrada"):
+        with pytest.raises(ValueError, match="não encontrada"):
             uc.execute(999)

@@ -147,8 +147,8 @@ class TituloFormView(QDialog):
         form.addRow("Cod. Barras:", self._campo_codigo_barras)
 
         self._campo_descricao = QLineEdit()
-        self._campo_descricao.setPlaceholderText("Descricao do titulo")
-        form.addRow("Descricao:*", self._campo_descricao)
+        self._campo_descricao.setPlaceholderText("Descrição do título")
+        form.addRow("Descrição:*", self._campo_descricao)
 
         self._combo_tipo = QComboBox()
         self._combo_tipo.addItems(self.TIPOS)
@@ -174,8 +174,8 @@ class TituloFormView(QDialog):
 
         self._campo_observacao = QTextEdit()
         self._campo_observacao.setMaximumHeight(80)
-        self._campo_observacao.setPlaceholderText("Observacoes opcionais")
-        form.addRow("Observacao:", self._campo_observacao)
+        self._campo_observacao.setPlaceholderText("Observações opcionais")
+        form.addRow("Observação:", self._campo_observacao)
 
         # Secao de replicacao (apenas para novo titulo)
         self._check_replicar = QCheckBox("Replicar lancamento mensal")
@@ -387,17 +387,17 @@ class TituloFormView(QDialog):
 
         if empresa_id is None:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "Selecione uma empresa."
+                self, "Campo obrigatório", "Selecione uma empresa."
             )
             return
         if escritorio_id is None or escritorio_id <= 0:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "Empresa sem escritorio vinculado."
+                self, "Campo obrigatório", "Empresa sem escritorio vinculado."
             )
             return
         if not descricao:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "A descricao nao pode ser vazia."
+                self, "Campo obrigatório", "A descricao não pode ser vazia."
             )
             return
 

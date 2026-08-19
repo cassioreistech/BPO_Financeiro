@@ -130,7 +130,7 @@ class ContadorFormView(QDialog):
 
         if not nome:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "O nome nao pode ser vazio."
+                self, "Campo obrigatório", "O nome não pode ser vazio."
             )
             return
 

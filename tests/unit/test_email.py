@@ -37,11 +37,11 @@ class TestEmailInvalido:
     """Casos de falha para Email."""
 
     def test_email_vazio(self) -> None:
-        with pytest.raises(ValueError, match="nao pode ser vazio"):
+        with pytest.raises(ValueError, match="não pode ser vazio"):
             Email("")
 
     def test_email_so_espacos(self) -> None:
-        with pytest.raises(ValueError, match="nao pode ser vazio"):
+        with pytest.raises(ValueError, match="não pode ser vazio"):
             Email("   ")
 
     def test_email_sem_arroba(self) -> None:

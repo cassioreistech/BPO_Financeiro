@@ -173,7 +173,7 @@ class TestEditarContaBancaria:
             tipo="CORRENTE",
             descricao="Conta",
         )
-        with pytest.raises(ValueError, match="nao encontrada"):
+        with pytest.raises(ValueError, match="não encontrada"):
             editar_uc.execute(dto)
 
 
@@ -199,7 +199,7 @@ class TestDesativarContaBancaria:
     def test_desativar_inexistente(
         self, desativar_uc: DesativarContaBancariaUseCase
     ) -> None:
-        with pytest.raises(ValueError, match="nao encontrada"):
+        with pytest.raises(ValueError, match="não encontrada"):
             desativar_uc.execute(999)
 
 

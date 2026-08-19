@@ -39,7 +39,7 @@ class CriarEscritorioUseCase:
             ValueError: se nome vazio ou cnpj_cpf duplicado.
         """
         if not dto.nome or not dto.nome.strip():
-            raise ValueError("Nome do escritorio nao pode ser vazio.")
+            raise ValueError("Nome do escritorio não pode ser vazio.")
 
         cnpj_cpf_limpo = re.sub(r"\D", "", dto.cnpj_cpf)
         existente = self._repository.get_by_cnpj(cnpj_cpf_limpo)
@@ -72,14 +72,14 @@ class EditarEscritorioUseCase:
         """Executa a edicao de um escritorio.
 
         Raises:
-            ValueError: se escritorio nao existe, nome vazio ou cnpj_cpf duplicado.
+            ValueError: se escritorio não existe, nome vazio ou cnpj_cpf duplicado.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
-            raise ValueError(f"Escritorio com ID {dto.id} nao encontrado.")
+            raise ValueError(f"Escritorio com ID {dto.id} não encontrado.")
 
         if not dto.nome or not dto.nome.strip():
-            raise ValueError("Nome do escritorio nao pode ser vazio.")
+            raise ValueError("Nome do escritorio não pode ser vazio.")
 
         cnpj_cpf_limpo = re.sub(r"\D", "", dto.cnpj_cpf)
         conflito = self._repository.get_by_cnpj(cnpj_cpf_limpo)
@@ -125,11 +125,11 @@ class ObterEscritorioUseCase:
         """Obtem escritorio por ID.
 
         Raises:
-            ValueError: se escritorio nao existe.
+            ValueError: se escritorio não existe.
         """
         escritorio = self._repository.get_by_id(id)
         if escritorio is None:
-            raise ValueError(f"Escritorio com ID {id} nao encontrado.")
+            raise ValueError(f"Escritorio com ID {id} não encontrado.")
         return _para_response_dto(escritorio)
 
 
@@ -143,9 +143,9 @@ class ExcluirEscritorioUseCase:
         """Exclui um escritorio por ID.
 
         Raises:
-            ValueError: se escritorio nao existe.
+            ValueError: se escritorio não existe.
         """
         existente = self._repository.get_by_id(id)
         if existente is None:
-            raise ValueError(f"Escritorio com ID {id} nao encontrado.")
+            raise ValueError(f"Escritorio com ID {id} não encontrado.")
         self._repository.delete(id)

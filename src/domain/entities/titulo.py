@@ -71,7 +71,7 @@ class Titulo:
         if self.centro_custo_id is not None and self.centro_custo_id <= 0:
             raise ValueError("Centro de Custo ID deve ser um numero positivo.")
         if not self.descricao or not self.descricao.strip():
-            raise ValueError("Descricao do titulo nao pode ser vazia.")
+            raise ValueError("Descrição do título não pode ser vazia.")
         if self.valor <= Decimal("0"):
             raise ValueError("Valor do titulo deve ser maior que zero.")
         if self.data_vencimento < self.data_emissao:
@@ -108,15 +108,15 @@ class Titulo:
         """Aplica regras de dominio para quitacao integral do titulo.
 
         Raises:
-            ValueError: se o titulo nao estiver aberto, valor invalido
+            ValueError: se o título não estiver aberto, valor invalido
                         ou conta inconsistente.
         """
         if self.status != StatusTitulo.ABERTO:
             if self.status == StatusTitulo.PAGO:
                 raise ValueError("Titulo ja esta quitado.")
             if self.status == StatusTitulo.CANCELADO:
-                raise ValueError("Nao e possivel quitar um titulo cancelado.")
-            raise ValueError("Titulo nao esta em situacao para quitacao.")
+                raise ValueError("Não é possível quitar um titulo cancelado.")
+            raise ValueError("Título não esta em situacao para quitacao.")
         if valor_pago <= Decimal("0"):
             raise ValueError("Valor pago deve ser maior que zero.")
         if valor_pago != self.valor:

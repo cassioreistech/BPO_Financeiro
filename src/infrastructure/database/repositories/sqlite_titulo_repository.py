@@ -96,13 +96,13 @@ class SQLiteTituloRepository(TituloRepository):
 
     def update(self, titulo: Titulo) -> Titulo:
         if titulo.id is None:
-            raise ValueError("ID do titulo nao pode ser None para atualizacao.")
+            raise ValueError("ID do título não pode ser None para atualizacao.")
 
         with self._session_factory() as session:
             model = session.get(TituloModel, titulo.id)
             if model is None:
                 raise ValueError(
-                    f"Titulo com ID {titulo.id} nao encontrado para atualizacao."
+                    f"Título com ID {titulo.id} não encontrado para atualizacao."
                 )
 
             model.escritorio_id = titulo.escritorio_id

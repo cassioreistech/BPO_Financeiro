@@ -128,11 +128,11 @@ class EscritorioFormView(QDialog):
         telefone = self._campo_telefone.text().strip() or None
 
         if not nome:
-            QMessageBox.warning(self, "Campo obrigatorio", "O nome nao pode ser vazio.")
+            QMessageBox.warning(self, "Campo obrigatório", "O nome não pode ser vazio.")
             return
         if not cnpj:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "O CNPJ/CPF nao pode ser vazio."
+                self, "Campo obrigatório", "O CNPJ/CPF não pode ser vazio."
             )
             return
 

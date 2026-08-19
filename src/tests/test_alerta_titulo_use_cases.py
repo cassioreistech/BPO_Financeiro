@@ -38,7 +38,7 @@ class FakeTituloRepository(TituloRepository):
 
     def update(self, titulo: Titulo) -> Titulo:
         if titulo.id is None:
-            raise ValueError("ID do titulo nao pode ser None.")
+            raise ValueError("ID do título não pode ser None.")
         self._titulos[titulo.id] = titulo
         return titulo
 

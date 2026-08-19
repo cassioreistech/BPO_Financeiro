@@ -39,7 +39,7 @@ class FakeEscritorioRepository(EscritorioRepository):
 
     def update(self, escritorio: Escritorio) -> Escritorio:
         if escritorio.id is None:
-            raise ValueError("ID do escritorio nao pode ser None para atualizacao.")
+            raise ValueError("ID do escritório não pode ser None para atualizacao.")
         self._dados[escritorio.id] = escritorio
         return escritorio
 
@@ -86,7 +86,7 @@ class FakeEmpresaRepository(EmpresaRepository):
 
     def update(self, empresa: Empresa) -> Empresa:
         if empresa.id is None:
-            raise ValueError("ID da empresa nao pode ser None para atualizacao.")
+            raise ValueError("ID da empresa não pode ser None para atualizacao.")
         self._dados[empresa.id] = empresa
         return empresa
 

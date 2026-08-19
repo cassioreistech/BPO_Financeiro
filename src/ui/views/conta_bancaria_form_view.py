@@ -185,22 +185,22 @@ class ContaBancariaFormView(QDialog):
 
         if not banco_nome:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "O nome do banco nao pode ser vazio."
+                self, "Campo obrigatório", "O nome do banco não pode ser vazio."
             )
             return
         if not agencia:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "A agencia nao pode ser vazia."
+                self, "Campo obrigatório", "A agencia não pode ser vazia."
             )
             return
         if not conta:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "A conta nao pode ser vazia."
+                self, "Campo obrigatório", "A conta não pode ser vazia."
             )
             return
         if not descricao:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "A descricao nao pode ser vazia."
+                self, "Campo obrigatório", "A descricao não pode ser vazia."
             )
             return
 

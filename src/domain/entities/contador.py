@@ -31,7 +31,7 @@ class Contador:
 
     def __post_init__(self) -> None:
         if not self.nome or not self.nome.strip():
-            raise ValueError("Nome do contador nao pode ser vazio.")
+            raise ValueError("Nome do contador não pode ser vazio.")
         if self.escritorio_id is None or self.escritorio_id <= 0:
             raise ValueError("Escritorio ID deve ser um numero positivo.")
 

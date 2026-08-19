@@ -47,9 +47,9 @@ class CadastrarEmpresaUseCase:
             ValueError: se dados invalidos ou CNPJ duplicado.
         """
         if not dto.razao_social or not dto.razao_social.strip():
-            raise ValueError("Razao social nao pode ser vazia.")
+            raise ValueError("Razao social não pode ser vazia.")
         if not dto.nome_fantasia or not dto.nome_fantasia.strip():
-            raise ValueError("Nome fantasia nao pode ser vazio.")
+            raise ValueError("Nome fantasia não pode ser vazio.")
 
         cnpj_limpo = re.sub(r"\D", "", dto.cnpj)
         existente = self._repository.get_by_cnpj(cnpj_limpo)
@@ -95,16 +95,16 @@ class EditarEmpresaUseCase:
         """Executa a edicao de uma empresa.
 
         Raises:
-            ValueError: se empresa nao existe, dados invalidos ou CNPJ duplicado.
+            ValueError: se empresa não existe, dados invalidos ou CNPJ duplicado.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
-            raise ValueError(f"Empresa com ID {dto.id} nao encontrada.")
+            raise ValueError(f"Empresa com ID {dto.id} não encontrada.")
 
         if not dto.razao_social or not dto.razao_social.strip():
-            raise ValueError("Razao social nao pode ser vazia.")
+            raise ValueError("Razao social não pode ser vazia.")
         if not dto.nome_fantasia or not dto.nome_fantasia.strip():
-            raise ValueError("Nome fantasia nao pode ser vazio.")
+            raise ValueError("Nome fantasia não pode ser vazio.")
 
         cnpj_limpo = re.sub(r"\D", "", dto.cnpj)
         conflito = self._repository.get_by_cnpj(cnpj_limpo)
@@ -152,11 +152,11 @@ class DesativarEmpresaUseCase:
         """Desativa uma empresa (marca como INATIVA).
 
         Raises:
-            ValueError: se empresa nao existe.
+            ValueError: se empresa não existe.
         """
         existente = self._repository.get_by_id(id)
         if existente is None:
-            raise ValueError(f"Empresa com ID {id} nao encontrada.")
+            raise ValueError(f"Empresa com ID {id} não encontrada.")
 
         empresa = Empresa(
             id=existente.id,
@@ -210,11 +210,11 @@ class ObterEmpresaUseCase:
         """Obtem empresa por ID.
 
         Raises:
-            ValueError: se empresa nao existe.
+            ValueError: se empresa não existe.
         """
         empresa = self._repository.get_by_id(id)
         if empresa is None:
-            raise ValueError(f"Empresa com ID {id} nao encontrada.")
+            raise ValueError(f"Empresa com ID {id} não encontrada.")
         return _para_response_dto(empresa)
 
 
@@ -228,9 +228,9 @@ class ExcluirEmpresaUseCase:
         """Exclui uma empresa por ID.
 
         Raises:
-            ValueError: se empresa nao existe.
+            ValueError: se empresa não existe.
         """
         existente = self._repository.get_by_id(id)
         if existente is None:
-            raise ValueError(f"Empresa com ID {id} nao encontrada.")
+            raise ValueError(f"Empresa com ID {id} não encontrada.")
         self._repository.delete(id)

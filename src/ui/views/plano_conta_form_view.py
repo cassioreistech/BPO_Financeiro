@@ -182,12 +182,12 @@ class PlanoContaFormView(QDialog):
 
         if not codigo:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "O codigo nao pode ser vazio."
+                self, "Campo obrigatório", "O codigo não pode ser vazio."
             )
             return
         if not nome:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "O nome nao pode ser vazio."
+                self, "Campo obrigatório", "O nome não pode ser vazio."
             )
             return
 

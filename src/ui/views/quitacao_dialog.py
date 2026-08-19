@@ -92,7 +92,7 @@ class QuitacaoDialog(QDialog):
         self._campo_observacao = QTextEdit()
         self._campo_observacao.setPlaceholderText("Observacao opcional...")
         self._campo_observacao.setMaximumHeight(80)
-        form.addRow("Observacao:", self._campo_observacao)
+        form.addRow("Observação:", self._campo_observacao)
 
         layout.addLayout(form)
 
@@ -153,7 +153,7 @@ class QuitacaoDialog(QDialog):
         valor_texto = self._campo_valor_pago.text().strip().replace(",", ".")
         if not valor_texto:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "Informe o valor pago."
+                self, "Campo obrigatório", "Informe o valor pago."
             )
             return
         try:
@@ -166,7 +166,7 @@ class QuitacaoDialog(QDialog):
 
         if self._combo_conta_bancaria.currentData() is None:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "Selecione a conta bancaria."
+                self, "Campo obrigatório", "Selecione a conta bancaria."
             )
             return
 

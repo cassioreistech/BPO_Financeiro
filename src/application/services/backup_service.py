@@ -30,7 +30,7 @@ def criar_backup(destino: Path | None = None) -> Path:
         FileNotFoundError: se o banco de dados nao existir.
     """
     if not DATABASE_PATH.exists():
-        raise FileNotFoundError("Banco de dados nao encontrado para backup.")
+        raise FileNotFoundError("Banco de dados não encontrado para backup.")
 
     if destino is None:
         _garantir_diretorio_backup()
@@ -63,7 +63,7 @@ def restaurar_backup(backup_path: Path) -> None:
         FileNotFoundError: se o backup nao existir.
     """
     if not backup_path.exists():
-        raise FileNotFoundError(f"Backup nao encontrado: {backup_path}")
+        raise FileNotFoundError(f"Backup não encontrado: {backup_path}")
 
     _garantir_diretorio_backup()
     shutil.copy2(backup_path, DATABASE_PATH)

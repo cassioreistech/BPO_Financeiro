@@ -71,7 +71,7 @@ class SQLiteEscritorioRepository(EscritorioRepository):
             model = session.get(EscritorioModel, escritorio.id)
             if model is None:
                 raise ValueError(
-                    f"Escritorio com ID {escritorio.id} nao encontrado para atualizacao."
+                    f"Escritorio com ID {escritorio.id} não encontrado para atualizacao."
                 )
 
             model.nome = escritorio.nome

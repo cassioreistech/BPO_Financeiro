@@ -36,13 +36,13 @@ class ContaBancaria:
 
     def __post_init__(self) -> None:
         if not self.banco_nome or not self.banco_nome.strip():
-            raise ValueError("Nome do banco nao pode ser vazio.")
+            raise ValueError("Nome do banco não pode ser vazio.")
         if not self.agencia or not self.agencia.strip():
-            raise ValueError("Agencia nao pode ser vazia.")
+            raise ValueError("Agencia não pode ser vazia.")
         if not self.conta or not self.conta.strip():
-            raise ValueError("Conta nao pode ser vazia.")
+            raise ValueError("Conta não pode ser vazia.")
         if not self.descricao or not self.descricao.strip():
-            raise ValueError("Descricao nao pode ser vazia.")
+            raise ValueError("Descricao não pode ser vazia.")
         if self.empresa_id is None or self.empresa_id <= 0:
             raise ValueError("Empresa ID deve ser um numero positivo.")
 

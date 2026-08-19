@@ -58,7 +58,7 @@ def _validar_dto(dto: CadastrarTituloDTO | EditarTituloDTO) -> None:
     if dto.centro_custo_id is not None and dto.centro_custo_id <= 0:
         raise ValueError("Centro de Custo ID deve ser um numero positivo.")
     if not dto.descricao or not dto.descricao.strip():
-        raise ValueError("Descricao do titulo nao pode ser vazia.")
+        raise ValueError("Descrição do título não pode ser vazia.")
     if dto.valor <= Decimal("0"):
         raise ValueError("Valor do titulo deve ser maior que zero.")
     if dto.data_vencimento < dto.data_emissao:
@@ -155,13 +155,13 @@ class EditarTituloUseCase:
         """Executa a edicao de um titulo.
 
         Raises:
-            ValueError: se titulo nao existe ou dados invalidos.
+            ValueError: se titulo não existe ou dados invalidos.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
-            raise ValueError(f"Titulo com ID {dto.id} nao encontrado.")
+            raise ValueError(f"Título com ID {dto.id} não encontrado.")
         if existente.status == StatusTitulo.CANCELADO:
-            raise ValueError("Nao e possivel editar um titulo cancelado.")
+            raise ValueError("Não é possível editar um titulo cancelado.")
 
         _validar_dto(dto)
         tipo = _parse_tipo(dto.tipo)
@@ -258,11 +258,11 @@ class ObterTituloUseCase:
         """Obtem titulo por ID.
 
         Raises:
-            ValueError: se titulo nao existe.
+            ValueError: se titulo não existe.
         """
         titulo = self._repository.get_by_id(id)
         if titulo is None:
-            raise ValueError(f"Titulo com ID {id} nao encontrado.")
+            raise ValueError(f"Título com ID {id} não encontrado.")
         return _para_response_dto(titulo)
 
 
@@ -281,17 +281,17 @@ class QuitarTituloUseCase:
         """Marca um titulo como pago com dados da quitacao.
 
         Raises:
-            ValueError: se titulo nao existe, empresa divergente,
+            ValueError: se titulo não existe, empresa divergente,
                         conta invalida/inativa/de outra empresa,
-                        valor invalido ou titulo nao estiver aberto.
+                        valor invalido ou título não estiver aberto.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
-            raise ValueError(f"Titulo com ID {dto.id} nao encontrado.")
+            raise ValueError(f"Título com ID {dto.id} não encontrado.")
 
         if dto.empresa_id is not None and dto.empresa_id != existente.empresa_id:
             raise ValueError(
-                "Titulo nao pertence a empresa ativa."
+                "Título não pertence a empresa ativa."
             )
 
         if dto.conta_bancaria_id is None or dto.conta_bancaria_id <= 0:
@@ -301,7 +301,7 @@ class QuitarTituloUseCase:
         if self._conta_repository is not None:
             conta = self._conta_repository.get_by_id(dto.conta_bancaria_id)
             if conta is None:
-                raise ValueError("Conta bancaria nao encontrada.")
+                raise ValueError("Conta bancaria não encontrada.")
             if conta.empresa_id != existente.empresa_id:
                 raise ValueError(
                     "Conta bancaria nao pertence a empresa do titulo."
@@ -357,11 +357,11 @@ class CancelarTituloUseCase:
         """Marca um titulo como cancelado.
 
         Raises:
-            ValueError: se titulo nao existe.
+            ValueError: se titulo não existe.
         """
         existente = self._repository.get_by_id(id)
         if existente is None:
-            raise ValueError(f"Titulo com ID {id} nao encontrado.")
+            raise ValueError(f"Título com ID {id} não encontrado.")
 
         titulo = Titulo(
             id=existente.id,
@@ -400,9 +400,9 @@ class RemoverTituloUseCase:
         """Remove um titulo por ID.
 
         Raises:
-            ValueError: se titulo nao existe.
+            ValueError: se titulo não existe.
         """
         existente = self._repository.get_by_id(id)
         if existente is None:
-            raise ValueError(f"Titulo com ID {id} nao encontrado.")
+            raise ValueError(f"Título com ID {id} não encontrado.")
         self._repository.delete(id)

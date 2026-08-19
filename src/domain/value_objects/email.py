@@ -22,7 +22,7 @@ class Email:
         normalizado = self.valor.strip().lower()
 
         if not normalizado:
-            raise ValueError("Email nao pode ser vazio.")
+            raise ValueError("Email não pode ser vazio.")
 
         padrao = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(padrao, normalizado):

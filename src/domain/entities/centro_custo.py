@@ -25,9 +25,9 @@ class CentroCusto:
 
     def __post_init__(self) -> None:
         if not self.codigo or not self.codigo.strip():
-            raise ValueError("Codigo do centro de custo nao pode ser vazio.")
+            raise ValueError("Codigo do centro de custo não pode ser vazio.")
         if not self.nome or not self.nome.strip():
-            raise ValueError("Nome do centro de custo nao pode ser vazio.")
+            raise ValueError("Nome do centro de custo não pode ser vazio.")
         if self.empresa_id <= 0:
             raise ValueError("Empresa ID deve ser um numero positivo.")
 

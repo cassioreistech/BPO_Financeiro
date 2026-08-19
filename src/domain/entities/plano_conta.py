@@ -31,9 +31,9 @@ class PlanoConta:
 
     def __post_init__(self) -> None:
         if not self.codigo or not self.codigo.strip():
-            raise ValueError("Codigo da conta nao pode ser vazio.")
+            raise ValueError("Codigo da conta não pode ser vazio.")
         if not self.nome or not self.nome.strip():
-            raise ValueError("Nome da conta nao pode ser vazio.")
+            raise ValueError("Nome da conta não pode ser vazio.")
         if self.escritorio_id <= 0:
             raise ValueError("Escritorio ID deve ser um numero positivo.")
         if self.nivel < 1:

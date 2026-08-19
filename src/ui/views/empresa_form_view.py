@@ -168,17 +168,17 @@ class EmpresaFormView(QDialog):
 
         if not razao:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "A razao social nao pode ser vazia."
+                self, "Campo obrigatório", "A razao social não pode ser vazia."
             )
             return
         if not fantasia:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "O nome fantasia nao pode ser vazio."
+                self, "Campo obrigatório", "O nome fantasia não pode ser vazio."
             )
             return
         if not cnpj:
             QMessageBox.warning(
-                self, "Campo obrigatorio", "O CNPJ nao pode ser vazio."
+                self, "Campo obrigatório", "O CNPJ não pode ser vazio."
             )
             return
 

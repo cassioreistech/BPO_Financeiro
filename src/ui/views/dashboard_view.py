@@ -231,7 +231,7 @@ class DashboardView(QWidget):
             self._limpar_cards()
             self._tabela_vencidos.setRowCount(0)
             self._titulo.setText("Dashboard Financeiro")
-            self._label_empresa.setText("Empresa nao encontrada")
+            self._label_empresa.setText("Empresa não encontrada")
             return
 
         self._titulo.setText("Dashboard Financeiro")

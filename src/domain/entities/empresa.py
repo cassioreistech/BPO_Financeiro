@@ -41,9 +41,9 @@ class Empresa:
 
     def __post_init__(self) -> None:
         if not self.razao_social or not self.razao_social.strip():
-            raise ValueError("Razao social nao pode ser vazia.")
+            raise ValueError("Razao social não pode ser vazia.")
         if not self.nome_fantasia or not self.nome_fantasia.strip():
-            raise ValueError("Nome fantasia nao pode ser vazio.")
+            raise ValueError("Nome fantasia não pode ser vazio.")
         if self.escritorio_id is None or self.escritorio_id <= 0:
             raise ValueError("Escritorio ID deve ser um numero positivo.")
 

@@ -262,6 +262,7 @@ class MainWindow(QMainWindow):
 
         # Conectar mudanca de pagina para ocultar/mostrar seletor empresa
         self._stack.currentChanged.connect(self._ao_trocar_pagina)
+        self._ao_trocar_pagina(0)  # Oculta seletor na tela inicial (Alertas)
 
         # Timer para auto-refresh dos alertas (a cada 5 minutos)
         self._timer_alertas = QTimer(self)

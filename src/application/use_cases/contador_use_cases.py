@@ -39,7 +39,7 @@ class CadastrarContadorUseCase:
             ValueError: se dados invalidos.
         """
         if not dto.nome or not dto.nome.strip():
-            raise ValueError("Nome do contador nao pode ser vazio.")
+            raise ValueError("Nome do contador não pode ser vazio.")
         if dto.escritorio_id <= 0:
             raise ValueError("Escritorio ID deve ser um numero positivo.")
 
@@ -69,14 +69,14 @@ class EditarContadorUseCase:
         """Executa a edicao de um contador.
 
         Raises:
-            ValueError: se contador nao existe ou dados invalidos.
+            ValueError: se contador não existe ou dados invalidos.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
-            raise ValueError(f"Contador com ID {dto.id} nao encontrado.")
+            raise ValueError(f"Contador com ID {dto.id} não encontrado.")
 
         if not dto.nome or not dto.nome.strip():
-            raise ValueError("Nome do contador nao pode ser vazio.")
+            raise ValueError("Nome do contador não pode ser vazio.")
 
         crc = CRC(dto.crc) if dto.crc else None
         email = Email(dto.email) if dto.email else None
@@ -121,11 +121,11 @@ class ObterContadorUseCase:
         """Obtem contador por ID.
 
         Raises:
-            ValueError: se contador nao existe.
+            ValueError: se contador não existe.
         """
         contador = self._repository.get_by_id(id)
         if contador is None:
-            raise ValueError(f"Contador com ID {id} nao encontrado.")
+            raise ValueError(f"Contador com ID {id} não encontrado.")
         return _para_response_dto(contador)
 
 
@@ -139,9 +139,9 @@ class ExcluirContadorUseCase:
         """Exclui um contador por ID.
 
         Raises:
-            ValueError: se contador nao existe.
+            ValueError: se contador não existe.
         """
         existente = self._repository.get_by_id(id)
         if existente is None:
-            raise ValueError(f"Contador com ID {id} nao encontrado.")
+            raise ValueError(f"Contador com ID {id} não encontrado.")
         self._repository.delete(id)
