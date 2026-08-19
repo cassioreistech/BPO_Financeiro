@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
         self._configurar_repositories()
         self._carregar_empresas_iniciais()
         self._montar_ui()
-        self._navegar(0)
+        self._navegar(1)  # Abre na tela de Alertas
 
     def _carregar_empresas_iniciais(self) -> None:
         """Carrega empresas e define a primeira como ativa, se houver."""
@@ -355,8 +355,8 @@ class MainWindow(QMainWindow):
         self._atualizar_badge_alertas()
 
     def _ao_trocar_pagina(self, indice: int) -> None:
-        """Oculta seletor de empresa quando na tela de Alertas (indice 2)."""
-        ocultar = indice == 2
+        """Oculta seletor de empresa quando na tela de Alertas (indice 1)."""
+        ocultar = indice == 1
         self._lbl_trocar_empresa.setVisible(not ocultar)
         self._combo_empresa_ativa.setVisible(not ocultar)
         self._label_empresa_ativa.setVisible(not ocultar)
@@ -522,8 +522,8 @@ class MainWindow(QMainWindow):
         # Itens principais (operacionais)
         main_items = [
             ("  Dashboard", 0),
-            ("  Titulos", 1),
-            ("  Alertas", 2),
+            ("  Alertas", 1),
+            ("  Titulos", 2),
         ]
 
         for texto, indice in main_items:
@@ -648,7 +648,15 @@ class MainWindow(QMainWindow):
         )
         self._stack.addWidget(self._view_dashboard)
 
-        # 1: Titulos
+        # 1: Alertas
+        self._view_alertas = AlertasTitulosView(
+            dashboard_use_case=self._uc_dashboard_alertas,
+            listar_escritorios=self._uc_listar_esc,
+            contexto_empresa=self._contexto_empresa,
+        )
+        self._stack.addWidget(self._view_alertas)
+
+        # 2: Titulos
         self._view_titulos = TitulosView(
             listar=self._uc_listar_titulo,
             obter=self._uc_obter_titulo,
@@ -668,14 +676,6 @@ class MainWindow(QMainWindow):
             on_titulo_alterado=self._atualizar_dashboard_e_alertas,
         )
         self._stack.addWidget(self._view_titulos)
-
-        # 2: Alertas
-        self._view_alertas = AlertasTitulosView(
-            dashboard_use_case=self._uc_dashboard_alertas,
-            listar_escritorios=self._uc_listar_esc,
-            contexto_empresa=self._contexto_empresa,
-        )
-        self._stack.addWidget(self._view_alertas)
 
         # 3: Contas Bancarias (config)
         self._view_contas = ContasBancariasView(
