@@ -5,9 +5,10 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
+    QDateEdit,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -21,10 +22,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from application.dto.titulo_dto import FiltroTitulosDTO, TituloResponseDTO
 from application.services.empresa_context_service import EmpresaContextService
 from application.use_cases.dashboard_use_cases import ResumoFinanceiroUseCase
 from application.use_cases.empresa_use_cases import ObterEmpresaUseCase
-from domain.entities.titulo import Titulo
+from application.use_cases.titulo_use_cases import ListarTitulosUseCase
 from infrastructure.database import SessionLocal
 from infrastructure.database.repositories.sqlite_empresa_repository import (
     SQLiteEmpresaRepository,
@@ -42,11 +44,13 @@ class DashboardView(QWidget):
     def __init__(
         self,
         resumo: ResumoFinanceiroUseCase,
+        listar_titulos: ListarTitulosUseCase,
         contexto_empresa: EmpresaContextService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._resumo = resumo
+        self._listar_titulos = listar_titulos
         self._contexto_empresa = contexto_empresa
         self._cards: dict[str, QLabel] = {}
         self._labels_tooltips: dict[str, tuple[str, str, str]] = {}
@@ -68,11 +72,39 @@ class DashboardView(QWidget):
         self._label_empresa.setStyleSheet("color: #666; font-size: 13px;")
         cabecalho.addWidget(self._label_empresa)
 
+        layout.addLayout(cabecalho)
+
+        # Linha de filtros de periodo
+        filtro_layout = QHBoxLayout()
+        filtro_layout.setSpacing(8)
+
+        filtro_layout.addWidget(QLabel("De:"))
+        self._date_inicio = QDateEdit()
+        self._date_inicio.setCalendarPopup(True)
+        hoje = date.today()
+        primeiro_dia = date(hoje.year, hoje.month, 1)
+        self._date_inicio.setDate(
+            QDate(primeiro_dia.year, primeiro_dia.month, primeiro_dia.day)
+        )
+        filtro_layout.addWidget(self._date_inicio)
+
+        filtro_layout.addWidget(QLabel("Ate:"))
+        self._date_fim = QDateEdit()
+        self._date_fim.setCalendarPopup(True)
+        self._date_fim.setDate(QDate(hoje.year, hoje.month, hoje.day))
+        filtro_layout.addWidget(self._date_fim)
+
+        btn_filtrar = QPushButton("Filtrar")
+        btn_filtrar.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_filtrar.clicked.connect(self._filtrar_periodo)
+        filtro_layout.addWidget(btn_filtrar)
+
         btn_atualizar = QPushButton("Atualizar")
         btn_atualizar.clicked.connect(self._atualizar)
-        cabecalho.addWidget(btn_atualizar)
+        filtro_layout.addWidget(btn_atualizar)
 
-        layout.addLayout(cabecalho)
+        filtro_layout.addStretch()
+        layout.addLayout(filtro_layout)
 
         grid = QGridLayout()
         grid.setSpacing(12)
@@ -120,7 +152,7 @@ class DashboardView(QWidget):
         font.setPointSize(12)
         font.setBold(True)
 
-        vencidos_titulo = QLabel("Titulos Vencidos (top 10)")
+        vencidos_titulo = QLabel("Titulos no Periodo")
         vencidos_titulo.setObjectName("sectionTitle")
         vencidos_titulo.setFont(font)
         layout.addWidget(vencidos_titulo)
@@ -214,9 +246,6 @@ class DashboardView(QWidget):
             resumo = self._resumo.execute(
                 escritorio_id=empresa.escritorio_id, empresa_id=empresa_id
             )
-            vencidos = self._resumo.titulos_vencidos(
-                escritorio_id=empresa.escritorio_id, empresa_id=empresa_id
-            )
         except Exception as e:
             QMessageBox.warning(self, "Erro", f"Erro ao carregar resumo: {e}")
             return
@@ -238,12 +267,54 @@ class DashboardView(QWidget):
             "mes_pagar", "Total do Mes a Pagar", resumo.total_mes_pagar
         )
 
-        self._atualizar_vencidos(vencidos)
+        self._filtrar_periodo()
 
-    def _atualizar_vencidos(self, vencidos: list[Titulo]) -> None:
-        self._tabela_vencidos.setRowCount(len(vencidos))
+    def _filtrar_periodo(self) -> None:
+        """Filtra titulos pelo periodo selecionado e atualiza a tabela."""
+        empresa_id = self._contexto_empresa.get_empresa_ativa()
+        if empresa_id is None:
+            self._tabela_vencidos.setRowCount(0)
+            return
+
+        try:
+            empresa_repo = SQLiteEmpresaRepository(SessionLocal)
+            obter_empresa = ObterEmpresaUseCase(empresa_repo)
+            empresa = obter_empresa.execute(empresa_id)
+        except Exception:
+            self._tabela_vencidos.setRowCount(0)
+            return
+
+        if empresa is None:
+            self._tabela_vencidos.setRowCount(0)
+            return
+
+        data_inicio = self._date_inicio.date().toPython()
+        data_fim = self._date_fim.date().toPython()
+
+        filtro = FiltroTitulosDTO(
+            empresa_id=empresa_id,
+            data_vencimento_inicio=data_inicio,
+            data_vencimento_fim=data_fim,
+        )
+
+        try:
+            titulos = self._listar_titulos.execute(
+                escritorio_id=empresa.escritorio_id,
+                filtro=filtro,
+                skip=0,
+                limit=1000,
+            )
+        except Exception:
+            self._tabela_vencidos.setRowCount(0)
+            return
+
+        titulos_ordenados = sorted(titulos, key=lambda t: t.data_vencimento)
+        self._atualizar_vencidos(titulos_ordenados)
+
+    def _atualizar_vencidos(self, titulos: list[TituloResponseDTO]) -> None:
+        self._tabela_vencidos.setRowCount(len(titulos))
         hoje = date.today()
-        for i, t in enumerate(vencidos):
+        for i, t in enumerate(titulos):
             dias = (hoje - t.data_vencimento).days
             self._tabela_vencidos.setItem(
                 i,
@@ -259,7 +330,7 @@ class DashboardView(QWidget):
             item_desc.setFont(font_desc)
             self._tabela_vencidos.setItem(i, 1, item_desc)
             self._tabela_vencidos.setItem(
-                i, 2, criar_item_centralizado(t.tipo.value)
+                i, 2, criar_item_centralizado(t.tipo)
             )
             item_valor = QTableWidgetItem(self._formatar_valor(t.valor))
             item_valor.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
