@@ -282,19 +282,24 @@ class TitulosView(QWidget):
         btn_do_mes.clicked.connect(self._filtrar_do_mes)
         filtros.addWidget(btn_do_mes, 2, 5)
 
+        btn_todos = QPushButton("Todos")
+        btn_todos.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_todos.clicked.connect(self._filtrar_todos)
+        filtros.addWidget(btn_todos, 2, 6)
+
         btn_limpar = QPushButton("Limpar")
         btn_limpar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_limpar.clicked.connect(self._limpar_filtros)
-        filtros.addWidget(btn_limpar, 2, 6)
+        filtros.addWidget(btn_limpar, 2, 7)
 
         btn_novo = QPushButton("Novo Titulo")
         btn_novo.setObjectName("btnPrimario")
         btn_novo.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_novo.clicked.connect(self._novo)
-        filtros.addWidget(btn_novo, 2, 7)
+        filtros.addWidget(btn_novo, 2, 8)
 
         # Stretch na ultima coluna para empurrar tudo para a esquerda
-        filtros.setColumnStretch(7, 1)
+        filtros.setColumnStretch(8, 1)
 
         # Auto-atualizar ao alterar filtros
         self._timer_filtro = QTimer(self)
@@ -613,6 +618,23 @@ class TitulosView(QWidget):
             QDate(ultimo_dia.year, ultimo_dia.month, ultimo_dia.day)
         )
         self._date_filtro_venc_fim.setSpecialValueText("")
+        self.atualizar_lista()
+
+    def _filtrar_todos(self) -> None:
+        """Limpa filtros de data e busca para mostrar todos os titulos."""
+        self._date_filtro_venc_ini.setDate(
+            self._date_filtro_venc_ini.minimumDate()
+        )
+        self._date_filtro_venc_ini.setSpecialValueText("Sem limite")
+        self._date_filtro_venc_fim.setDate(
+            self._date_filtro_venc_fim.minimumDate()
+        )
+        self._date_filtro_venc_fim.setSpecialValueText("Sem limite")
+        self._campo_busca.clear()
+        self._combo_filtro_categoria.setCurrentIndex(0)
+        self._combo_filtro_tipo.setCurrentIndex(0)
+        self._combo_filtro_status.setCurrentIndex(0)
+        self._combo_filtro_situacao.setCurrentIndex(0)
         self.atualizar_lista()
 
     @staticmethod
