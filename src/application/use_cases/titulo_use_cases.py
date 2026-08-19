@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
+import re
 
 from application.dto.titulo_dto import (
     CadastrarTituloDTO,
@@ -98,9 +100,53 @@ def _parse_forma_pagamento(forma_str: str) -> FormaPagamento:
     except ValueError:
         formas_validas = [f.value for f in FormaPagamento]
         raise ValueError(
-            f"Forma de pagamento invalida: '{forma_str}'. "
+            f"Forma de pagamento invalido: '{forma_str}'. "
             f"Valores aceitos: {formas_validas}."
         ) from None
+
+
+def _extrair_descricao_base(descricao: str) -> tuple[str, bool]:
+    """Extrai a descrição base (sem sufixo XX/YY) e indica se é a primeira parcela.
+    
+    Returns:
+        (descricao_base, eh_primeira_parcela)
+    """
+    # Procura padrão " (X/YY)" ou " (XX/YY)" no final (1 ou 2 dígitos)
+    match = re.search(r"\s+\((\d{1,2})/(\d{1,2})\)$", descricao)
+    if not match:
+        return descricao, False
+    
+    num_parcela = int(match.group(1))
+    total_parcelas = int(match.group(2))
+    descricao_base = descricao[:match.start()]
+    
+    return descricao_base, num_parcela == 1
+
+
+def _incrementar_numero_documento(numero: str | None, incremento: int) -> str | None:
+    """Incrementa a parte numerica final do numero do documento.
+    
+    Exemplos:
+    - '01125425-6' + 1 -> '01125425-7'
+    - '01125425-6' + 4 -> '01125425-10'
+    - 'ABC-001' + 1 -> 'ABC-002'
+    - '12345' + 1 -> '12346'
+    """
+    if not numero:
+        return None
+    
+    match = re.search(r"^(.*?[-_])?(\d+)$", numero)
+    if not match:
+        return numero
+    
+    prefixo = match.group(1) or ""
+    numero_base = int(match.group(2))
+    novo_numero = numero_base + incremento
+    
+    largura_original = len(match.group(2))
+    novo_numero_str = str(novo_numero).zfill(largura_original)
+    
+    return f"{prefixo}{novo_numero_str}"
 
 
 class CadastrarTituloUseCase:
@@ -167,23 +213,45 @@ class EditarTituloUseCase:
         tipo = _parse_tipo(dto.tipo)
         categoria = _parse_categoria(dto.categoria)
 
+        # Verifica se é a primeira parcela de uma replicação
+        descricao_base, eh_primeira = _extrair_descricao_base(existente.descricao)
+        novo_numero_doc = dto.numero_documento.strip() if dto.numero_documento else None
+        novo_valor = dto.valor
+        nova_descricao_base, _ = _extrair_descricao_base(dto.descricao.strip())
+
+        # Calcula total de parcelas para reconstruir sufixos
+        parcelas_relacionadas = []
+        if eh_primeira and dto.empresa_id is not None:
+            parcelas_relacionadas = self._repository.list_parcelas_relacionadas(
+                escritorio_id=dto.escritorio_id,
+                empresa_id=dto.empresa_id,
+                descricao_base=descricao_base,
+                primeiro_vencimento=existente.data_vencimento,
+                excluir_id=dto.id,
+            )
+        total_parcelas = len(parcelas_relacionadas) + 1
+
+        # Se é primeira parcela, reconstrói descrição com sufixo (01/YY)
+        if eh_primeira:
+            descricao_primeira = f"{nova_descricao_base} (01/{total_parcelas:02d})"
+        else:
+            descricao_primeira = nova_descricao_base
+
         titulo = Titulo(
             id=dto.id,
             escritorio_id=dto.escritorio_id,
             empresa_id=dto.empresa_id,
             plano_conta_id=dto.plano_conta_id,
             centro_custo_id=dto.centro_custo_id,
-            numero_documento=dto.numero_documento.strip()
-            if dto.numero_documento
-            else None,
+            numero_documento=novo_numero_doc,
             codigo_barras=dto.codigo_barras.strip()
             if dto.codigo_barras
             else None,
             categoria=categoria,
-            descricao=dto.descricao.strip(),
+            descricao=descricao_primeira,
             tipo=tipo,
             status=existente.status,
-            valor=dto.valor,
+            valor=novo_valor,
             valor_pago=existente.valor_pago,
             data_emissao=dto.data_emissao,
             data_vencimento=dto.data_vencimento,
@@ -198,6 +266,42 @@ class EditarTituloUseCase:
         )
 
         salvo = self._repository.update(titulo)
+
+        # Se for a primeira parcela, propaga alterações para as subsequentes
+        if eh_primeira and dto.empresa_id is not None:
+            for i, parcela in enumerate(parcelas_relacionadas, start=1):
+                # Incrementa número do documento
+                novo_num_parcela = _incrementar_numero_documento(novo_numero_doc, i)
+                
+                # Limpa sufixos acumulados e reconstrói com o sufixo correto
+                sufixo = f" ({i+1:02d}/{total_parcelas:02d})"
+                nova_desc_parcela = f"{nova_descricao_base}{sufixo}"
+
+                parcela_atualizada = Titulo(
+                    id=parcela.id,
+                    escritorio_id=parcela.escritorio_id,
+                    empresa_id=parcela.empresa_id,
+                    plano_conta_id=parcela.plano_conta_id,
+                    centro_custo_id=parcela.centro_custo_id,
+                    numero_documento=novo_num_parcela,
+                    codigo_barras=parcela.codigo_barras,
+                    categoria=parcela.categoria,
+                    descricao=nova_desc_parcela,
+                    tipo=parcela.tipo,
+                    status=parcela.status,
+                    valor=novo_valor,  # Propaga o novo valor
+                    valor_pago=parcela.valor_pago,
+                    data_emissao=parcela.data_emissao,
+                    data_vencimento=parcela.data_vencimento,
+                    data_quitacao=parcela.data_quitacao,
+                    conta_bancaria_id=parcela.conta_bancaria_id,
+                    forma_pagamento=parcela.forma_pagamento,
+                    observacao=parcela.observacao,
+                    observacao_quitacao=parcela.observacao_quitacao,
+                    emitente=parcela.emitente,
+                )
+                self._repository.update(parcela_atualizada)
+
         return _para_response_dto(salvo)
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 from decimal import Decimal
+import re
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -319,3 +320,26 @@ class SQLiteTituloRepository(TituloRepository):
                 )
                 for row in resultados
             ]
+
+    def list_parcelas_relacionadas(
+        self,
+        escritorio_id: int,
+        empresa_id: int,
+        descricao_base: str,
+        primeiro_vencimento: date,
+        excluir_id: int,
+    ) -> list[Titulo]:
+        """Busca parcelas subsequentes de uma replicação mensal."""
+        with self._session_factory() as session:
+            # Busca todos os títulos da mesma empresa com descrição que começa com a base
+            # e vencimento >= primeiro_vencimento, exceto o próprio
+            stmt = select(TituloModel).where(
+                TituloModel.escritorio_id == escritorio_id,
+                TituloModel.empresa_id == empresa_id,
+                TituloModel.descricao.like(f"{descricao_base} %"),
+                TituloModel.data_vencimento >= primeiro_vencimento,
+                TituloModel.id != excluir_id,
+            ).order_by(TituloModel.data_vencimento)
+            
+            models = session.scalars(stmt).all()
+            return [_para_entidade(m) for m in models]

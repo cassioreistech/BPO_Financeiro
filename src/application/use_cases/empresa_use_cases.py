@@ -13,7 +13,7 @@ from application.ports.empresa_repository import EmpresaRepository
 from domain.entities.empresa import Empresa
 from domain.enums.regime_tributario import RegimeTributario
 from domain.enums.status_empresa import StatusEmpresa
-from domain.value_objects.cnpj import CNPJ
+from domain.value_objects.documento import Documento
 from domain.value_objects.email import Email
 from domain.value_objects.telefone import Telefone
 
@@ -23,7 +23,7 @@ def _para_response_dto(emp: Empresa) -> EmpresaResponseDTO:
     return EmpresaResponseDTO(
         id=emp.id if emp.id is not None else 0,
         escritorio_id=emp.escritorio_id,
-        cnpj=emp.cnpj.valor,
+        cnpj=emp.documento.apenas_digitos(),
         razao_social=emp.razao_social,
         nome_fantasia=emp.nome_fantasia,
         regime_tributario=emp.regime_tributario.value,
@@ -44,17 +44,17 @@ class CadastrarEmpresaUseCase:
         """Executa o cadastro de uma empresa.
 
         Raises:
-            ValueError: se dados invalidos ou CNPJ duplicado.
+            ValueError: se dados invalidos ou CNPJ/CPF duplicado.
         """
         if not dto.razao_social or not dto.razao_social.strip():
             raise ValueError("Razao social não pode ser vazia.")
         if not dto.nome_fantasia or not dto.nome_fantasia.strip():
             raise ValueError("Nome fantasia não pode ser vazio.")
 
-        cnpj_limpo = re.sub(r"\D", "", dto.cnpj)
-        existente = self._repository.get_by_cnpj(cnpj_limpo)
+        doc_limpo = re.sub(r"[^A-Za-z0-9]", "", dto.cnpj).upper()
+        existente = self._repository.get_by_cnpj(doc_limpo)
         if existente is not None:
-            raise ValueError(f"Ja existe empresa com CNPJ '{dto.cnpj}'.")
+            raise ValueError(f"Ja existe empresa com documento '{dto.cnpj}'.")
 
         try:
             regime = RegimeTributario(dto.regime_tributario)
@@ -68,12 +68,12 @@ class CadastrarEmpresaUseCase:
         email = Email(dto.email_financeiro) if dto.email_financeiro else None
         telefone = Telefone(dto.telefone_financeiro) if dto.telefone_financeiro else None
 
-        cnpj = CNPJ(cnpj_limpo)
+        documento = Documento(doc_limpo)
 
         empresa = Empresa(
             escritorio_id=dto.escritorio_id,
             contador_id=dto.contador_id,
-            cnpj=cnpj,
+            documento=documento,
             razao_social=dto.razao_social.strip(),
             nome_fantasia=dto.nome_fantasia.strip(),
             regime_tributario=regime,
@@ -95,7 +95,7 @@ class EditarEmpresaUseCase:
         """Executa a edicao de uma empresa.
 
         Raises:
-            ValueError: se empresa não existe, dados invalidos ou CNPJ duplicado.
+            ValueError: se empresa não existe, dados invalidos ou CNPJ/CPF duplicado.
         """
         existente = self._repository.get_by_id(dto.id)
         if existente is None:
@@ -106,10 +106,10 @@ class EditarEmpresaUseCase:
         if not dto.nome_fantasia or not dto.nome_fantasia.strip():
             raise ValueError("Nome fantasia não pode ser vazio.")
 
-        cnpj_limpo = re.sub(r"\D", "", dto.cnpj)
-        conflito = self._repository.get_by_cnpj(cnpj_limpo)
+        doc_limpo = re.sub(r"[^A-Za-z0-9]", "", dto.cnpj).upper()
+        conflito = self._repository.get_by_cnpj(doc_limpo)
         if conflito is not None and conflito.id != dto.id:
-            raise ValueError(f"Ja existe empresa com CNPJ '{dto.cnpj}'.")
+            raise ValueError(f"Ja existe empresa com documento '{dto.cnpj}'.")
 
         try:
             regime = RegimeTributario(dto.regime_tributario)
@@ -123,13 +123,13 @@ class EditarEmpresaUseCase:
         email = Email(dto.email_financeiro) if dto.email_financeiro else None
         telefone = Telefone(dto.telefone_financeiro) if dto.telefone_financeiro else None
 
-        cnpj = CNPJ(cnpj_limpo)
+        documento = Documento(doc_limpo)
 
         empresa = Empresa(
             id=dto.id,
             escritorio_id=dto.escritorio_id,
             contador_id=dto.contador_id,
-            cnpj=cnpj,
+            documento=documento,
             razao_social=dto.razao_social.strip(),
             nome_fantasia=dto.nome_fantasia.strip(),
             regime_tributario=regime,
@@ -162,7 +162,7 @@ class DesativarEmpresaUseCase:
             id=existente.id,
             escritorio_id=existente.escritorio_id,
             contador_id=existente.contador_id,
-            cnpj=existente.cnpj,
+            documento=existente.documento,
             razao_social=existente.razao_social,
             nome_fantasia=existente.nome_fantasia,
             regime_tributario=existente.regime_tributario,

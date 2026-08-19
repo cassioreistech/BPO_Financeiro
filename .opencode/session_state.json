@@ -7,7 +7,7 @@
 - **Stack**: PySide6, SQLAlchemy, SQLite, pytest
 
 ## Last Summary
-Sessão concluída em 18/08/2026. Dashboard com filtro de período, alertas multiempresa, campos com copiar/colar, installer gerado.
+Sessão concluída em 19/08/2026. Implementado: replicação nº documento em parcelas (025212101→025212102...), edição 1ª parcela propaga para demais (nº doc, valor, descrição), campo CNPJ/CPF unificado aceita ambos com validação completa.
 
 ## Current Task
 Aguardando próxima sessão.
@@ -28,20 +28,29 @@ Aguardando próxima sessão.
 - Sidebar: Dashboard, Alertas, Titulos
 - Sistema abre na tela de Alertas
 - Cards do Dashboard calculados pelo período selecionado
-- CNPJ aceita alfanumérico (preparação legislação futura)
+- CNPJ/CPF unificado: auto-detecta pelo tamanho (≤11=CPF, ≥12=CNPJ)
 - Campos aceitam copiar/colar de qualquer fonte
 - Sistema abre maximizado
 
 ## Pending Actions
 - Próxima sessão: verificar pendências e novos pedidos
+- Regenerar installer (build.spec + installer.iss) com novas features
 
 ## Recent Files
-- src/ui/views/dashboard_view.py (filtro período, cards por período)
-- src/ui/views/alertas_titulos_view.py (multiempresa, cards formato dashboard)
-- src/ui/views/titulos_view.py (botão Todos)
-- src/ui/views/formatadores.py (novo - CNPJ, CPF, telefone)
-- src/ui/views/empresa_form_view.py (copiar/colar)
-- src/ui/views/escritorio_form_view.py (copiar/colar)
-- src/ui/main_window.py (sidebar, badge, auto-refresh, maximizado)
-- build.spec (formatadores adicionado)
-- installer.iss (configuração Inno Setup)
+- src/ui/views/titulo_form_view.py (replicação nº documento incrementado)
+- src/application/use_cases/titulo_use_cases.py (edição 1ª parcela propaga + helpers)
+- src/infrastructure/database/repositories/sqlite_titulo_repository.py (list_parcelas_relacionadas)
+- src/domain/value_objects/documento.py (novo - CNPJ ou CPF unificado)
+- src/domain/value_objects/cpf.py (novo - validador CPF)
+- src/domain/entities/empresa.py (campo documento substitui cnpj)
+- src/application/use_cases/empresa_use_cases.py (usa Documento)
+- src/infrastructure/database/repositories/sqlite_empresa_repository.py (usa Documento)
+- src/ui/views/empresa_form_view.py (campo CNPJ/CPF unificado)
+- src/ui/views/formatadores.py (formatar_cnpj_cpf auto-detecta)
+- src/application/ports/titulo_repository.py (list_parcelas_relacionadas)
+- src/tests/test_titulo_filtros_use_cases.py (fake atualizado)
+- src/tests/test_quitacao_titulo_use_cases.py (fake atualizado)
+- src/tests/test_alerta_titulo_use_cases.py (fake atualizado)
+- src/tests/test_quitacao_titulo_repository.py (fixtures corrigidos)
+- src/tests/test_sqlite_titulo_repository_alertas.py (fixtures corrigidos)
+- src/tests/test_sqlite_titulo_repository_filtros.py (fixtures corrigidos + categorias válidas)

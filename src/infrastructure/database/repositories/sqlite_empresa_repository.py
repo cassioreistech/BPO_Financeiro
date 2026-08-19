@@ -9,7 +9,7 @@ from application.ports.empresa_repository import EmpresaRepository
 from domain.entities.empresa import Empresa
 from domain.enums.regime_tributario import RegimeTributario
 from domain.enums.status_empresa import StatusEmpresa
-from domain.value_objects.cnpj import CNPJ
+from domain.value_objects.documento import Documento
 from domain.value_objects.email import Email
 from domain.value_objects.telefone import Telefone
 from infrastructure.database.models.empresa_model import EmpresaModel
@@ -21,7 +21,7 @@ def _para_model(empresa: Empresa) -> EmpresaModel:
         id=empresa.id,
         escritorio_id=empresa.escritorio_id,
         contador_id=empresa.contador_id,
-        cnpj=empresa.cnpj.valor,
+        cnpj=empresa.documento.apenas_digitos(),
         razao_social=empresa.razao_social,
         nome_fantasia=empresa.nome_fantasia,
         regime_tributario=empresa.regime_tributario.value,
@@ -39,7 +39,7 @@ def _para_entidade(model: EmpresaModel) -> Empresa:
         id=model.id,
         escritorio_id=model.escritorio_id,
         contador_id=model.contador_id,
-        cnpj=CNPJ(model.cnpj),
+        documento=Documento(model.cnpj),
         razao_social=model.razao_social,
         nome_fantasia=model.nome_fantasia,
         regime_tributario=RegimeTributario(model.regime_tributario),
@@ -93,7 +93,7 @@ class SQLiteEmpresaRepository(EmpresaRepository):
 
             model.escritorio_id = empresa.escritorio_id
             model.contador_id = empresa.contador_id
-            model.cnpj = empresa.cnpj.valor
+            model.cnpj = empresa.documento.apenas_digitos()
             model.razao_social = empresa.razao_social
             model.nome_fantasia = empresa.nome_fantasia
             model.regime_tributario = empresa.regime_tributario.value

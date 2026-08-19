@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 from ui.views.formatadores import (
     aplicar_formatacao_campo,
-    formatar_cnpj,
+    formatar_cnpj_cpf,
     formatar_telefone,
     limpar_documento,
 )
@@ -31,7 +31,7 @@ from application.use_cases.empresa_use_cases import (
     EditarEmpresaUseCase,
 )
 from domain.enums.regime_tributario import RegimeTributario
-from domain.value_objects.cnpj import CNPJ
+from domain.value_objects.documento import Documento
 
 
 class EmpresaFormView(QDialog):
@@ -79,11 +79,11 @@ class EmpresaFormView(QDialog):
             self._combo_escritorio.addItem(nome, eid)
         form.addRow("Escritorio:", self._combo_escritorio)
 
-        self._campo_cnpj = QLineEdit()
-        self._campo_cnpj.setPlaceholderText("Cole o CNPJ aqui (com ou sem pontuacao)")
-        self._campo_cnpj.setMaxLength(18)
-        self._campo_cnpj.textChanged.connect(self._ao_mudar_cnpj)
-        form.addRow("CNPJ:", self._campo_cnpj)
+        self._campo_documento = QLineEdit()
+        self._campo_documento.setPlaceholderText("Cole o CNPJ ou CPF aqui (com ou sem pontuacao)")
+        self._campo_documento.setMaxLength(18)
+        self._campo_documento.textChanged.connect(self._ao_mudar_documento)
+        form.addRow("CNPJ/CPF:", self._campo_documento)
 
         self._campo_razao = QLineEdit()
         self._campo_razao.setPlaceholderText("Razao social da empresa")
@@ -125,16 +125,16 @@ class EmpresaFormView(QDialog):
 
         layout.addLayout(botoes)
 
-    def _ao_mudar_cnpj(self, texto: str) -> None:
-        """Formata CNPJ automaticamente ao digitar ou colar."""
-        aplicar_formatacao_campo(self._campo_cnpj, formatar_cnpj, texto)
+    def _ao_mudar_documento(self, texto: str) -> None:
+        """Formata CNPJ ou CPF automaticamente ao digitar ou colar."""
+        aplicar_formatacao_campo(self._campo_documento, formatar_cnpj_cpf, texto)
 
     def _ao_mudar_telefone(self, texto: str) -> None:
         """Formata telefone automaticamente ao digitar ou colar."""
         aplicar_formatacao_campo(self._campo_telefone, formatar_telefone, texto)
 
-    def _obter_cnpj_digitos(self) -> str:
-        return limpar_documento(self._campo_cnpj.text())
+    def _obter_documento_digitos(self) -> str:
+        return limpar_documento(self._campo_documento.text())
 
     def _preencher_se_edicao(self) -> None:
         if self._empresa is None:
@@ -144,7 +144,8 @@ class EmpresaFormView(QDialog):
         if idx_esc >= 0:
             self._combo_escritorio.setCurrentIndex(idx_esc)
 
-        self._campo_cnpj.setText(formatar_cnpj(self._empresa.cnpj))
+        # EmpresaResponseDTO tem cnpj como string (compatibilidade)
+        self._campo_documento.setText(formatar_cnpj_cpf(self._empresa.cnpj))
         self._campo_razao.setText(self._empresa.razao_social)
         self._campo_fantasia.setText(self._empresa.nome_fantasia)
 
@@ -159,7 +160,7 @@ class EmpresaFormView(QDialog):
 
     def _salvar(self) -> None:
         escritorio_id = self._combo_escritorio.currentData()
-        cnpj = self._obter_cnpj_digitos()
+        documento = self._obter_documento_digitos()
         razao = self._campo_razao.text().strip()
         fantasia = self._campo_fantasia.text().strip()
         regime = self._combo_regime.currentText()
@@ -176,22 +177,17 @@ class EmpresaFormView(QDialog):
                 self, "Campo obrigatório", "O nome fantasia não pode ser vazio."
             )
             return
-        if not cnpj:
+        if not documento:
             QMessageBox.warning(
-                self, "Campo obrigatório", "O CNPJ não pode ser vazio."
+                self, "Campo obrigatório", "O CNPJ/CPF não pode ser vazio."
             )
             return
 
         try:
-            CNPJ(cnpj)
+            Documento(documento)
         except ValueError as e:
-            msg = f"CNPJ: {cnpj}\n\n{e}"
-            if len(cnpj) >= 12:
-                base = cnpj[:12].ljust(12, "0")
-                dv_corretos = CNPJ.calcular_digitos_verificadores(base)
-                cnpj_correto = base + dv_corretos
-                msg += f"\n\nCNPJ correto: {cnpj_correto}"
-            QMessageBox.warning(self, "CNPJ invalido", msg)
+            msg = f"Documento: {documento}\n\n{e}"
+            QMessageBox.warning(self, "Documento invalido", msg)
             return
 
         try:
@@ -199,7 +195,7 @@ class EmpresaFormView(QDialog):
                 dto_editar = EditarEmpresaDTO(
                     id=self._empresa.id,
                     escritorio_id=escritorio_id,
-                    cnpj=cnpj,
+                    cnpj=documento,
                     razao_social=razao,
                     nome_fantasia=fantasia,
                     regime_tributario=regime,
@@ -213,7 +209,7 @@ class EmpresaFormView(QDialog):
             else:
                 dto_criar = CadastrarEmpresaDTO(
                     escritorio_id=escritorio_id,
-                    cnpj=cnpj,
+                    cnpj=documento,
                     razao_social=razao,
                     nome_fantasia=fantasia,
                     regime_tributario=regime,

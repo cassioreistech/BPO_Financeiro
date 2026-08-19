@@ -137,6 +137,16 @@ class FakeTituloRepository(TituloRepository):
     ) -> list[AlertaTitulo]:
         return []
 
+    def list_parcelas_relacionadas(
+        self,
+        escritorio_id: int,
+        empresa_id: int,
+        descricao_base: str,
+        primeiro_vencimento: date,
+        excluir_id: int,
+    ) -> list[Titulo]:
+        return []
+
 
 class FakeContaBancariaRepository(ContaBancariaRepository):
     """Repositorio fake para testes de contas bancarias."""

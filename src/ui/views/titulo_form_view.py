@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import cast
+import re
 
 from dateutil.relativedelta import relativedelta
 from PySide6.QtCore import QDate, QEvent, Qt
@@ -335,6 +336,32 @@ class TituloFormView(QDialog):
     def _formatar_valor(valor: Decimal) -> str:
         return f"{valor:.2f}".replace(".", ",")
 
+    @staticmethod
+    def _incrementar_numero_documento(numero: str | None, incremento: int) -> str | None:
+        """Incrementa a parte numerica final do numero do documento.
+        
+        Exemplos:
+        - '01125425-6' + 1 -> '01125425-7'
+        - '01125425-6' + 4 -> '01125425-10'
+        - 'ABC-001' + 1 -> 'ABC-002'
+        - '12345' + 1 -> '12346'
+        """
+        if not numero:
+            return None
+        
+        match = re.search(r"^(.*?[-_])?(\d+)$", numero)
+        if not match:
+            return numero
+        
+        prefixo = match.group(1) or ""
+        numero_base = int(match.group(2))
+        novo_numero = numero_base + incremento
+        
+        largura_original = len(match.group(2))
+        novo_numero_str = str(novo_numero).zfill(largura_original)
+        
+        return f"{prefixo}{novo_numero_str}"
+
     def _configurar_somente_leitura(self) -> None:
         """Bloqueia edicao de titulo quitado e ajusta botoes."""
         campos = [
@@ -439,16 +466,18 @@ class TituloFormView(QDialog):
                 for i in range(vezes):
                     venc = data_vencimento + relativedelta(months=i)
                     desc = descricao
+                    num_doc = numero_documento
                     if vezes > 1:
                         seq = f" ({i + 1:02d}/{vezes:02d})"
                         desc = f"{descricao}{seq}"
+                        num_doc = self._incrementar_numero_documento(numero_documento, i)
 
                     dto_criar = CadastrarTituloDTO(
                         escritorio_id=escritorio_id,
                         empresa_id=empresa_id,
                         plano_conta_id=self._plano_conta_id,
                         centro_custo_id=None,
-                        numero_documento=numero_documento,
+                        numero_documento=num_doc,
                         codigo_barras=codigo_barras,
                         categoria=categoria,
                         descricao=desc,

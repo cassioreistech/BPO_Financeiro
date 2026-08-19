@@ -30,7 +30,7 @@ def repo() -> SQLiteTituloRepository:
         escritorio = EscritorioModel(
             id=1,
             nome="Escritorio Teste",
-            cnpj="00000000000191",
+            cnpj_cpf="00000000000191",
             email="teste@teste.com",
             telefone="11999999999",
         )
@@ -58,7 +58,6 @@ def repo() -> SQLiteTituloRepository:
             codigo="1",
             nome="Despesas",
             tipo="DESPESA",
-            ativo=True,
         )
         session.add_all([escritorio, empresa_a, empresa_b, plano])
 

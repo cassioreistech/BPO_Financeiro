@@ -32,7 +32,7 @@ def repo() -> SQLiteTituloRepository:
         escritorio = EscritorioModel(
             id=1,
             nome="Escritorio Teste",
-            cnpj="00000000000191",
+            cnpj_cpf="00000000000191",
             email="teste@teste.com",
             telefone="11999999999",
         )
@@ -60,7 +60,6 @@ def repo() -> SQLiteTituloRepository:
             codigo="1",
             nome="Despesas",
             tipo="DESPESA",
-            ativo=True,
         )
         session.add_all([escritorio, empresa_a, empresa_b, plano])
 
@@ -77,7 +76,7 @@ def repo() -> SQLiteTituloRepository:
                 valor=Decimal("1500.00"),
                 data_emissao=hoje - timedelta(days=10),
                 data_vencimento=hoje - timedelta(days=5),
-                categoria="OPERACIONAL",
+                categoria="OUTRO",
                 numero_documento="NF-001",
                 forma_pagamento="OUTRO",
             ),
@@ -92,7 +91,7 @@ def repo() -> SQLiteTituloRepository:
                 valor=Decimal("3000.00"),
                 data_emissao=hoje - timedelta(days=10),
                 data_vencimento=hoje,
-                categoria="RECEITA",
+                categoria="SERVICO",
                 numero_documento="NF-002",
                 forma_pagamento="OUTRO",
             ),
@@ -107,7 +106,7 @@ def repo() -> SQLiteTituloRepository:
                 valor=Decimal("250.00"),
                 data_emissao=hoje - timedelta(days=10),
                 data_vencimento=hoje + timedelta(days=3),
-                categoria="OPERACIONAL",
+                categoria="OUTRO",
                 numero_documento=None,
                 forma_pagamento="PIX",
                 data_quitacao=hoje,
@@ -124,7 +123,7 @@ def repo() -> SQLiteTituloRepository:
                 valor=Decimal("1200.00"),
                 data_emissao=hoje - timedelta(days=10),
                 data_vencimento=hoje - timedelta(days=1),
-                categoria="RECEITA",
+                categoria="VENDA",
                 numero_documento=None,
                 forma_pagamento="OUTRO",
             ),
@@ -156,7 +155,7 @@ class TestSQLiteTituloRepositoryFiltros:
 
     def test_filtro_por_tipo_e_categoria(self, repo: SQLiteTituloRepository) -> None:
         filtro = FiltroTitulosDTO(
-            empresa_id=1, tipo="PAGAR", categoria="OPERACIONAL"
+            empresa_id=1, tipo="PAGAR", categoria="OUTRO"
         )
         resultado = repo.list_filtered(escritorio_id=1, filtro=filtro)
         assert len(resultado) == 2

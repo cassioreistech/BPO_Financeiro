@@ -72,3 +72,18 @@ class TituloRepository(ABC):
         incluir_vencidos: bool,
     ) -> list[AlertaTitulo]:
         """Lista titulos em aberto para alertas, com dados da empresa."""
+
+    @abstractmethod
+    def list_parcelas_relacionadas(
+        self,
+        escritorio_id: int,
+        empresa_id: int,
+        descricao_base: str,
+        primeiro_vencimento: date,
+        excluir_id: int,
+    ) -> list[Titulo]:
+        """Lista parcelas subsequentes de uma replicação mensal.
+        
+        Identifica por: mesma empresa, mesma descrição base (sem sufixo XX/YY),
+        vencimentos mensais sequenciais a partir do primeiro.
+        """

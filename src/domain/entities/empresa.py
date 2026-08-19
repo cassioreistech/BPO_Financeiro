@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from domain.enums.regime_tributario import RegimeTributario
 from domain.enums.status_empresa import StatusEmpresa
-from domain.value_objects.cnpj import CNPJ
+from domain.value_objects.documento import Documento
 from domain.value_objects.email import Email
 from domain.value_objects.telefone import Telefone
 
@@ -19,7 +19,7 @@ class Empresa:
         id: identificador unico (None antes de persistir)
         escritorio_id: FK para o escritorio responsavel
         contador_id: FK para o contador responsavel (opcional)
-        cnpj: CNPJ validado
+        documento: CNPJ ou CPF validado
         razao_social: nome oficial da empresa
         nome_fantasia: nome comercial
         regime_tributario: regime tributario vigente
@@ -29,7 +29,7 @@ class Empresa:
     """
 
     escritorio_id: int
-    cnpj: CNPJ
+    documento: Documento
     razao_social: str
     nome_fantasia: str
     regime_tributario: RegimeTributario
@@ -49,3 +49,12 @@ class Empresa:
 
         object.__setattr__(self, "razao_social", self.razao_social.strip())
         object.__setattr__(self, "nome_fantasia", self.nome_fantasia.strip())
+
+    @property
+    def cnpj(self) -> str:
+        """Compatibilidade: retorna o documento como string (apenas dígitos)."""
+        return self.documento.apenas_digitos()
+
+    @property
+    def tipo_documento(self) -> str:
+        return self.documento.tipo

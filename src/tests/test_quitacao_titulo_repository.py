@@ -53,7 +53,7 @@ def session_factory() -> sessionmaker[Session]:
         escritorio = EscritorioModel(
             id=1,
             nome="Escritorio Teste",
-            cnpj="00000000000191",
+            cnpj_cpf="00000000000191",
             email="teste@teste.com",
             telefone="11999999999",
         )
@@ -81,7 +81,6 @@ def session_factory() -> sessionmaker[Session]:
             codigo="1",
             nome="Despesas",
             tipo="DESPESA",
-            ativo=True,
         )
         session.add_all([escritorio, empresa_a, empresa_b, plano])
         session.commit()
