@@ -386,6 +386,9 @@ class TitulosView(QWidget):
         self._tabela.verticalHeader().setDefaultSectionSize(40)
         self._tabela.verticalHeader().setMinimumSectionSize(40)
 
+        # Ocultar colunas que nao precisam nesta tela
+        self._tabela.setColumnHidden(7, True)  # Valor Pago
+
         # Altura minima da tabela para aproveitar melhor a tela
         self._tabela.setMinimumHeight(400)
 
