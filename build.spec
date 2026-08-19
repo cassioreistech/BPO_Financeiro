@@ -115,6 +115,7 @@ hiddenimports = [
     "ui.views.centro_custo_form_view",
     "ui.views.centros_custo_view",
     "ui.views.alertas_titulos_view",
+    "ui.views.formatadores",
 ]
 
 # Análise do entrypoint
