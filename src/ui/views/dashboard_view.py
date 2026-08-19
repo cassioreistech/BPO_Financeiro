@@ -24,7 +24,6 @@ from PySide6.QtWidgets import (
 
 from application.dto.titulo_dto import FiltroTitulosDTO, TituloResponseDTO
 from application.services.empresa_context_service import EmpresaContextService
-from application.use_cases.dashboard_use_cases import ResumoFinanceiroUseCase
 from application.use_cases.empresa_use_cases import ObterEmpresaUseCase
 from application.use_cases.titulo_use_cases import ListarTitulosUseCase
 from infrastructure.database import SessionLocal
@@ -43,13 +42,11 @@ class DashboardView(QWidget):
 
     def __init__(
         self,
-        resumo: ResumoFinanceiroUseCase,
         listar_titulos: ListarTitulosUseCase,
         contexto_empresa: EmpresaContextService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self._resumo = resumo
         self._listar_titulos = listar_titulos
         self._contexto_empresa = contexto_empresa
         self._cards: dict[str, QLabel] = {}
@@ -242,31 +239,6 @@ class DashboardView(QWidget):
             f"{empresa.nome_fantasia}  —  CNPJ {self._formatar_cnpj(empresa.cnpj)}"
         )
 
-        try:
-            resumo = self._resumo.execute(
-                escritorio_id=empresa.escritorio_id, empresa_id=empresa_id
-            )
-        except Exception as e:
-            QMessageBox.warning(self, "Erro", f"Erro ao carregar resumo: {e}")
-            return
-
-        self._atualizar_card("a_receber", "A Receber", resumo.a_receber)
-        self._atualizar_card("a_pagar", "A Pagar", resumo.a_pagar)
-        self._atualizar_card("recebido", "Recebido", resumo.recebido)
-        self._atualizar_card("pago", "Pago", resumo.pago)
-        self._atualizar_card(
-            "vencido_receber", "Vencido a Receber", resumo.vencido_receber
-        )
-        self._atualizar_card(
-            "vencido_pagar", "Vencido a Pagar", resumo.vencido_pagar
-        )
-        self._atualizar_card(
-            "mes_receber", "Total do Mes a Receber", resumo.total_mes_receber
-        )
-        self._atualizar_card(
-            "mes_pagar", "Total do Mes a Pagar", resumo.total_mes_pagar
-        )
-
         self._filtrar_periodo()
 
     def _filtrar_periodo(self) -> None:
@@ -310,6 +282,51 @@ class DashboardView(QWidget):
 
         titulos_ordenados = sorted(titulos, key=lambda t: t.data_vencimento)
         self._atualizar_vencidos(titulos_ordenados)
+        self._atualizar_cards_periodo(titulos_ordenados)
+
+    def _atualizar_cards_periodo(self, titulos: list[TituloResponseDTO]) -> None:
+        """Atualiza os cards com base nos titulos filtrados pelo periodo."""
+        hoje = date.today()
+        a_receber = Decimal("0")
+        a_pagar = Decimal("0")
+        recebido = Decimal("0")
+        pago = Decimal("0")
+        vencido_receber = Decimal("0")
+        vencido_pagar = Decimal("0")
+        mes_receber = Decimal("0")
+        mes_pagar = Decimal("0")
+
+        for t in titulos:
+            valor = t.valor if t.valor else Decimal("0")
+            if t.status == "ABERTO":
+                if t.tipo == "RECEBER":
+                    a_receber += valor
+                    if t.data_vencimento < hoje:
+                        vencido_receber += valor
+                elif t.tipo == "PAGAR":
+                    a_pagar += valor
+                    if t.data_vencimento < hoje:
+                        vencido_pagar += valor
+            elif t.status == "PAGO":
+                if t.tipo == "RECEBER":
+                    recebido += valor
+                elif t.tipo == "PAGAR":
+                    pago += valor
+
+            if t.data_vencimento.month == hoje.month and t.data_vencimento.year == hoje.year:
+                if t.tipo == "RECEBER":
+                    mes_receber += valor
+                elif t.tipo == "PAGAR":
+                    mes_pagar += valor
+
+        self._atualizar_card("a_receber", "A Receber", a_receber)
+        self._atualizar_card("a_pagar", "A Pagar", a_pagar)
+        self._atualizar_card("recebido", "Quitado a Receber", recebido)
+        self._atualizar_card("pago", "Quitado a Pagar", pago)
+        self._atualizar_card("vencido_receber", "Vencido a Receber", vencido_receber)
+        self._atualizar_card("vencido_pagar", "Vencido a Pagar", vencido_pagar)
+        self._atualizar_card("mes_receber", "No Periodo a Receber", mes_receber)
+        self._atualizar_card("mes_pagar", "No Periodo a Pagar", mes_pagar)
 
     def _atualizar_vencidos(self, titulos: list[TituloResponseDTO]) -> None:
         self._tabela_vencidos.setRowCount(len(titulos))
