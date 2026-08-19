@@ -293,21 +293,8 @@ class TitulosView(QWidget):
         btn_limpar.clicked.connect(self._limpar_filtros)
         filtros.addWidget(btn_limpar, 2, 6)
 
-        # Botoes Filtrar e Atualizar
-        btn_filtrar = QPushButton("Filtrar")
-        btn_filtrar.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_filtrar.clicked.connect(self.atualizar_lista)
-        btn_filtrar.setFixedWidth(100)
-        filtros.addWidget(btn_filtrar, 2, 7, Qt.AlignmentFlag.AlignRight)
-
-        btn_atualizar = QPushButton("Atualizar")
-        btn_atualizar.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_atualizar.clicked.connect(self.atualizar_lista)
-        btn_atualizar.setFixedWidth(100)
-        filtros.addWidget(btn_atualizar, 2, 8, Qt.AlignmentFlag.AlignRight)
-
         # Stretch na ultima coluna para empurrar tudo para a esquerda
-        filtros.setColumnStretch(9, 1)
+        filtros.setColumnStretch(7, 1)
 
         # Auto-atualizar ao alterar filtros
         self._timer_filtro = QTimer(self)
