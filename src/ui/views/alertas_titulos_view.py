@@ -77,7 +77,7 @@ class AlertasTitulosView(QWidget):
         self._listar_escritorios = listar_escritorios
         self._contexto_empresa = contexto_empresa
         self._cards: dict[
-            str, tuple[QWidget, tuple[QLabel, QLabel]]
+            str, tuple[QLabel, tuple[QLabel, QLabel]]
         ] = {}
         self._montar()
         self._atualizar()
@@ -145,46 +145,46 @@ class AlertasTitulosView(QWidget):
 
     def _criar_card(
         self, titulo: str, cor_texto: str, cor_fundo: str
-    ) -> tuple[QWidget, tuple[QLabel, QLabel]]:
-        card = QWidget()
+    ) -> tuple[QLabel, tuple[QLabel, QLabel]]:
+        valor_inicial = "R$ 0,00"
+        card = QLabel(
+            f"<b>{titulo}</b><br>"
+            f"<span style='font-size:14px;'>0 titulos</span><br>"
+            f"<span style='font-size:18px;'>{valor_inicial}</span>"
+        )
+        card.setWordWrap(True)
+        card.setTextFormat(Qt.TextFormat.RichText)
+        card.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card.setCursor(Qt.CursorShape.PointingHandCursor)
+        card.setToolTip(f"{titulo}: {valor_inicial}")
+        card.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         card.setStyleSheet(
             f"""
-            QWidget {{
+            QLabel {{
                 background-color: {cor_fundo};
-                border: 1px solid {cor_texto}88;
+                color: {cor_texto};
                 border-radius: 10px;
+                padding: 18px 16px;
+                border: 1px solid {cor_texto}88;
+            }}
+            QLabel:hover {{
+                background-color: {cor_fundo};
+                border: 2px solid {cor_texto};
             }}
             """
         )
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(4)
-
-        lbl_titulo = QLabel(titulo)
-        font_titulo = QFont()
-        font_titulo.setPointSize(11)
-        font_titulo.setBold(True)
-        lbl_titulo.setFont(font_titulo)
-        lbl_titulo.setStyleSheet(f"color: {cor_texto}; border: none;")
-        layout.addWidget(lbl_titulo)
+        card.setMinimumHeight(100)
 
         lbl_quantidade = QLabel("0 titulos")
         lbl_quantidade.setStyleSheet(f"color: {cor_texto}; border: none;")
-        layout.addWidget(lbl_quantidade)
-
-        lbl_valor = QLabel("R$ 0,00")
+        lbl_valor = QLabel(valor_inicial)
         font_valor = QFont()
         font_valor.setPointSize(14)
         font_valor.setBold(True)
         lbl_valor.setFont(font_valor)
         lbl_valor.setStyleSheet(f"color: {cor_texto}; border: none;")
-        layout.addWidget(lbl_valor)
-
-        layout.addStretch()
-        card.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
-        card.setMinimumHeight(110)
 
         return card, (lbl_quantidade, lbl_valor)
 
@@ -267,10 +267,19 @@ class AlertasTitulosView(QWidget):
         )
 
     def _limpar_dashboard(self) -> None:
+        titulos = {
+            "CRITICO": "Vencidos",
+            "ALTO": "Vence hoje",
+            "MEDIO": "Vence amanha",
+            "INFORMATIVO": "Esta semana",
+        }
         for chave in self._cards:
-            lbl_quantidade, lbl_valor = self._cards[chave][1]
-            lbl_quantidade.setText("0 titulos")
-            lbl_valor.setText("R$ 0,00")
+            card = self._cards[chave][0]
+            card.setText(
+                f"<b>{titulos[chave]}</b><br>"
+                f"<span style='font-size:14px;'>0 titulos</span><br>"
+                f"<span style='font-size:18px;'>R$ 0,00</span>"
+            )
         self._tabela.setRowCount(0)
         self._label_total.setText("Total: 0 titulo(s) — R$ 0,00")
 
@@ -283,13 +292,25 @@ class AlertasTitulosView(QWidget):
             "MEDIO": dashboard.vence_amanha,
             "INFORMATIVO": dashboard.semana,
         }
+        titulos = {
+            "CRITICO": "Vencidos",
+            "ALTO": "Vence hoje",
+            "MEDIO": "Vence amanha",
+            "INFORMATIVO": "Esta semana",
+        }
         for chave, grupo in grupos.items():
-            lbl_quantidade, lbl_valor = self._cards[chave][1]
-            lbl_quantidade.setText(
+            card = self._cards[chave][0]
+            quantidade_texto = (
                 f"{grupo.quantidade} "
                 f"{'titulos' if grupo.quantidade != 1 else 'titulo'}"
             )
-            lbl_valor.setText(self._formatar_valor(grupo.valor_total))
+            valor_texto = self._formatar_valor(grupo.valor_total)
+            card.setText(
+                f"<b>{titulos[chave]}</b><br>"
+                f"<span style='font-size:14px;'>{quantidade_texto}</span><br>"
+                f"<span style='font-size:18px;'>{valor_texto}</span>"
+            )
+            card.setToolTip(f"{titulos[chave]}: {valor_texto}")
 
     def _atualizar_tabela(
         self, dashboard: DashboardAlertasTitulosResponseDTO
