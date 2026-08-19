@@ -533,7 +533,7 @@ class MainWindow(QMainWindow):
             btn.clicked.connect(lambda checked, i=indice: self._navegar(i))
             layout.addWidget(btn)
             self._botoes_nav.append(btn)
-            if indice == 2:
+            if indice == 1:
                 self._btn_alertas = btn
 
         # Separador antes de Configurações
