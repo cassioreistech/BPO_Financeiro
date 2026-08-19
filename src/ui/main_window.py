@@ -604,7 +604,7 @@ class MainWindow(QMainWindow):
             fluxo_caixa=self._uc_fluxo_caixa,
             projecao_financeira=self._uc_projecao_financeira,
             contexto_empresa=self._contexto_empresa,
-            on_titulo_quitado=self._atualizar_dashboard_e_alertas,
+            on_titulo_alterado=self._atualizar_dashboard_e_alertas,
         )
         self._stack.addWidget(self._view_titulos)
 

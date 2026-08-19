@@ -101,7 +101,7 @@ class TitulosView(QWidget):
         fluxo_caixa: FluxoCaixaUseCase,
         projecao_financeira: ProjecaoFinanceiraUseCase,
         contexto_empresa: EmpresaContextService,
-        on_titulo_quitado: Callable[[], None] | None = None,
+        on_titulo_alterado: Callable[[], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -120,7 +120,7 @@ class TitulosView(QWidget):
         self._fluxo_caixa = fluxo_caixa
         self._projecao_financeira = projecao_financeira
         self._contexto_empresa = contexto_empresa
-        self._on_titulo_quitado = on_titulo_quitado
+        self._on_titulo_alterado = on_titulo_alterado
         self._mapa_empresa_escritorio: dict[int, int] = {}
         self._montar()
         self.carregar_empresa_ativa()
@@ -521,6 +521,11 @@ class TitulosView(QWidget):
         """Reinicia o timer para auto-atualizar apos 300ms de inatividade."""
         self._timer_filtro.start()
 
+    def _notificar_alteracao(self) -> None:
+        """Notifica que um titulo foi alterado (criado, editado, quitado etc.)."""
+        if self._on_titulo_alterado is not None:
+            self._on_titulo_alterado()
+
     def _atualizar_label_resultados(self, quantidade: int) -> None:
         """Atualiza o label de contagem de resultados."""
         palavra = "titulos" if quantidade != 1 else "titulo"
@@ -777,6 +782,7 @@ class TitulosView(QWidget):
         )
         if form.exec() == TituloFormView.DialogCode.Accepted:
             self.atualizar_lista()
+            self._notificar_alteracao()
 
     def _editar_selecionado(self) -> None:
         titulo = self._obter_selecionado()
@@ -817,6 +823,7 @@ class TitulosView(QWidget):
         )
         if form.exec() == TituloFormView.DialogCode.Accepted:
             self.atualizar_lista()
+            self._notificar_alteracao()
 
     def _quitar_selecionado(self) -> None:
         titulo = self._obter_selecionado()
@@ -861,8 +868,7 @@ class TitulosView(QWidget):
             )
             self._quitar.execute(dto)
             self.atualizar_lista()
-            if self._on_titulo_quitado is not None:
-                self._on_titulo_quitado()
+            self._notificar_alteracao()
             QMessageBox.information(
                 self, "Sucesso", "Titulo quitado com sucesso."
             )
@@ -919,6 +925,7 @@ class TitulosView(QWidget):
             try:
                 self._cancelar.execute(titulo.id)
                 self.atualizar_lista()
+                self._notificar_alteracao()
                 QMessageBox.information(
                     self, "Sucesso", "Titulo cancelado com sucesso."
                 )
@@ -942,6 +949,7 @@ class TitulosView(QWidget):
             try:
                 self._remover.execute(titulo.id)
                 self.atualizar_lista()
+                self._notificar_alteracao()
                 QMessageBox.information(
                     self, "Sucesso", "Titulo removido com sucesso."
                 )
