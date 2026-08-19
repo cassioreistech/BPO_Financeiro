@@ -4,17 +4,14 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import cast
 
-from PySide6.QtCore import QDate, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
-    QDateEdit,
     QGridLayout,
     QHBoxLayout,
     QLabel,
     QMessageBox,
-    QPushButton,
     QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
@@ -96,14 +93,6 @@ class AlertasTitulosView(QWidget):
         titulo.setObjectName("viewTitulo")
         cabecalho.addWidget(titulo)
         cabecalho.addStretch()
-
-        cabecalho.addWidget(QLabel("Data referencia:"))
-        self._date_referencia = QDateEdit()
-        self._date_referencia.setCalendarPopup(True)
-        hoje = date.today()
-        self._date_referencia.setDate(QDate(hoje.year, hoje.month, hoje.day))
-        self._date_referencia.dateChanged.connect(self._atualizar)
-        cabecalho.addWidget(self._date_referencia)
 
         layout.addLayout(cabecalho)
 
@@ -229,23 +218,18 @@ class AlertasTitulosView(QWidget):
         self._atualizar()
 
     def _atualizar(self) -> None:
-        escritorio_id = self._obter_escritorio_id()
-        if escritorio_id is None:
-            self._limpar_dashboard()
-            return
-
-        empresa_id = self._contexto_empresa.get_empresa_ativa()
-
-        data_referencia = cast(
-            date, self._date_referencia.date().toPython()
-        )
         filtro = FiltroAlertasTitulosDTO(
-            empresa_id=empresa_id,
-            data_referencia=data_referencia,
+            empresa_id=None,
+            data_referencia=date.today(),
             incluir_vencidos=True,
         )
 
         try:
+            escritorios = self._listar_escritorios.execute(skip=0, limit=1)
+            if not escritorios:
+                self._limpar_dashboard()
+                return
+            escritorio_id = escritorios[0].id
             dashboard = self._dashboard_uc.execute(
                 escritorio_id=escritorio_id,
                 filtro=filtro,
@@ -262,15 +246,6 @@ class AlertasTitulosView(QWidget):
             f"Total: {dashboard.total_quantidade} titulo(s) — "
             f"{self._formatar_valor(dashboard.total_valor)}"
         )
-
-    def _obter_escritorio_id(self) -> int | None:
-        try:
-            escritorios = self._listar_escritorios.execute(skip=0, limit=1)
-        except Exception:
-            return None
-        if not escritorios:
-            return None
-        return escritorios[0].id
 
     def _limpar_dashboard(self) -> None:
         for chave in self._cards:
