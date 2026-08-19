@@ -139,12 +139,6 @@ class TitulosView(QWidget):
         topo.addWidget(titulo)
         topo.addStretch()
 
-        btn_novo = QPushButton("Novo Titulo")
-        btn_novo.setObjectName("btnPrimario")
-        btn_novo.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_novo.clicked.connect(self._novo)
-        topo.addWidget(btn_novo)
-
         btn_relatorio = QPushButton("Relatorios")
         btn_relatorio.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_relatorio.clicked.connect(self._abrir_relatorios)
@@ -292,6 +286,12 @@ class TitulosView(QWidget):
         btn_limpar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_limpar.clicked.connect(self._limpar_filtros)
         filtros.addWidget(btn_limpar, 2, 6)
+
+        btn_novo = QPushButton("Novo Titulo")
+        btn_novo.setObjectName("btnPrimario")
+        btn_novo.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_novo.clicked.connect(self._novo)
+        filtros.addWidget(btn_novo, 2, 7)
 
         # Stretch na ultima coluna para empurrar tudo para a esquerda
         filtros.setColumnStretch(7, 1)
