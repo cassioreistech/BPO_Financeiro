@@ -6,6 +6,7 @@ import contextlib
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -408,8 +409,12 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
-    def _criar_backup(self) -> None:
-        """Cria um backup do banco de dados pedindo onde salvar."""
+    def _criar_backup(self) -> bool:
+        """Cria um backup do banco de dados pedindo onde salvar.
+
+        Returns:
+            True se o backup foi criado; False se cancelado ou com erro.
+        """
         from datetime import datetime
 
         from PySide6.QtWidgets import QFileDialog, QMessageBox
@@ -426,7 +431,7 @@ class MainWindow(QMainWindow):
             "Banco de dados (*.db);;Todos os arquivos (*)",
         )
         if not arquivo:
-            return
+            return False
 
         if not arquivo.endswith(".db"):
             arquivo += ".db"
@@ -438,12 +443,14 @@ class MainWindow(QMainWindow):
                 "Backup realizado",
                 f"Backup criado com sucesso:\n{backup_path}",
             )
+            return True
         except Exception as e:
             QMessageBox.warning(
                 self,
                 "Erro no backup",
                 f"Erro ao criar backup:\n{e}",
             )
+            return False
 
     def _restaurar_backup(self) -> None:
         """Restaura o banco de dados a partir de um arquivo de backup."""
@@ -499,6 +506,37 @@ class MainWindow(QMainWindow):
                 "Erro na restauracao",
                 f"Erro ao restaurar backup:\n{e}",
             )
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """Bloqueia o fechamento ate um backup quando houve alteracao no dia."""
+        from datetime import date
+
+        from PySide6.QtWidgets import QMessageBox
+
+        from application.services.backup_service import banco_alterado_em
+
+        if not banco_alterado_em(date.today()):
+            event.accept()
+            return
+
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle("Backup antes de fechar")
+        msg.setText(
+            "Foi feita alteracao nos dados hoje.\n"
+            "Faca um backup antes de fechar o sistema."
+        )
+        botao_backup = msg.addButton(
+            "Fazer Backup e Fechar", QMessageBox.ButtonRole.AcceptRole
+        )
+        msg.addButton("Cancelar", QMessageBox.ButtonRole.RejectRole)
+        msg.setDefaultButton(botao_backup)
+        msg.exec()
+
+        if msg.clickedButton() is botao_backup and self._criar_backup():
+            event.accept()
+            return
+        event.ignore()
 
     def _criar_sidebar(self) -> QWidget:
         sidebar = QWidget()

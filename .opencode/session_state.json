@@ -16,7 +16,7 @@ Implementado (v1.0.2, branch main):
 - version_info.txt → 1.0.2.
 
 ## Current Task
-Correções implementadas, testadas (9 novos testes OK; lint+ruff e mypy limpos). Pendente: rebuild do exe (PyInstaller) + installer Inno e entrega ao cliente, após RECUPERAR os dados atuais na máquina do cliente.
+Pacote v1.0.3 PRONTO (exe + instalador). Funcionalidade nova: ao FECHAR, se o banco foi alterado hoje, um modal bloqueia a saída obrigando "Fazer Backup e Fechar" (sem opção de fechar sem backup; "Cancelar" mantém o app aberto). Se não houve alteração no dia, fecha direto. Detecção: mtime do bpo.db == hoje (`banco_alterado_em`). 3 testes novos (12 no pacote relacionado, todos passam), ruff/mypy limpos. Exe com metadado 1.0.3.0 (fix `version=` no spec). AGUARDANDO autorização de commit/push.
 
 ## Key Decisions
 - Flat imports mandatory (`from src.` prohibited)
@@ -28,10 +28,10 @@ Correções implementadas, testadas (9 novos testes OK; lint+ruff e mypy limpos)
 - CNPJ/CPF unificado (domain `Empresa.documento` substituiu `cnpj`) — testes antigos em `tests/` ainda usam `cnpj=` → 31 falhas PRÉ-EXISTENTES e fora do escopo desta sessão
 
 ## Pending Actions
-- RECUPERAR dados atuais no PC do cliente: buscar `bpo.db` + `bpo_backup_*.db` (Desktop\data, exe antigo, lixeira) e validar abrindo com o app
-- Rebuild exe v1.0.2: python global (PyInstaller 6.18) `pyinstaller build.spec --noconfirm` (venv sem PyInstaller)
-- Recompilar installer Inno (`installer.iss` → ISCC.exe) e enviar; INSTALAR POR CIMA, sem desinstalar (preserva `data` legado → migração no 1º run)
+- Commit + push do conjunto v1.0.3 (backup no fechamento, fix spec `version=`, testes, version bump) — aguardando autorização
+- Enviar `dist\installer\SistemaBPOFinanceiro_Setup_1.0.3.exe` ao cliente; INSTALAR POR CIMA, sem desinstalar (preserva `data` legado → migração no 1º run)
 - Atualizar testes `tests/` para campo `documento` (31 falhas pre-existentes)
+- Observação: no primeiro dia após instalar/atualizar o schema, o fechamento pedirá backup uma vez mesmo sem edição manual (o banco sofre escrita no upgrade) — comportamento aceitável.
 
 ## Recent Files
 - src/infrastructure/database/__init__.py (DATA_DIR canônico + migração legados + backup no init_db)

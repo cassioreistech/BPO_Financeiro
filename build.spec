@@ -188,7 +188,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=None,  # Adicione um .ico se tiver
-    version_file="version_info.txt",
+    version="version_info.txt",
 )
 
 # Cria pasta de distribuição

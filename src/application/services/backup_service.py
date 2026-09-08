@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import shutil
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from infrastructure.database import DATA_DIR, DATABASE_PATH
@@ -115,3 +115,21 @@ def formatar_nome_backup(backup_path: Path) -> str:
         return dt.strftime("%d/%m/%Y %H:%M:%S")
     except ValueError:
         return nome
+
+
+def banco_alterado_em(data_referencia: date) -> bool:
+    """Indica se o banco de dados foi modificado na data informada.
+
+    Args:
+        data_referencia: data (dia) a verificar.
+
+    Returns:
+        True se o arquivo do banco foi alterado nessa data.
+    """
+    try:
+        if not DATABASE_PATH.exists():
+            return False
+        mtime = datetime.fromtimestamp(DATABASE_PATH.stat().st_mtime).date()
+        return mtime == data_referencia
+    except OSError:
+        return False

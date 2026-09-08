@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -65,3 +67,40 @@ def test_rotacao_mantem_apenas_recentes(
 
     restantes = sorted(p.name for p in backup_dir.glob("bpo_auto_*.db"))
     assert restantes == ["bpo_auto_20260104.db", "bpo_auto_20260105.db"]
+
+
+def _fazer_mtime(caminho: Path, momento: datetime) -> None:
+    ts = momento.timestamp()
+    os.utime(caminho, (ts, ts))
+
+
+def test_banco_alterado_em_detecta_hoje(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db = tmp_path / "bpo.db"
+    db.write_bytes(b"banco")
+    _fazer_mtime(db, datetime.now())
+    monkeypatch.setattr(backup_service, "DATABASE_PATH", db)
+
+    assert backup_service.banco_alterado_em(datetime.now().date())
+
+
+def test_banco_sem_alteracao_no_dia_retorna_false(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db = tmp_path / "bpo.db"
+    db.write_bytes(b"banco")
+    _fazer_mtime(db, datetime.now() - timedelta(days=2))
+    monkeypatch.setattr(backup_service, "DATABASE_PATH", db)
+
+    assert not backup_service.banco_alterado_em(datetime.now().date())
+
+
+def test_banco_inexistente_retorna_false(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        backup_service, "DATABASE_PATH", tmp_path / "sem-banco" / "bpo.db"
+    )
+
+    assert not backup_service.banco_alterado_em(datetime.now().date())

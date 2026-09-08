@@ -1,5 +1,6 @@
 """Infraestrutura de banco de dados (SQLite via SQLAlchemy 2.x)."""
 
+import logging
 import os
 import shutil
 import sys
@@ -11,6 +12,8 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from infrastructure.database.schema_upgrade import upgrade_database
 
 NOME_APP = "Sistema BPO Financeiro"
+
+log = logging.getLogger(__name__)
 
 
 def _aplicacao_empacotada() -> bool:
@@ -100,15 +103,35 @@ class Base(DeclarativeBase):
     """Base declarativa para as entidades do dominio."""
 
 
+def _verificar_integridade() -> None:
+    """Executa PRAGMA quick_check e registra o resultado."""
+    try:
+        with engine.connect() as conn:
+            resultado = conn.exec_driver_sql("PRAGMA quick_check;").scalar()
+    except Exception:
+        log.exception("Falha ao verificar integridade do banco")
+        return
+    if resultado == "ok":
+        log.info("Integridade do banco verificada: %s", resultado)
+    else:
+        log.critical("Banco possivelmente corrompido: %s", resultado)
+
+
 def init_db() -> None:
     """Garante o diretorio de dados e cria/atualiza o schema do banco."""
-    _migrar_dados_legados()
+    try:
+        _migrar_dados_legados()
+    except Exception:
+        log.exception("Falha na migracao de dados legados")
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     if DATABASE_PATH.exists():
-        from application.services.backup_service import backup_automatico
+        try:
+            from application.services.backup_service import backup_automatico
 
-        backup_automatico()
+            backup_automatico()
+        except Exception:
+            log.exception("Falha no backup automatico do banco")
 
     # Importacao registra os models no metadata do Base antes do create_all.
     from infrastructure.database.models import (  # noqa: F401
@@ -123,3 +146,4 @@ def init_db() -> None:
 
     Base.metadata.create_all(bind=engine)
     upgrade_database(engine)
+    _verificar_integridade()
