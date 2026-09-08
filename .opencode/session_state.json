@@ -7,50 +7,37 @@
 - **Stack**: PySide6, SQLAlchemy, SQLite, pytest
 
 ## Last Summary
-Sessão concluída em 19/08/2026. Implementado: replicação nº documento em parcelas (025212101→025212102...), edição 1ª parcela propaga para demais (nº doc, valor, descrição), campo CNPJ/CPF unificado aceita ambos com validação completa.
+Sessão em 08/09/2026. Cliente relatou perda total de cadastros ("funcionava ontem, sumiu"). Causa raiz confirmada: DATA_DIR derivado de `__file__` via parents[3] → em exe PyInstaller 6.x one-dir isso ressalva para a **pasta do exe** (`sys._MEIPASS`=pasta `_internal`; parents[3] de `_internal\infrastructure\database\__init__.py` = pasta do exe). Movendo/trocando o exe, o app procura `data\bpo.db` em outro lugar e cria banco vazio. Pasta do cliente (`Downloads\BPO`) contém só exe+_internal+unins, SEM data/backups.
+Implementado (v1.0.2, branch main):
+- DATA_DIR canônico: `%APPDATA%\Sistema BPO Financeiro\data` quando frozen; `<repo>\data` em dev.
+- Migração automática no primeiro run: localiza `<exe>\data`, `<exe>\_internal\data`, `Desktop\data`, `OneDrive\Desktop\data`; move banco e reaproveita backups antigos sem sobrescrever.
+- Backup automático diário (`backup_automatico` → `backups\bpo_auto_YYYYMMDD.db`) disparado no `init_db()` antes do create_all/upgrade, rotação mantém 15.
+- Log em arquivo JSON em `%APPDATA%` quando frozen (console=False hoje não grava nada).
+- version_info.txt → 1.0.2.
 
 ## Current Task
-Aguardando próxima sessão.
+Correções implementadas, testadas (9 novos testes OK; lint+ruff e mypy limpos). Pendente: rebuild do exe (PyInstaller) + installer Inno e entrega ao cliente, após RECUPERAR os dados atuais na máquina do cliente.
 
 ## Key Decisions
 - Flat imports mandatory (`from src.` prohibited)
 - Commit messages in Portuguese
-- Auto-refresh on titulo operations via callback
-- Replicação mensal implemented in titulo form
-- Campo Emitente added full-stack
-- Valor Pago column hidden in titulos table
-- Combo Empresa locked to active company
-- Auto-update on filters via QTimer
-- Empresa sync across views via callback
-- Dashboard simplified without chart
-- Alertas multiempresa (empresa_id=None)
-- Seletor de empresa oculto na tela de Alertas
-- Sidebar: Dashboard, Alertas, Titulos
-- Sistema abre na tela de Alertas
-- Cards do Dashboard calculados pelo período selecionado
-- CNPJ/CPF unificado: auto-detecta pelo tamanho (≤11=CPF, ≥12=CNPJ)
-- Campos aceitam copiar/colar de qualquer fonte
-- Sistema abre maximizado
+- DATA_DIR canônico em `%APPDATA%\Sistema BPO Financeiro\data` (estável, não depende do exe)
+- Migração de legados na primeira abertura move (move) banco e copia backups antigos sem sobrescrever
+- Backup automático diário + retenção 15 (nenhum backup automático antes; só manual via botão)
+- Log de eventos em arquivo JSON em `%APPDATA%` (frozen) via structlog stdlib LoggerFactory
+- CNPJ/CPF unificado (domain `Empresa.documento` substituiu `cnpj`) — testes antigos em `tests/` ainda usam `cnpj=` → 31 falhas PRÉ-EXISTENTES e fora do escopo desta sessão
 
 ## Pending Actions
-- Próxima sessão: verificar pendências e novos pedidos
-- Regenerar installer (build.spec + installer.iss) com novas features
+- RECUPERAR dados atuais no PC do cliente: buscar `bpo.db` + `bpo_backup_*.db` (Desktop\data, exe antigo, lixeira) e validar abrindo com o app
+- Rebuild exe v1.0.2: python global (PyInstaller 6.18) `pyinstaller build.spec --noconfirm` (venv sem PyInstaller)
+- Recompilar installer Inno (`installer.iss` → ISCC.exe) e enviar; INSTALAR POR CIMA, sem desinstalar (preserva `data` legado → migração no 1º run)
+- Atualizar testes `tests/` para campo `documento` (31 falhas pre-existentes)
 
 ## Recent Files
-- src/ui/views/titulo_form_view.py (replicação nº documento incrementado)
-- src/application/use_cases/titulo_use_cases.py (edição 1ª parcela propaga + helpers)
-- src/infrastructure/database/repositories/sqlite_titulo_repository.py (list_parcelas_relacionadas)
-- src/domain/value_objects/documento.py (novo - CNPJ ou CPF unificado)
-- src/domain/value_objects/cpf.py (novo - validador CPF)
-- src/domain/entities/empresa.py (campo documento substitui cnpj)
-- src/application/use_cases/empresa_use_cases.py (usa Documento)
-- src/infrastructure/database/repositories/sqlite_empresa_repository.py (usa Documento)
-- src/ui/views/empresa_form_view.py (campo CNPJ/CPF unificado)
-- src/ui/views/formatadores.py (formatar_cnpj_cpf auto-detecta)
-- src/application/ports/titulo_repository.py (list_parcelas_relacionadas)
-- src/tests/test_titulo_filtros_use_cases.py (fake atualizado)
-- src/tests/test_quitacao_titulo_use_cases.py (fake atualizado)
-- src/tests/test_alerta_titulo_use_cases.py (fake atualizado)
-- src/tests/test_quitacao_titulo_repository.py (fixtures corrigidos)
-- src/tests/test_sqlite_titulo_repository_alertas.py (fixtures corrigidos)
-- src/tests/test_sqlite_titulo_repository_filtros.py (fixtures corrigidos + categorias válidas)
+- src/infrastructure/database/__init__.py (DATA_DIR canônico + migração legados + backup no init_db)
+- src/application/services/backup_service.py (backup_automatico + rotação)
+- src/infrastructure/logging_config.py (arquivo de log JSON quando frozen)
+- tests/unit/test_backup_service.py (novo)
+- tests/unit/test_migracao_dados.py (novo)
+- version_info.txt (1.0.2)
+- build.spec / installer.iss (revisão futura p/ v1.0.2)

@@ -10,6 +10,36 @@ from infrastructure.database import DATA_DIR, DATABASE_PATH
 
 BACKUP_DIR = DATA_DIR / "backups"
 
+MAX_BACKUPS_AUTOMATICOS = 15
+
+
+def _limpar_backups_automaticos(max_manter: int = MAX_BACKUPS_AUTOMATICOS) -> None:
+    """Remove backups automaticos antigos, mantendo os max_manter recentes."""
+    backups = sorted(BACKUP_DIR.glob("bpo_auto_*.db"), reverse=True)
+    for antigo in backups[max_manter:]:
+        antigo.unlink(missing_ok=True)
+
+
+def backup_automatico() -> Path:
+    """Cria um backup automatico diario do banco atual.
+
+    Cria um unico arquivo por dia (bpo_auto_YYYYMMDD.db) e aplica a rotacao.
+    Retorna o caminho do backup (criado agora ou ja existente no dia).
+
+    Raises:
+        FileNotFoundError: se o banco de dados nao existir.
+    """
+    if not DATABASE_PATH.exists():
+        raise FileNotFoundError("Banco de dados não encontrado para backup.")
+
+    _garantir_diretorio_backup()
+    hoje = datetime.now().strftime("%Y%m%d")
+    destino = BACKUP_DIR / f"bpo_auto_{hoje}.db"
+    if not destino.exists():
+        shutil.copy2(DATABASE_PATH, destino)
+    _limpar_backups_automaticos()
+    return destino
+
 
 def _garantir_diretorio_backup() -> None:
     """Garante que o diretorio de backups existe."""
