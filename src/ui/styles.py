@@ -127,6 +127,11 @@ QPushButton {
     padding: 8px 16px;
 }
 
+QPushButton:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
 QPushButton:hover {
     background-color: #d1d5db;
 }
@@ -174,8 +179,9 @@ QLineEdit, QComboBox {
 }
 
 QLineEdit:focus, QComboBox:focus {
-    border-color: #3b82f6;
-    outline: none;
+    border: 1px solid #2563eb;
+    outline: 1px solid #2563eb;
+    outline-offset: 1px;
 }
 
 QLineEdit::placeholder {

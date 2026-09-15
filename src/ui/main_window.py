@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -65,7 +65,32 @@ class MainWindow(QMainWindow):
         self._carregar_empresas_iniciais()
         self._montar_ui()
         self._navegar(0)  # Abre na tela de Alertas
+        self._criar_atalhos_teclado()
         QTimer.singleShot(100, self.showMaximized)
+
+    def _criar_atalhos_teclado(self) -> None:
+        """Atalhos de navegacao via teclado (F1-F7) para acessibilidade."""
+        atalhos = {
+            Qt.Key.Key_F1: 0,   # Alertas
+            Qt.Key.Key_F2: 1,   # Dashboard
+            Qt.Key.Key_F3: 2,   # Titulos
+            Qt.Key.Key_F4: 4,   # Empresas
+            Qt.Key.Key_F5: 5,   # Escritorios
+            Qt.Key.Key_F6: 3,   # Contas Bancarias
+            Qt.Key.Key_F7: 6,   # Contadores
+        }
+        for tecla, indice in atalhos.items():
+            shortcut = QShortcut(QKeySequence(tecla), self)
+            shortcut.activated.connect(
+                lambda ind=indice: self._navegar_por_atalho(ind)
+            )
+
+    def _navegar_por_atalho(self, indice: int) -> None:
+        """Navega para uma tela; expande Configuracoes se necessario."""
+        self._navegar(indice)
+        if indice >= 3 and not self._config_container.isVisible():
+            self._config_container.setVisible(True)
+            self._btn_config.setChecked(True)
 
     def _carregar_empresas_iniciais(self) -> None:
         """Carrega empresas e define a primeira como ativa, se houver."""
