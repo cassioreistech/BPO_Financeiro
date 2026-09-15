@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
@@ -12,6 +12,12 @@ class CentroCustoModel(Base):
     """Persistencia do centro de custo na tabela ``centros_custo``."""
 
     __tablename__ = "centros_custo"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "empresa_id", "codigo", name="uq_centros_custo_empresa_codigo"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     empresa_id: Mapped[int] = mapped_column(

@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
@@ -17,6 +24,10 @@ class ContaBancariaModel(Base):
         CheckConstraint(
             "tipo IN ('CORRENTE', 'POUPANCA', 'OUTRO')",
             name="ck_contas_bancarias_tipo",
+        ),
+        UniqueConstraint(
+            "empresa_id", "banco_codigo", "agencia", "conta",
+            name="uq_contas_bancarias_dados_unicos",
         ),
     )
 

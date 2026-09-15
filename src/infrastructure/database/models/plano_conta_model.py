@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
@@ -19,6 +25,9 @@ class PlanoContaModel(Base):
             name="ck_plano_contas_tipo",
         ),
         CheckConstraint("nivel >= 1", name="ck_plano_contas_nivel"),
+        UniqueConstraint(
+            "escritorio_id", "codigo", name="uq_plano_contas_escritorio_codigo"
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
