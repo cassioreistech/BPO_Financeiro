@@ -127,6 +127,10 @@ class Titulo:
             raise ValueError("Conta bancaria deve ser informada.")
         if data_quitacao is None:
             raise ValueError("Data de quitacao deve ser informada.")
+        if data_quitacao < self.data_emissao:
+            raise ValueError(
+                "Data de quitacao nao pode ser anterior a data de emissao."
+            )
 
         object.__setattr__(self, "status", StatusTitulo.PAGO)
         object.__setattr__(self, "data_quitacao", data_quitacao)

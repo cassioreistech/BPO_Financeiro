@@ -1,14 +1,21 @@
 """Testes unitarios para as entidades do dominio."""
 
+from datetime import date
+from decimal import Decimal
+
 import pytest
 
 from domain.entities.conta_bancaria import ContaBancaria
 from domain.entities.contador import Contador
 from domain.entities.empresa import Empresa
 from domain.entities.escritorio import Escritorio
+from domain.entities.titulo import Titulo
+from domain.enums.forma_pagamento import FormaPagamento
 from domain.enums.regime_tributario import RegimeTributario
 from domain.enums.status_empresa import StatusEmpresa
+from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_conta_bancaria import TipoContaBancaria
+from domain.enums.tipo_titulo import TipoTitulo
 from domain.value_objects.banco_codigo import BancoCodigo
 from domain.value_objects.cnpj import CNPJ
 from domain.value_objects.crc import CRC
@@ -202,4 +209,72 @@ class TestContaBancaria:
                 conta="",
                 tipo=TipoContaBancaria.CORRENTE,
                 descricao="Conta",
+            )
+
+
+class TestTitulo:
+    """Testes para a entidade Titulo (pagamento)."""
+
+    def _titulo_aberto(self) -> Titulo:
+        return Titulo(
+            escritorio_id=1,
+            plano_conta_id=1,
+            descricao="Conta de luz",
+            tipo=TipoTitulo.PAGAR,
+            status=StatusTitulo.ABERTO,
+            valor=Decimal("150.00"),
+            data_emissao=date(2026, 1, 1),
+            data_vencimento=date(2026, 1, 10),
+        )
+
+    def test_quitar_titulo_valido(self) -> None:
+        titulo = self._titulo_aberto()
+        titulo.quitar(
+            data_quitacao=date(2026, 1, 5),
+            valor_pago=Decimal("150.00"),
+            conta_bancaria_id=1,
+            forma_pagamento=FormaPagamento.PIX,
+        )
+        assert titulo.status == StatusTitulo.PAGO
+        assert titulo.data_quitacao == date(2026, 1, 5)
+        assert titulo.valor_pago == Decimal("150.00")
+
+    def test_quitar_titulo_data_anterior_a_emissao(self) -> None:
+        titulo = self._titulo_aberto()
+        with pytest.raises(
+            ValueError, match="Data de quitacao nao pode ser anterior"
+        ):
+            titulo.quitar(
+                data_quitacao=date(2025, 12, 31),
+                valor_pago=Decimal("150.00"),
+                conta_bancaria_id=1,
+                forma_pagamento=FormaPagamento.PIX,
+            )
+
+    def test_quitar_titulo_valor_incorreto(self) -> None:
+        titulo = self._titulo_aberto()
+        with pytest.raises(
+            ValueError, match="Quitação integral exige valor pago igual"
+        ):
+            titulo.quitar(
+                data_quitacao=date(2026, 1, 5),
+                valor_pago=Decimal("100.00"),
+                conta_bancaria_id=1,
+                forma_pagamento=FormaPagamento.PIX,
+            )
+
+    def test_quitar_titulo_ja_pago(self) -> None:
+        titulo = self._titulo_aberto()
+        titulo.quitar(
+            data_quitacao=date(2026, 1, 5),
+            valor_pago=Decimal("150.00"),
+            conta_bancaria_id=1,
+            forma_pagamento=FormaPagamento.PIX,
+        )
+        with pytest.raises(ValueError, match="ja esta quitado"):
+            titulo.quitar(
+                data_quitacao=date(2026, 1, 6),
+                valor_pago=Decimal("150.00"),
+                conta_bancaria_id=1,
+                forma_pagamento=FormaPagamento.PIX,
             )
