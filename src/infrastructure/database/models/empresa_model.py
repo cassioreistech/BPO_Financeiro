@@ -18,7 +18,10 @@ class EmpresaModel(Base):
         ForeignKey("escritorios.id"),
         nullable=False,
     )
-    contador_id: Mapped[int | None] = mapped_column(nullable=True)
+    contador_id: Mapped[int | None] = mapped_column(
+        ForeignKey("contadores.id"),
+        nullable=True,
+    )
     cnpj: Mapped[str] = mapped_column(String(14), nullable=False, unique=True)
     razao_social: Mapped[str] = mapped_column(String(255), nullable=False)
     nome_fantasia: Mapped[str] = mapped_column(String(255), nullable=False)
