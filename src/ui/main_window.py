@@ -277,8 +277,10 @@ class MainWindow(QMainWindow):
         self._timer_backup.start(1800000)
 
         # Verificar alertas criticos na abertura
-        QTimer.singleShot(1000, self._verificar_alertas_abertura)
+        QTimer.singleShot(300, self._verificar_escrita_abertura)
         QTimer.singleShot(500, self._verificar_integridade_abertura)
+        QTimer.singleShot(700, self._verificar_dados_ausentes)
+        QTimer.singleShot(1000, self._verificar_alertas_abertura)
 
     def _criar_header_empresa(self) -> QWidget:
         """Cria o cabecalho superior com seletor de empresa ativa."""
@@ -416,6 +418,63 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
+    def _verificar_escrita_abertura(self) -> None:
+        """Orienta o usuario quando o Windows bloqueia a pasta de dados."""
+        from PySide6.QtWidgets import QMessageBox
+
+        from infrastructure.database import DATA_DIR, diretorio_dados_gravavel
+
+        if diretorio_dados_gravavel():
+            return
+
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Critical)
+        msg.setWindowTitle("Sem permissao de escrita")
+        msg.setText(
+            "O sistema nao consegue gravar na pasta de dados:\n\n"
+            f"{DATA_DIR}\n\n"
+            "Isso costuma ser causado pelo Windows Defender (Acesso a "
+            "pastas controladas), por um antivirus ou por permissoes "
+            "da pasta.\n\n"
+            "Para corrigir: adicione o sistema a lista de aplicativos "
+            "permitidos do Windows Defender (Seguranca do Windows > "
+            "Protecao contra virus e ameacas > Protecao contra ransomware > "
+            "Permitir um aplicativo pela protecao contra ransomware) e "
+            "rode o sistema novamente."
+        )
+        msg.exec()
+
+    def _verificar_dados_ausentes(self) -> None:
+        """Oferece restauracao quando o banco esta vazio mas ha backups."""
+        from PySide6.QtWidgets import QMessageBox
+
+        from application.services.backup_service import BACKUP_DIR
+        from infrastructure.database import banco_vazio
+
+        backups = sorted(BACKUP_DIR.glob("bpo_auto_*.db")) + sorted(
+            BACKUP_DIR.glob("bpo_backup_*.db")
+        )
+        if not backups or not banco_vazio():
+            return
+
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Warning)
+        msg.setWindowTitle("Dados encontrados em backup")
+        msg.setText(
+            "O banco de dados esta vazio, mas ha backups disponiveis.\n"
+            "Isso pode indicar que os dados foram removidos ou corrompidos.\n\n"
+            "Deseja restaurar o backup mais recente?"
+        )
+        btn_restaurar = msg.addButton(
+            "Restaurar", QMessageBox.ButtonRole.AcceptRole
+        )
+        msg.addButton("Abrir vazio", QMessageBox.ButtonRole.RejectRole)
+        msg.setDefaultButton(btn_restaurar)
+        msg.exec()
+
+        if msg.clickedButton() is btn_restaurar:
+            self._restaurar_backup(backups[-1])
+
     def _fazer_backup_periodico(self) -> None:
         """Cria o backup automatico diario periodicamente durante a sessao."""
         from application.services.backup_service import backup_automatico
@@ -492,12 +551,19 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Erro no backup",
-                f"Erro ao criar backup:\n{e}",
+                f"Erro ao criar backup:\n{e}\n\n"
+                "Verifique se o arquivo de destino nao esta aberto em "
+                "outro programa e tente novamente.",
             )
             return False
 
-    def _restaurar_backup(self) -> None:
-        """Restaura o banco de dados a partir de um arquivo de backup."""
+    def _restaurar_backup(self, caminho: Path | None = None) -> None:
+        """Restaura o banco de dados a partir de um arquivo de backup.
+
+        Args:
+            caminho: backup fixo (recuperacao automatica) ou None para
+                o usuario escolher via dialogo.
+        """
         from PySide6.QtWidgets import QFileDialog, QMessageBox
 
         from application.services.backup_service import (
@@ -505,16 +571,16 @@ class MainWindow(QMainWindow):
             restaurar_backup,
         )
 
-        arquivo, _ = QFileDialog.getOpenFileName(
-            self,
-            "Selecionar Backup para Restaurar",
-            "",
-            "Banco de dados (*.db);;Todos os arquivos (*)",
-        )
-        if not arquivo:
-            return
-
-        backup_selecionado = Path(arquivo)
+        if caminho is None:
+            arquivo, _ = QFileDialog.getOpenFileName(
+                self,
+                "Selecionar Backup para Restaurar",
+                "",
+                "Banco de dados (*.db);;Todos os arquivos (*)",
+            )
+            if not arquivo:
+                return
+            caminho = Path(arquivo)
 
         confirmacao = QMessageBox.question(
             self,
@@ -535,7 +601,7 @@ class MainWindow(QMainWindow):
         engine.dispose()
 
         try:
-            restaurar_backup(backup_selecionado)
+            restaurar_backup(caminho)
             QMessageBox.information(
                 self,
                 "Restauracao concluida",

@@ -111,6 +111,53 @@ def integridade_falhou() -> bool:
     return _integridade_falhou
 
 
+def diretorio_dados_gravavel() -> bool:
+    """Garante e testa a gravacao em DATA_DIR; True se tudo escrevivel.
+
+    Protege contra bloqueios do Windows (Defender 'Acesso a pastas
+    controladas'), antivirus e permissoes de usuario.
+    """
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        (DATA_DIR / "backups").mkdir(parents=True, exist_ok=True)
+        probe = DATA_DIR / ".probe_escrita.tmp"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+        return True
+    except Exception:
+        log.critical(
+            "Sem permissao de escrita em %s: verificar Windows Defender, "
+            "antivirus ou permissoes da pasta",
+            DATA_DIR,
+            exc_info=True,
+        )
+        return False
+
+
+def banco_vazio() -> bool:
+    """True quando o banco existe mas nao possui registros em nenhuma tabela."""
+    try:
+        with engine.connect() as conn:
+            tabelas = [
+                str(linha[0])
+                for linha in conn.exec_driver_sql(
+                    "SELECT name FROM sqlite_master WHERE type='table' "
+                    "AND name NOT LIKE 'sqlite_%'"
+                )
+            ]
+        for tabela in tabelas:
+            with engine.connect() as conn:
+                total = conn.exec_driver_sql(
+                    f'SELECT COUNT(*) FROM "{tabela}"'
+                ).scalar()
+            if total:
+                return False
+        return True
+    except Exception:
+        log.exception("Falha ao verificar se o banco esta vazio")
+        return False
+
+
 def _verificar_integridade() -> bool:
     """Executa PRAGMA quick_check e informa se o banco esta integro."""
     global _integridade_falhou
@@ -137,7 +184,9 @@ def init_db() -> None:
         _migrar_dados_legados()
     except Exception:
         log.exception("Falha na migracao de dados legados")
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    if not diretorio_dados_gravavel():
+        return
 
     if DATABASE_PATH.exists():
         if _verificar_integridade():
