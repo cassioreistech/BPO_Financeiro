@@ -18,16 +18,20 @@ class TituloModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     escritorio_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("escritorios.id"), nullable=False
+        Integer, ForeignKey("escritorios.id", ondelete="RESTRICT"), nullable=False
     )
     empresa_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("empresas.id"), nullable=True
+        Integer, ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True
     )
     plano_conta_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("plano_contas.id"), nullable=False
+        Integer,
+        ForeignKey("plano_contas.id", ondelete="RESTRICT"),
+        nullable=False,
     )
     centro_custo_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("centros_custo.id"), nullable=True
+        Integer,
+        ForeignKey("centros_custo.id", ondelete="SET NULL"),
+        nullable=True,
     )
     descricao: Mapped[str] = mapped_column(String(255), nullable=False)
     tipo: Mapped[str] = mapped_column(String(10), nullable=False)
@@ -52,7 +56,9 @@ class TituloModel(Base):
         Numeric(15, 2), nullable=True
     )
     conta_bancaria_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("contas_bancarias.id"), nullable=True
+        Integer,
+        ForeignKey("contas_bancarias.id", ondelete="SET NULL"),
+        nullable=True,
     )
     forma_pagamento: Mapped[str] = mapped_column(
         String(20), nullable=False, default="OUTRO"

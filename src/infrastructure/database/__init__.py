@@ -6,7 +6,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from infrastructure.database.schema_upgrade import upgrade_database
@@ -95,6 +95,15 @@ engine = create_engine(
     f"sqlite:///{DATABASE_PATH}",
     connect_args={"check_same_thread": False},
 )
+
+
+@event.listens_for(engine, "connect")
+def _ativar_foreign_keys(dbapi_connection: object, _connection_record: object) -> None:
+    """Habilita a aplicacao das foreign keys no SQLite (desligado por padrao)."""
+    cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 

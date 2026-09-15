@@ -15,12 +15,12 @@ class PlanoContaModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     escritorio_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("escritorios.id"), nullable=False
+        Integer, ForeignKey("escritorios.id", ondelete="RESTRICT"), nullable=False
     )
     codigo: Mapped[str] = mapped_column(String(50), nullable=False)
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
     tipo: Mapped[str] = mapped_column(String(20), nullable=False)
     nivel: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     pai_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("plano_contas.id"), nullable=True
+        Integer, ForeignKey("plano_contas.id", ondelete="SET NULL"), nullable=True
     )

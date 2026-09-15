@@ -15,7 +15,9 @@ class ContadorModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     escritorio_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("escritorios.id"), nullable=False
+        Integer,
+        ForeignKey("escritorios.id", ondelete="RESTRICT"),
+        nullable=False,
     )
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
     crc: Mapped[str | None] = mapped_column(String(20), nullable=True)

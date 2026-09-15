@@ -15,11 +15,11 @@ class EmpresaModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     escritorio_id: Mapped[int] = mapped_column(
-        ForeignKey("escritorios.id"),
+        ForeignKey("escritorios.id", ondelete="RESTRICT"),
         nullable=False,
     )
     contador_id: Mapped[int | None] = mapped_column(
-        ForeignKey("contadores.id"),
+        ForeignKey("contadores.id", ondelete="RESTRICT"),
         nullable=True,
     )
     cnpj: Mapped[str] = mapped_column(String(14), nullable=False, unique=True)

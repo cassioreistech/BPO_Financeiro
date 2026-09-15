@@ -15,7 +15,7 @@ class CentroCustoModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     empresa_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("empresas.id"), nullable=False
+        Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False
     )
     codigo: Mapped[str] = mapped_column(String(50), nullable=False)
     nome: Mapped[str] = mapped_column(String(255), nullable=False)

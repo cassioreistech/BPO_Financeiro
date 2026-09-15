@@ -15,7 +15,7 @@ class ContaBancariaModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     empresa_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("empresas.id"), nullable=False
+        Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False
     )
     banco_nome: Mapped[str] = mapped_column(String(100), nullable=False)
     banco_codigo: Mapped[str | None] = mapped_column(String(3), nullable=True)
