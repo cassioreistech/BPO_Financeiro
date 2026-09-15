@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
+    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -27,6 +28,11 @@ class PlanoContaModel(Base):
         CheckConstraint("nivel >= 1", name="ck_plano_contas_nivel"),
         UniqueConstraint(
             "escritorio_id", "codigo", name="uq_plano_contas_escritorio_codigo"
+        ),
+        Index(
+            "ix_plano_contas_escritorio_tipo",
+            "escritorio_id",
+            "tipo",
         ),
     )
 

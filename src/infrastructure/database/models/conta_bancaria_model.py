@@ -6,6 +6,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     ForeignKey,
+    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -28,6 +29,11 @@ class ContaBancariaModel(Base):
         UniqueConstraint(
             "empresa_id", "banco_codigo", "agencia", "conta",
             name="uq_contas_bancarias_dados_unicos",
+        ),
+        Index(
+            "ix_contas_bancarias_empresa_ativo",
+            "empresa_id",
+            "ativo",
         ),
     )
 

@@ -5,7 +5,15 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer, Numeric, String
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
@@ -17,6 +25,12 @@ class TituloModel(Base):
     __tablename__ = "titulos"
 
     __table_args__ = (
+        Index(
+            "ix_titulos_escritorio_status_vencimento",
+            "escritorio_id",
+            "status",
+            "data_vencimento",
+        ),
         CheckConstraint(
             "tipo IN ('PAGAR', 'RECEBER')",
             name="ck_titulos_tipo",

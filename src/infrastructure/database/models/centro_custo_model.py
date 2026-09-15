@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
@@ -16,6 +16,11 @@ class CentroCustoModel(Base):
     __table_args__ = (
         UniqueConstraint(
             "empresa_id", "codigo", name="uq_centros_custo_empresa_codigo"
+        ),
+        Index(
+            "ix_centros_custo_empresa_ativo",
+            "empresa_id",
+            "ativo",
         ),
     )
 

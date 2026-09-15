@@ -13,9 +13,42 @@ def upgrade_database(engine: Engine) -> None:
     """Executa upgrades incrementais no schema do banco.
 
     A funcao e segura para ser chamada multiplas vezes: ignora colunas
-    que ja existem.
+    que ja existem e indices que ja foram criados.
     """
     _upgrade_titulos(engine)
+    _criar_indices(engine)
+
+
+def _indices() -> dict[str, str]:
+    """Indices compostos para as consultas mais frequentes.
+
+    Aplicaveis a bancos existentes: ``CREATE INDEX IF NOT EXISTS`` e
+    idempotente e nao altera dados.
+    """
+    return {
+        "ix_titulos_escritorio_status_vencimento": (
+            "titulos (escritorio_id, status, data_vencimento)"
+        ),
+        "ix_centros_custo_empresa_ativo": (
+            "centros_custo (empresa_id, ativo)"
+        ),
+        "ix_contas_bancarias_empresa_ativo": (
+            "contas_bancarias (empresa_id, ativo)"
+        ),
+        "ix_plano_contas_escritorio_tipo": (
+            "plano_contas (escritorio_id, tipo)"
+        ),
+    }
+
+
+def _criar_indices(engine: Engine) -> None:
+    """Cria os indices compostos caso ainda nao existam."""
+    with engine.begin() as conn:
+        for nome, colunas in _indices().items():
+            sql = (
+                f"CREATE INDEX IF NOT EXISTS {nome} ON {colunas}"
+            )
+            conn.exec_driver_sql(sql)
 
 
 def _upgrade_titulos(engine: Engine) -> None:
