@@ -103,22 +103,36 @@ class Base(DeclarativeBase):
     """Base declarativa para as entidades do dominio."""
 
 
-def _verificar_integridade() -> None:
-    """Executa PRAGMA quick_check e registra o resultado."""
+_integridade_falhou = False
+
+
+def integridade_falhou() -> bool:
+    """Indica se a ultima verificacao de integridade detectou problema."""
+    return _integridade_falhou
+
+
+def _verificar_integridade() -> bool:
+    """Executa PRAGMA quick_check e informa se o banco esta integro."""
+    global _integridade_falhou
     try:
         with engine.connect() as conn:
             resultado = conn.exec_driver_sql("PRAGMA quick_check;").scalar()
     except Exception:
         log.exception("Falha ao verificar integridade do banco")
-        return
+        _integridade_falhou = True
+        return False
     if resultado == "ok":
         log.info("Integridade do banco verificada: %s", resultado)
-    else:
-        log.critical("Banco possivelmente corrompido: %s", resultado)
+        return True
+    log.critical("Banco possivelmente corrompido: %s", resultado)
+    _integridade_falhou = True
+    return False
 
 
 def init_db() -> None:
     """Garante o diretorio de dados e cria/atualiza o schema do banco."""
+    global _integridade_falhou
+    _integridade_falhou = False
     try:
         _migrar_dados_legados()
     except Exception:
@@ -126,12 +140,18 @@ def init_db() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     if DATABASE_PATH.exists():
-        try:
-            from application.services.backup_service import backup_automatico
+        if _verificar_integridade():
+            try:
+                from application.services.backup_service import backup_automatico
 
-            backup_automatico()
-        except Exception:
-            log.exception("Falha no backup automatico do banco")
+                backup_automatico()
+            except Exception:
+                log.exception("Falha no backup automatico do banco")
+        else:
+            log.error(
+                "Integridade falha detectada: backup diario preservado (nao "
+                "sobrescrito com banco suspeito)"
+            )
 
     # Importacao registra os models no metadata do Base antes do create_all.
     from infrastructure.database.models import (  # noqa: F401
@@ -144,6 +164,13 @@ def init_db() -> None:
         TituloModel,
     )
 
-    Base.metadata.create_all(bind=engine)
-    upgrade_database(engine)
-    _verificar_integridade()
+    try:
+        Base.metadata.create_all(bind=engine)
+        upgrade_database(engine)
+        _verificar_integridade()
+    except Exception:
+        _integridade_falhou = True
+        log.exception(
+            "Falha ao carregar o schema do banco (provavelmente corrompido): "
+            "a interface abrira para permitir a restauracao de um backup"
+        )

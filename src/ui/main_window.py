@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
@@ -270,8 +271,14 @@ class MainWindow(QMainWindow):
         self._timer_alertas.timeout.connect(self._atualizar_alertas_seguranca)
         self._timer_alertas.start(300000)  # 5 minutos
 
+        # Backup periodico durante sessoes longas (a cada 30 minutos)
+        self._timer_backup = QTimer(self)
+        self._timer_backup.timeout.connect(self._fazer_backup_periodico)
+        self._timer_backup.start(1800000)
+
         # Verificar alertas criticos na abertura
         QTimer.singleShot(1000, self._verificar_alertas_abertura)
+        QTimer.singleShot(500, self._verificar_integridade_abertura)
 
     def _criar_header_empresa(self) -> QWidget:
         """Cria o cabecalho superior com seletor de empresa ativa."""
@@ -409,6 +416,43 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
+    def _fazer_backup_periodico(self) -> None:
+        """Cria o backup automatico diario periodicamente durante a sessao."""
+        from application.services.backup_service import backup_automatico
+
+        try:
+            backup_automatico()
+        except Exception:
+            logging.getLogger(__name__).exception("Falha no backup periodico")
+
+    def _verificar_integridade_abertura(self) -> None:
+        """Avisa o usuario quando a integridade do banco falhou na abertura."""
+        from infrastructure.database import integridade_falhou
+
+        if not integridade_falhou():
+            return
+
+        from PySide6.QtWidgets import QMessageBox
+
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Critical)
+        msg.setWindowTitle("Alerta de integridade do banco")
+        msg.setText(
+            "O sistema detectou possiveis problemas de integridade no banco\n"
+            "de dados. Trabalhar com o banco nestas condicoes pode causar\n"
+            "perda de dados.\n\n"
+            "E recomendado restaurar um backup recente."
+        )
+        btn_restaurar = msg.addButton(
+            "Restaurar Backup", QMessageBox.ButtonRole.AcceptRole
+        )
+        msg.addButton("Continuar mesmo assim", QMessageBox.ButtonRole.RejectRole)
+        msg.setDefaultButton(btn_restaurar)
+        msg.exec()
+
+        if msg.clickedButton() is btn_restaurar:
+            self._restaurar_backup()
+
     def _criar_backup(self) -> bool:
         """Cria um backup do banco de dados pedindo onde salvar.
 
@@ -433,7 +477,7 @@ class MainWindow(QMainWindow):
         if not arquivo:
             return False
 
-        if not arquivo.endswith(".db"):
+        if not arquivo.lower().endswith(".db"):
             arquivo += ".db"
 
         try:
@@ -486,6 +530,10 @@ class MainWindow(QMainWindow):
         with contextlib.suppress(Exception):
             criar_backup()
 
+        from infrastructure.database import engine
+
+        engine.dispose()
+
         try:
             restaurar_backup(backup_selecionado)
             QMessageBox.information(
@@ -494,11 +542,9 @@ class MainWindow(QMainWindow):
                 "Banco de dados restaurado com sucesso.\n"
                 "O sistema sera reiniciado para aplicar as alteracoes.",
             )
+            import os
             import sys
 
-            from infrastructure.database import engine
-            engine.dispose()
-            import os
             os.execv(sys.executable, [sys.executable] + sys.argv)
         except Exception as e:
             QMessageBox.warning(
@@ -523,7 +569,7 @@ class MainWindow(QMainWindow):
         msg.setIcon(QMessageBox.Icon.Question)
         msg.setWindowTitle("Backup antes de fechar")
         msg.setText(
-            "Foi feita alteracao nos dados hoje.\n"
+            "Houve alteracoes nos dados desde o ultimo backup.\n"
             "Faca um backup antes de fechar o sistema."
         )
         botao_backup = msg.addButton(
@@ -533,9 +579,26 @@ class MainWindow(QMainWindow):
         msg.setDefaultButton(botao_backup)
         msg.exec()
 
-        if msg.clickedButton() is botao_backup and self._criar_backup():
-            event.accept()
-            return
+        if msg.clickedButton() is botao_backup:
+            if self._criar_backup():
+                event.accept()
+                return
+            fuga = QMessageBox(self)
+            fuga.setIcon(QMessageBox.Icon.Warning)
+            fuga.setWindowTitle("Falha no backup")
+            fuga.setText(
+                "Nao foi possivel criar o backup.\n"
+                "Fechar sem backup pode resultar em perda de dados."
+            )
+            btn_fechar = fuga.addButton(
+                "Fechar sem Backup", QMessageBox.ButtonRole.AcceptRole
+            )
+            btn_voltar = fuga.addButton("Voltar", QMessageBox.ButtonRole.RejectRole)
+            fuga.setDefaultButton(btn_voltar)
+            fuga.exec()
+            if fuga.clickedButton() is btn_fechar:
+                event.accept()
+                return
         event.ignore()
 
     def _criar_sidebar(self) -> QWidget:

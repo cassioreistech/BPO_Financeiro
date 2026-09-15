@@ -1,43 +1,31 @@
-# Session State
-
-## Project
-- **Name**: Sistema BPO Financeiro
-- **Path**: C:\Users\cassi\OneDrive\Documentos\Sistema BPO_controle_financeiro
-- **Architecture**: hexagonal (ui → infrastructure → application → domain)
-- **Stack**: PySide6, SQLAlchemy, SQLite, pytest
-
-## Last Summary
-Sessão em 08/09/2026. Cliente relatou perda total de cadastros ("funcionava ontem, sumiu"). Causa raiz confirmada: DATA_DIR derivado de `__file__` via parents[3] → em exe PyInstaller 6.x one-dir isso ressalva para a **pasta do exe** (`sys._MEIPASS`=pasta `_internal`; parents[3] de `_internal\infrastructure\database\__init__.py` = pasta do exe). Movendo/trocando o exe, o app procura `data\bpo.db` em outro lugar e cria banco vazio. Pasta do cliente (`Downloads\BPO`) contém só exe+_internal+unins, SEM data/backups.
-Implementado (v1.0.2, branch main):
-- DATA_DIR canônico: `%APPDATA%\Sistema BPO Financeiro\data` quando frozen; `<repo>\data` em dev.
-- Migração automática no primeiro run: localiza `<exe>\data`, `<exe>\_internal\data`, `Desktop\data`, `OneDrive\Desktop\data`; move banco e reaproveita backups antigos sem sobrescrever.
-- Backup automático diário (`backup_automatico` → `backups\bpo_auto_YYYYMMDD.db`) disparado no `init_db()` antes do create_all/upgrade, rotação mantém 15.
-- Log em arquivo JSON em `%APPDATA%` quando frozen (console=False hoje não grava nada).
-- version_info.txt → 1.0.2.
-
-## Current Task
-Pacote v1.0.3 PRONTO (exe + instalador). Funcionalidade nova: ao FECHAR, se o banco foi alterado hoje, um modal bloqueia a saída obrigando "Fazer Backup e Fechar" (sem opção de fechar sem backup; "Cancelar" mantém o app aberto). Se não houve alteração no dia, fecha direto. Detecção: mtime do bpo.db == hoje (`banco_alterado_em`). 3 testes novos (12 no pacote relacionado, todos passam), ruff/mypy limpos. Exe com metadado 1.0.3.0 (fix `version=` no spec). AGUARDANDO autorização de commit/push.
-
-## Key Decisions
-- Flat imports mandatory (`from src.` prohibited)
-- Commit messages in Portuguese
-- DATA_DIR canônico em `%APPDATA%\Sistema BPO Financeiro\data` (estável, não depende do exe)
-- Migração de legados na primeira abertura move (move) banco e copia backups antigos sem sobrescrever
-- Backup automático diário + retenção 15 (nenhum backup automático antes; só manual via botão)
-- Log de eventos em arquivo JSON em `%APPDATA%` (frozen) via structlog stdlib LoggerFactory
-- CNPJ/CPF unificado (domain `Empresa.documento` substituiu `cnpj`) — testes antigos em `tests/` ainda usam `cnpj=` → 31 falhas PRÉ-EXISTENTES e fora do escopo desta sessão
-
-## Pending Actions
-- Commit + push do conjunto v1.0.3 (backup no fechamento, fix spec `version=`, testes, version bump) — aguardando autorização
-- Enviar `dist\installer\SistemaBPOFinanceiro_Setup_1.0.3.exe` ao cliente; INSTALAR POR CIMA, sem desinstalar (preserva `data` legado → migração no 1º run)
-- Atualizar testes `tests/` para campo `documento` (31 falhas pre-existentes)
-- Observação: no primeiro dia após instalar/atualizar o schema, o fechamento pedirá backup uma vez mesmo sem edição manual (o banco sofre escrita no upgrade) — comportamento aceitável.
-
-## Recent Files
-- src/infrastructure/database/__init__.py (DATA_DIR canônico + migração legados + backup no init_db)
-- src/application/services/backup_service.py (backup_automatico + rotação)
-- src/infrastructure/logging_config.py (arquivo de log JSON quando frozen)
-- tests/unit/test_backup_service.py (novo)
-- tests/unit/test_migracao_dados.py (novo)
-- version_info.txt (1.0.2)
-- build.spec / installer.iss (revisão futura p/ v1.0.2)
+{
+  "project_name": "Sistema BPO Financeiro",
+  "version": "1.0.3",
+  "token_saving_mode": true,
+  "last_summary": "Correcoes de seguranca de backup implementadas (v1.0.4). Backup diario atualiza-se se houve alteracoes apos a abertura; snapshot via sqlite3.backup() em vez de shutil.copy2; stamp de mtime; rotacao backups manuais (30); restauracao rejeita arquivo invalido; engine.dispose() antes de restaurar; sufixo .db case-insensitive. EXTRA (3 correcoes novas): (1) flag integridade_falhou() + dialog na abertura 'Restaurar Backup x Continuar' quando quick_check falha, e init_db NAO crasha mais com banco corrupto (create_all/upgrade protegidos — achado no teste: o app crashava na abertura antes do dialogo); (2) modal 'Fechar sem Backup' como fuga quando o backup do fechamento falha (antes o usuario ficava preso no app); (3) QTimer de backup periodico a cada 30 min durante a sessao. 79 unit tests pass, 5 fail (pre-existentes cnpj=->documento, fora de escopo). ruff/mypy limpos nos arquivos alterados (39 erros pre-existentes em arquivos titulo/dashboard).",
+  "current_task": "Todas as correcoes de backup (8 + 3) concluidas e verificadas. Aguardando autorizacao de commit/push (sugerido v1.0.4).",
+  "key_decisions": [
+    "Flat imports mandatory (from src. prohibited)",
+    "Commit messages in Portuguese",
+    "DATA_DIR canônico em %APPDATA%\\Sistema BPO Financeiro\\data",
+    "Migração de legados move banco e copia backups sem sobrescrever",
+    "Backup automático diário + retenção 15 (auto) e 30 (manual)",
+    "Log de eventos em arquivo JSON em %APPDATA% quando frozen",
+    "CNPJ/CPF unificado (domain Empresa.documento substituiu cnpj)",
+    "Snapshot de backup via sqlite3.backup() para consistência atômica",
+    "banco_alterado_em compara mtime do banco vs mtime armazenado no stamp (não relógio de parede)",
+    "Verificação de integridade ANTES do backup automático (não preserva corrupto)",
+    "engine.dispose() antes de restaurar banco (fechar conexões antes de sobrescrever arquivo)"
+  ],
+  "pending_actions": [
+    "Commit + push do conjunto v1.0.4 (8 correcoes + 3 novas de robustez)",
+    "Enviar dist\\installer\\SistemaBPOFinanceiro_Setup_1.0.4.exe ao cliente; INSTALAR POR CIMA (preserva data -> migracao no 1o run)",
+    "Atualizar testes tests/ para campo documento (5+17 falhas pre-existentes)"
+  ],
+  "recent_files": [
+    "src/application/services/backup_service.py",
+    "src/infrastructure/database/__init__.py",
+    "src/ui/main_window.py",
+    "tests/unit/test_backup_service.py"
+  ]
+}
