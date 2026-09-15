@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
@@ -12,6 +12,14 @@ class PlanoContaModel(Base):
     """Persistencia do plano de conta na tabela ``plano_contas``."""
 
     __tablename__ = "plano_contas"
+
+    __table_args__ = (
+        CheckConstraint(
+            "tipo IN ('RECEITA', 'DESPESA', 'OUTRO')",
+            name="ck_plano_contas_tipo",
+        ),
+        CheckConstraint("nivel >= 1", name="ck_plano_contas_nivel"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     escritorio_id: Mapped[int] = mapped_column(

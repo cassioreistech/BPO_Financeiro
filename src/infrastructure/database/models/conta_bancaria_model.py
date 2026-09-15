@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
@@ -12,6 +12,13 @@ class ContaBancariaModel(Base):
     """Persistencia da conta bancaria na tabela ``contas_bancarias``."""
 
     __tablename__ = "contas_bancarias"
+
+    __table_args__ = (
+        CheckConstraint(
+            "tipo IN ('CORRENTE', 'POUPANCA', 'OUTRO')",
+            name="ck_contas_bancarias_tipo",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     empresa_id: Mapped[int] = mapped_column(

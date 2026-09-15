@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
@@ -12,6 +12,14 @@ class EmpresaModel(Base):
     """Persistencia da empresa cliente na tabela ``empresas``."""
 
     __tablename__ = "empresas"
+
+    __table_args__ = (
+        CheckConstraint(
+            "regime_tributario IN ('SIMPLES', 'LUCRO_PRESUMIDO', "
+            "'LUCRO_REAL', 'MEI')",
+            name="ck_empresas_regime_tributario",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     escritorio_id: Mapped[int] = mapped_column(

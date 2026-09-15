@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, ForeignKey, Integer, Numeric, String
+from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
@@ -15,6 +15,41 @@ class TituloModel(Base):
     """Persistencia do titulo financeiro na tabela ``titulos``."""
 
     __tablename__ = "titulos"
+
+    __table_args__ = (
+        CheckConstraint(
+            "tipo IN ('PAGAR', 'RECEBER')",
+            name="ck_titulos_tipo",
+        ),
+        CheckConstraint(
+            "status IN ('ABERTO', 'PAGO', 'CANCELADO')",
+            name="ck_titulos_status",
+        ),
+        CheckConstraint(
+            "categoria IN ('BOLETO', 'IMPOSTO', 'SALARIO', 'VENDA', "
+            "'SERVICO', 'OUTRO')",
+            name="ck_titulos_categoria",
+        ),
+        CheckConstraint(
+            "forma_pagamento IN ('DINHEIRO', 'PIX', 'BOLETO', "
+            "'TRANSFERENCIA', 'CARTAO_CREDITO', 'CARTAO_DEBITO', "
+            "'CHEQUE', 'OUTRO')",
+            name="ck_titulos_forma_pagamento",
+        ),
+        CheckConstraint("valor > 0", name="ck_titulos_valor_maior_zero"),
+        CheckConstraint(
+            "valor_pago IS NULL OR valor_pago >= 0",
+            name="ck_titulos_valor_pago",
+        ),
+        CheckConstraint(
+            "data_vencimento >= data_emissao",
+            name="ck_titulos_data_vencimento",
+        ),
+        CheckConstraint(
+            "data_quitacao IS NULL OR data_quitacao >= data_emissao",
+            name="ck_titulos_data_quitacao",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     escritorio_id: Mapped[int] = mapped_column(
