@@ -51,9 +51,7 @@ class TestCadastrarEmpresa:
         assert resultado.email_financeiro == "fin@empresa.com"
         assert resultado.telefone_financeiro == "(11) 99999-8888"
 
-    def test_cadastrar_razao_social_vazia_erro(
-        self, repo: FakeEmpresaRepository
-    ) -> None:
+    def test_cadastrar_razao_social_vazia_erro(self, repo: FakeEmpresaRepository) -> None:
         uc = CadastrarEmpresaUseCase(repo)
         dto = CadastrarEmpresaDTO(
             escritorio_id=1,
@@ -65,9 +63,7 @@ class TestCadastrarEmpresa:
         with pytest.raises(ValueError, match="Razao social não pode ser vazia"):
             uc.execute(dto)
 
-    def test_cadastrar_nome_fantasia_vazio_erro(
-        self, repo: FakeEmpresaRepository
-    ) -> None:
+    def test_cadastrar_nome_fantasia_vazio_erro(self, repo: FakeEmpresaRepository) -> None:
         uc = CadastrarEmpresaUseCase(repo)
         dto = CadastrarEmpresaDTO(
             escritorio_id=1,
@@ -97,7 +93,7 @@ class TestCadastrarEmpresa:
             nome_fantasia="Emp 2",
             regime_tributario="SIMPLES",
         )
-        with pytest.raises(ValueError, match="Ja existe empresa com CNPJ"):
+        with pytest.raises(ValueError, match="Ja existe empresa com documento"):
             uc.execute(dto2)
 
     def test_cadastrar_regime_invalido_erro(self, repo: FakeEmpresaRepository) -> None:
@@ -163,7 +159,7 @@ class TestEditarEmpresa:
                 regime_tributario="SIMPLES",
             )
         )
-        cadastrada2 =         uc_cadastrar.execute(
+        cadastrada2 = uc_cadastrar.execute(
             CadastrarEmpresaDTO(
                 escritorio_id=1,
                 cnpj="33333333000191",
@@ -182,7 +178,7 @@ class TestEditarEmpresa:
             nome_fantasia="Emp 2",
             regime_tributario="SIMPLES",
         )
-        with pytest.raises(ValueError, match="Ja existe empresa com CNPJ"):
+        with pytest.raises(ValueError, match="Ja existe empresa com documento"):
             uc_editar.execute(dto)
 
 
@@ -237,9 +233,7 @@ class TestListarObterEmpresas:
 
         assert len(resultado) == 2
 
-    def test_listar_filtrar_por_escritorio(
-        self, repo: FakeEmpresaRepository
-    ) -> None:
+    def test_listar_filtrar_por_escritorio(self, repo: FakeEmpresaRepository) -> None:
         uc_cadastrar = CadastrarEmpresaUseCase(repo)
         uc_cadastrar.execute(
             CadastrarEmpresaDTO(

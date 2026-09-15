@@ -145,4 +145,4 @@ def test_editar_empresa_ponta_a_ponta(
 
     recuperada = empresa_repo.get_by_id(criada.id)
     assert recuperada is not None
-    assert recuperada.cnpj.valor == CNPJ_VALIDO_2
+    assert recuperada.cnpj == CNPJ_VALIDO_2

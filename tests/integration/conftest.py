@@ -16,8 +16,8 @@ from domain.enums.regime_tributario import RegimeTributario
 from domain.enums.status_empresa import StatusEmpresa
 from domain.enums.tipo_conta_bancaria import TipoContaBancaria
 from domain.value_objects.banco_codigo import BancoCodigo
-from domain.value_objects.cnpj import CNPJ
 from domain.value_objects.crc import CRC
+from domain.value_objects.documento import Documento
 from domain.value_objects.email import Email
 from domain.value_objects.telefone import Telefone
 from infrastructure.database import Base
@@ -116,7 +116,7 @@ def criar_empresa(
     entidade = Empresa(
         escritorio_id=escritorio_id,
         contador_id=contador_id,
-        cnpj=CNPJ(cnpj),
+        documento=Documento(cnpj),
         razao_social="Razao Social Teste",
         nome_fantasia="Fantasia Teste",
         regime_tributario=RegimeTributario.SIMPLES,

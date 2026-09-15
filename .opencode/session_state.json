@@ -1,31 +1,31 @@
 {
   "project_name": "Sistema BPO Financeiro",
-  "version": "1.0.3",
+  "version": "1.0.13",
   "token_saving_mode": true,
-  "last_summary": "Correcoes de seguranca de backup implementadas (v1.0.4). Backup diario atualiza-se se houve alteracoes apos a abertura; snapshot via sqlite3.backup() em vez de shutil.copy2; stamp de mtime; rotacao backups manuais (30); restauracao rejeita arquivo invalido; engine.dispose() antes de restaurar; sufixo .db case-insensitive. EXTRA (3 correcoes novas): (1) flag integridade_falhou() + dialog na abertura 'Restaurar Backup x Continuar' quando quick_check falha, e init_db NAO crasha mais com banco corrupto (create_all/upgrade protegidos — achado no teste: o app crashava na abertura antes do dialogo); (2) modal 'Fechar sem Backup' como fuga quando o backup do fechamento falha (antes o usuario ficava preso no app); (3) QTimer de backup periodico a cada 30 min durante a sessao. 79 unit tests pass, 5 fail (pre-existentes cnpj=->documento, fora de escopo). ruff/mypy limpos nos arquivos alterados (39 erros pre-existentes em arquivos titulo/dashboard).",
-  "current_task": "Todas as correcoes de backup (8 + 3) concluidas e verificadas. Aguardando autorizacao de commit/push (sugerido v1.0.4).",
+  "last_summary": "31 falhas pre-existentes de teste corrigidas (campo Empresa.documento) e todos os 159 testes OK. Migrado cnpj=CNPJ(...) -> documento=Documento(...), .cnpj.valor -> .cnpj (property str) em conftest, test_entities, test_sqlite_empresa_repository, test_sqlite_conta_bancaria_repository, test_e2e_use_cases, fake_repositories, test_empresa_use_cases. Tambem: match de erro 'Ja existe empresa com documento', e test_listar de contas bancarias agora usa banco/agencia/conta distintos para respeitar UniqueConstraint do v1.0.9. ruff format aplicado; ruff check + mypy limpos.",
+  "current_task": "Correcao de testes concluida (v1.0.13). Pendente opcional baixo impacto: contraste #94a3b8 na sidebar e fonte 11px em headers de tabela.",
   "key_decisions": [
     "Flat imports mandatory (from src. prohibited)",
     "Commit messages in Portuguese",
-    "DATA_DIR canônico em %APPDATA%\\Sistema BPO Financeiro\\data",
-    "Migração de legados move banco e copia backups sem sobrescrever",
-    "Backup automático diário + retenção 15 (auto) e 30 (manual)",
-    "Log de eventos em arquivo JSON em %APPDATA% quando frozen",
-    "CNPJ/CPF unificado (domain Empresa.documento substituiu cnpj)",
-    "Snapshot de backup via sqlite3.backup() para consistência atômica",
-    "banco_alterado_em compara mtime do banco vs mtime armazenado no stamp (não relógio de parede)",
-    "Verificação de integridade ANTES do backup automático (não preserva corrupto)",
-    "engine.dispose() antes de restaurar banco (fechar conexões antes de sobrescrever arquivo)"
+    "Constraint fixes (FK ondelete, CHECK, UNIQUE) aplicadas SO em bancos novos via create_all; bancos existentes NAO migrados (SQLite nao suporta ALTER TABLE ADD constraint); excecao: indices compostos cabem em bancos existentes via CREATE INDEX IF NOT EXISTS",
+    "PRAGMA foreign_keys=ON ativado via event listener no connect (enforce FKs tambem em bancos existentes)",
+    "Sem UniqueConstraint em titulos.numero_documento (parcelas legítimas do mesmo documento)",
+    "Backup automatico diario + retencao 15 (auto) e 30 (manual), snapshot sqlite3.backup()",
+    "Verificacao de integridade ANTES do backup automatico; engine.dispose() antes de restaurar",
+    "DATA_DIR canonico em %APPDATA% quandp frozen; data/ em dev",
+    "CNPJ/CPF unificado (domain Empresa.documento substituiu cnpj); testes migrados para Documento"
   ],
   "pending_actions": [
-    "Commit + push do conjunto v1.0.4 (8 correcoes + 3 novas de robustez)",
-    "Enviar dist\\installer\\SistemaBPOFinanceiro_Setup_1.0.4.exe ao cliente; INSTALAR POR CIMA (preserva data -> migracao no 1o run)",
-    "Atualizar testes tests/ para campo documento (5+17 falhas pre-existentes)"
+    "Opcional baixo impacto: contraste #94a3b8 -> #cbd5e1 na sidebar e fonte QHeaderView 11px -> 12px",
+    "Empacotar/instalador quando o cliente solicitar nova versao"
   ],
   "recent_files": [
-    "src/application/services/backup_service.py",
-    "src/infrastructure/database/__init__.py",
-    "src/ui/main_window.py",
-    "tests/unit/test_backup_service.py"
+    "tests/integration/conftest.py",
+    "tests/integration/test_sqlite_empresa_repository.py",
+    "tests/integration/test_sqlite_conta_bancaria_repository.py",
+    "tests/unit/test_entities.py",
+    "tests/use_cases/fake_repositories.py",
+    "tests/use_cases/test_empresa_use_cases.py",
+    "src/domain/entities/empresa.py"
   ]
 }

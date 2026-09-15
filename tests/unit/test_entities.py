@@ -17,8 +17,8 @@ from domain.enums.status_titulo import StatusTitulo
 from domain.enums.tipo_conta_bancaria import TipoContaBancaria
 from domain.enums.tipo_titulo import TipoTitulo
 from domain.value_objects.banco_codigo import BancoCodigo
-from domain.value_objects.cnpj import CNPJ
 from domain.value_objects.crc import CRC
+from domain.value_objects.documento import Documento
 from domain.value_objects.email import Email
 from domain.value_objects.telefone import Telefone
 
@@ -99,7 +99,7 @@ class TestEmpresa:
     def test_criar_empresa(self) -> None:
         emp = Empresa(
             escritorio_id=1,
-            cnpj=CNPJ("11222333000181"),
+            documento=Documento("11222333000181"),
             razao_social="Empresa Teste LTDA",
             nome_fantasia="Teste",
             regime_tributario=RegimeTributario.SIMPLES,
@@ -111,7 +111,7 @@ class TestEmpresa:
     def test_empresa_por_padrao_ativa(self) -> None:
         emp = Empresa(
             escritorio_id=1,
-            cnpj=CNPJ("11222333000181"),
+            documento=Documento("11222333000181"),
             razao_social="Empresa",
             nome_fantasia="Fantasia",
             regime_tributario=RegimeTributario.LUCRO_PRESUMIDO,
@@ -122,7 +122,7 @@ class TestEmpresa:
         with pytest.raises(ValueError, match="Razao social não pode ser vazia"):
             Empresa(
                 escritorio_id=1,
-                cnpj=CNPJ("11222333000181"),
+                documento=Documento("11222333000181"),
                 razao_social="",
                 nome_fantasia="Fantasia",
                 regime_tributario=RegimeTributario.SIMPLES,
@@ -132,7 +132,7 @@ class TestEmpresa:
         with pytest.raises(ValueError, match="Nome fantasia não pode ser vazio"):
             Empresa(
                 escritorio_id=1,
-                cnpj=CNPJ("11222333000181"),
+                documento=Documento("11222333000181"),
                 razao_social="Empresa",
                 nome_fantasia="",
                 regime_tributario=RegimeTributario.SIMPLES,
@@ -142,7 +142,7 @@ class TestEmpresa:
         with pytest.raises(ValueError, match="Escritorio ID deve ser um numero positivo"):
             Empresa(
                 escritorio_id=-1,
-                cnpj=CNPJ("11222333000181"),
+                documento=Documento("11222333000181"),
                 razao_social="Empresa",
                 nome_fantasia="Fantasia",
                 regime_tributario=RegimeTributario.SIMPLES,
@@ -241,9 +241,7 @@ class TestTitulo:
 
     def test_quitar_titulo_data_anterior_a_emissao(self) -> None:
         titulo = self._titulo_aberto()
-        with pytest.raises(
-            ValueError, match="Data de quitacao nao pode ser anterior"
-        ):
+        with pytest.raises(ValueError, match="Data de quitacao nao pode ser anterior"):
             titulo.quitar(
                 data_quitacao=date(2025, 12, 31),
                 valor_pago=Decimal("150.00"),
@@ -253,9 +251,7 @@ class TestTitulo:
 
     def test_quitar_titulo_valor_incorreto(self) -> None:
         titulo = self._titulo_aberto()
-        with pytest.raises(
-            ValueError, match="Quitação integral exige valor pago igual"
-        ):
+        with pytest.raises(ValueError, match="Quitação integral exige valor pago igual"):
             titulo.quitar(
                 data_quitacao=date(2026, 1, 5),
                 valor_pago=Decimal("100.00"),

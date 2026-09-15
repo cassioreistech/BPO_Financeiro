@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from domain.entities.empresa import Empresa
 from domain.enums.regime_tributario import RegimeTributario
 from domain.enums.status_empresa import StatusEmpresa
-from domain.value_objects.cnpj import CNPJ
+from domain.value_objects.documento import Documento
 from infrastructure.database.repositories.sqlite_empresa_repository import (
     SQLiteEmpresaRepository,
 )
@@ -39,7 +39,7 @@ def test_criar_e_buscar_por_id(
     assert encontrada is not None
     assert encontrada.id == criada.id
     assert encontrada.escritorio_id == escritorio.id
-    assert encontrada.cnpj.valor == CNPJ_VALIDO_1
+    assert encontrada.cnpj == CNPJ_VALIDO_1
     assert encontrada.regime_tributario == RegimeTributario.SIMPLES
     assert encontrada.ativo == StatusEmpresa.ATIVA
 
@@ -62,7 +62,7 @@ def test_buscar_por_cnpj(
 
     encontrada = empresa_repo.get_by_cnpj(CNPJ_VALIDO_1)
     assert encontrada is not None
-    assert encontrada.cnpj.valor == CNPJ_VALIDO_1
+    assert encontrada.cnpj == CNPJ_VALIDO_1
 
 
 def test_buscar_por_cnpj_inexistente(
@@ -142,7 +142,7 @@ def test_listar_empresas_com_paginacao(
 
     pagina = empresa_repo.list_all(skip=1, limit=1)
     assert len(pagina) == 1
-    assert pagina[0].cnpj.valor == CNPJ_VALIDO_2
+    assert pagina[0].cnpj == CNPJ_VALIDO_2
 
 
 def test_atualizar_empresa(
@@ -160,7 +160,7 @@ def test_atualizar_empresa(
         id=criada.id,
         escritorio_id=escritorio.id,
         contador_id=7,
-        cnpj=CNPJ(CNPJ_VALIDO_2),
+        documento=Documento(CNPJ_VALIDO_2),
         razao_social="Razao Nova",
         nome_fantasia="Fantasia Nova",
         regime_tributario=RegimeTributario.LUCRO_REAL,
@@ -177,7 +177,7 @@ def test_atualizar_empresa(
 
     encontrada = empresa_repo.get_by_id(criada.id)
     assert encontrada is not None
-    assert encontrada.cnpj.valor == CNPJ_VALIDO_2
+    assert encontrada.cnpj == CNPJ_VALIDO_2
     assert encontrada.contador_id == 7
 
 
@@ -188,7 +188,7 @@ def test_atualizar_empresa_inexistente_raise(
     alvo = Empresa(
         id=9999,
         escritorio_id=1,
-        cnpj=CNPJ(CNPJ_VALIDO_1),
+        documento=Documento(CNPJ_VALIDO_1),
         razao_social="X",
         nome_fantasia="Y",
         regime_tributario=RegimeTributario.SIMPLES,
@@ -232,7 +232,7 @@ def test_cnpj_duplicado_levanta_integrity_error(
 
     duplicada = Empresa(
         escritorio_id=escritorio.id,
-        cnpj=CNPJ(CNPJ_VALIDO_1),
+        documento=Documento(CNPJ_VALIDO_1),
         razao_social="Outra",
         nome_fantasia="Outra",
         regime_tributario=RegimeTributario.SIMPLES,

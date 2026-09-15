@@ -121,8 +121,8 @@ class TestListContasBancarias:
         assert esc.id is not None
         emp = criar_empresa(empresa_repo, esc.id)
         assert emp.id is not None
-        criar_conta_bancaria(repo, emp.id, banco_nome="BB")
-        criar_conta_bancaria(repo, emp.id, banco_nome="Itau")
+        criar_conta_bancaria(repo, emp.id, banco_nome="BB", banco_codigo="001")
+        criar_conta_bancaria(repo, emp.id, banco_nome="Itau", banco_codigo="341", conta="67890-1")
         resultado = repo.list_all()
         assert len(resultado) == 2
 

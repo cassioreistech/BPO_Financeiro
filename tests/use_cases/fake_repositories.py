@@ -63,7 +63,7 @@ class FakeEmpresaRepository(EmpresaRepository):
             id=self._proximo_id,
             escritorio_id=empresa.escritorio_id,
             contador_id=empresa.contador_id,
-            cnpj=empresa.cnpj,
+            documento=empresa.documento,
             razao_social=empresa.razao_social,
             nome_fantasia=empresa.nome_fantasia,
             regime_tributario=empresa.regime_tributario,
@@ -80,7 +80,7 @@ class FakeEmpresaRepository(EmpresaRepository):
 
     def get_by_cnpj(self, cnpj: str) -> Empresa | None:
         for emp in self._dados.values():
-            if emp.cnpj.valor == cnpj:
+            if emp.cnpj == cnpj:
                 return emp
         return None
 
