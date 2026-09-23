@@ -11,7 +11,7 @@ set PROJECT_ROOT=%~dp0
 set BUILD_DIR=%PROJECT_ROOT%dist
 set PYINSTALLER_SPEC=%PROJECT_ROOT%build.spec
 set INNO_SCRIPT=%PROJECT_ROOT%installer.iss
-set VERSION=1.0.0
+set VERSION=1.0.14
 
 REM Cores para output
 set GREEN=\033[92m
@@ -100,7 +100,7 @@ echo [%BLUE%INFO%RESET%] Compilando instalador Windows com Inno Setup...
 echo.
 
 cd /d "%PROJECT_ROOT%"
-iscc "%INNO_SCRIPT%"
+iscc /DMyAppVersion=%VERSION% "%INNO_SCRIPT%"
 
 if %errorlevel% neq 0 (
     echo [%RED%ERRO%RESET%] Falha na compilação Inno Setup

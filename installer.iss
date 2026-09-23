@@ -5,7 +5,7 @@
 
 #define MyAppName "Sistema BPO Financeiro"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.0"
+  #define MyAppVersion "1.0.14"
 #endif
 #define MyAppPublisher "Sistema BPO Financeiro"
 #define MyAppURL "https://sistema-bpo-financeiro.com"
@@ -26,7 +26,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DisableDirPage=yes
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputDir=..\dist\installer
+OutputDir=dist\installer
 OutputBaseFilename=SistemaBPOFinanceiro_Setup_{#MyAppVersion}
 ; SetupIconFile=..\assets\icon.ico  ; Removido: arquivo não existe
 Compression=lzma2/ultra64
