@@ -33,6 +33,7 @@ from infrastructure.reports.pdf_gerador import (
     gerar_projecao_financeira,
     gerar_relatorio_titulos,
 )
+from ui.views.formatadores import aplicar_formatacao_campo, formatar_moeda
 
 
 class RelatorioDialog(QDialog):
@@ -94,6 +95,11 @@ class RelatorioDialog(QDialog):
         self._campo_saldo_inicial = QLineEdit()
         self._campo_saldo_inicial.setPlaceholderText("0,00")
         self._campo_saldo_inicial.setEnabled(False)
+        self._campo_saldo_inicial.textChanged.connect(
+            lambda texto: aplicar_formatacao_campo(
+                self._campo_saldo_inicial, formatar_moeda, texto
+            )
+        )
         form.addRow("Saldo Inicial:", self._campo_saldo_inicial)
 
         layout.addLayout(form)
@@ -124,7 +130,7 @@ class RelatorioDialog(QDialog):
 
     @staticmethod
     def _formatar_valor(valor: Decimal) -> str:
-        return f"{valor:.2f}".replace(".", ",")
+        return f"R$ {float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
     def _parse_saldo_inicial(self) -> Decimal:
         texto = self._campo_saldo_inicial.text().strip().replace(",", ".")

@@ -37,6 +37,7 @@ from application.use_cases.titulo_use_cases import (
 )
 from domain.enums.categoria_titulo import CategoriaTitulo
 from domain.enums.tipo_titulo import TipoTitulo
+from ui.views.formatadores import aplicar_formatacao_campo, formatar_moeda
 from ui.views.status_formatter import formatar_status_titulo
 
 
@@ -192,6 +193,11 @@ class TituloFormView(QDialog):
 
         self._campo_valor = QLineEdit()
         self._campo_valor.setPlaceholderText("0,00")
+        self._campo_valor.textChanged.connect(
+            lambda texto: aplicar_formatacao_campo(
+                self._campo_valor, formatar_moeda, texto
+            )
+        )
         form.addRow("Valor:*", self._campo_valor)
 
         self._campo_emitente = QLineEdit()
@@ -370,7 +376,7 @@ class TituloFormView(QDialog):
 
     @staticmethod
     def _formatar_valor(valor: Decimal) -> str:
-        return f"{valor:.2f}".replace(".", ",")
+        return f"R$ {float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
     @staticmethod
     def _incrementar_numero_documento(numero: str | None, incremento: int) -> str | None:

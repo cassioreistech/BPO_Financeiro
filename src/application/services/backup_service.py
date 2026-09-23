@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
+import shutil
 import sqlite3
 from datetime import date, datetime
 from pathlib import Path
 
-from infrastructure.database import DATA_DIR, DATABASE_PATH
+from infrastructure.database import DATA_DIR, DATABASE_PATH, engine
+
+log = logging.getLogger(__name__)
 
 BACKUP_DIR = DATA_DIR / "backups"
 
@@ -17,14 +21,38 @@ MAX_BACKUPS_MANUAIS = 30
 NOME_STAMP = ".ultimo_backup.json"
 
 
+def _wal_checkpoint(caminho: Path) -> None:
+    """Forca WAL checkpoint para garantir que todos os dados estao no .db."""
+    try:
+        conn = sqlite3.connect(str(caminho), timeout=10)
+        try:
+            conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        finally:
+            conn.close()
+    except sqlite3.DatabaseError:
+        log.warning("Falha ao executar WAL checkpoint em %s", caminho)
+
+
+def _fechar_sessoes_ativas() -> None:
+    """Fecha todas as sessoes SQLAlchemy ativas antes de operacoes no banco."""
+    try:
+        engine.dispose()
+    except Exception:
+        log.warning("Falha ao dispor engine SQLAlchemy", exc_info=True)
+
+
 def _copiar_banco_consistente(origem: Path, destino: Path) -> None:
     """Copia um snapshot consistente do banco usando a backup API do sqlite3.
 
     Diferente de shutil.copy2, esta copia produz um snapshot atomico do ponto
     de vista do SQLite, evitando backups parciais quando ha escrita concorrente.
+    Executa WAL checkpoint antes de copiar para garantir que todos os dados
+    estao no arquivo principal.
     """
     if not origem.exists():
         raise FileNotFoundError(f"Banco de dados não encontrado: {origem}")
+
+    _wal_checkpoint(origem)
 
     destino.parent.mkdir(parents=True, exist_ok=True)
     conn_origem = sqlite3.connect(str(origem), timeout=10)
@@ -175,6 +203,9 @@ def listar_backups() -> list[Path]:
 def restaurar_backup(backup_path: Path) -> None:
     """Restaura o banco de dados a partir de um backup.
 
+    Antes de sobrescrever, cria um backup de segurança do estado atual
+    para permitir rollback caso a restauração falhe.
+
     Args:
         backup_path: path do arquivo de backup.
 
@@ -188,7 +219,37 @@ def restaurar_backup(backup_path: Path) -> None:
         raise ValueError(f"Backup inválido ou corrompido: {backup_path}")
 
     _garantir_diretorio_backup()
-    _copiar_banco_consistente(backup_path, DATABASE_PATH)
+    _fechar_sessoes_ativas()
+
+    # Backup de segurança antes de sobrescrever
+    backup_seguranca = BACKUP_DIR / ".restore_rollback.db"
+    tem_backup_seguranca = False
+    if DATABASE_PATH.exists():
+        try:
+            shutil.copy2(DATABASE_PATH, backup_seguranca)
+            tem_backup_seguranca = True
+        except OSError:
+            log.warning("Não foi possível criar backup de segurança antes de restaurar")
+
+    try:
+        _copiar_banco_consistente(backup_path, DATABASE_PATH)
+    except Exception:
+        # Rollback: restaura o estado anterior
+        if tem_backup_seguranca and backup_seguranca.exists():
+            try:
+                _fechar_sessoes_ativas()
+                shutil.copy2(backup_seguranca, DATABASE_PATH)
+                log.info("Rollback: banco anterior restaurado após falha na restauração")
+            except OSError:
+                log.critical("FALHA CRÍTICA: rollback falhou. Banco pode estar corrompido.")
+        raise
+    finally:
+        # Limpa arquivo temporário
+        if backup_seguranca.exists():
+            try:
+                backup_seguranca.unlink()
+            except OSError:
+                pass
 
 
 def formatar_nome_backup(backup_path: Path) -> str:

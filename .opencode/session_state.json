@@ -2,8 +2,8 @@
   "project_name": "Sistema BPO Financeiro",
   "version": "1.0.13",
   "token_saving_mode": true,
-  "last_summary": "31 falhas pre-existentes de teste corrigidas (campo Empresa.documento) e todos os 159 testes OK. Migrado cnpj=CNPJ(...) -> documento=Documento(...), .cnpj.valor -> .cnpj (property str) em conftest, test_entities, test_sqlite_empresa_repository, test_sqlite_conta_bancaria_repository, test_e2e_use_cases, fake_repositories, test_empresa_use_cases. Tambem: match de erro 'Ja existe empresa com documento', e test_listar de contas bancarias agora usa banco/agencia/conta distintos para respeitar UniqueConstraint do v1.0.9. ruff format aplicado; ruff check + mypy limpos.",
-  "current_task": "Correcao de testes concluida (v1.0.13). Pendente opcional baixo impacto: contraste #94a3b8 na sidebar e fonte 11px em headers de tabela.",
+  "last_summary": "Build v1.0.13 concluido. EXE: dist\\SistemaBPOFinanceiro\\SistemaBPOFinanceiro.exe (74 MB). Instalador: dist\\installer\\SistemaBPOFinanceiro_Setup_1.0.13.exe (115 MB). Smoke test OK (app abre e fica vivo 8s sem crash). Installer antigo 1.0.3 removido. Versao atualizada em version_info.txt, build.bat e installer.iss. 159 testes passando.",
+  "current_task": "Build v1.0.13 pronto para distribuicao. Pendencia opcional: contraste sidebar #94a3b8 e fonte header 11px.",
   "key_decisions": [
     "Flat imports mandatory (from src. prohibited)",
     "Commit messages in Portuguese",
@@ -17,15 +17,15 @@
   ],
   "pending_actions": [
     "Opcional baixo impacto: contraste #94a3b8 -> #cbd5e1 na sidebar e fonte QHeaderView 11px -> 12px",
-    "Empacotar/instalador quando o cliente solicitar nova versao"
+    "Distribuir SistemaBPOFinanceiro_Setup_1.0.13.exe ao cliente (instalar POR CIMA preserva data -> migracao no 1o run)",
+    "Assinatura digital (code signing) recomendada para reduzir alertas SmartScreen"
   ],
   "recent_files": [
-    "tests/integration/conftest.py",
-    "tests/integration/test_sqlite_empresa_repository.py",
-    "tests/integration/test_sqlite_conta_bancaria_repository.py",
-    "tests/unit/test_entities.py",
-    "tests/use_cases/fake_repositories.py",
-    "tests/use_cases/test_empresa_use_cases.py",
-    "src/domain/entities/empresa.py"
+    "build.bat",
+    "installer.iss",
+    "version_info.txt",
+    "build.spec",
+    "dist/installer/SistemaBPOFinanceiro_Setup_1.0.13.exe",
+    "dist/SistemaBPOFinanceiro/SistemaBPOFinanceiro.exe"
   ]
 }

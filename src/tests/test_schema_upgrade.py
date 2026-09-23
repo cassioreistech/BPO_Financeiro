@@ -9,6 +9,17 @@ from sqlalchemy.orm import sessionmaker
 from infrastructure.database import Base
 from infrastructure.database.schema_upgrade import upgrade_database
 
+# Importa models para registrar no metadata do Base
+from infrastructure.database.models import (  # noqa: F401
+    CentroCustoModel,
+    ContaBancariaModel,
+    ContadorModel,
+    EmpresaModel,
+    EscritorioModel,
+    PlanoContaModel,
+    TituloModel,
+)
+
 
 @pytest.fixture
 def engine() -> Engine:

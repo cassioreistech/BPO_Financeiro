@@ -100,7 +100,7 @@ def _parse_forma_pagamento(forma_str: str) -> FormaPagamento:
     except ValueError:
         formas_validas = [f.value for f in FormaPagamento]
         raise ValueError(
-            f"Forma de pagamento invalido: '{forma_str}'. "
+            f"Forma de pagamento invalida: '{forma_str}'. "
             f"Valores aceitos: {formas_validas}."
         ) from None
 
@@ -277,6 +277,10 @@ class EditarTituloUseCase:
                 sufixo = f" ({i+1:02d}/{total_parcelas:02d})"
                 nova_desc_parcela = f"{nova_descricao_base}{sufixo}"
 
+                # Só propaga valor para parcelas em aberto; parcelas quitadas
+                # mantêm seu valor_pago intacto para preservar o histórico
+                valor_parcela = novo_valor if parcela.status == StatusTitulo.ABERTO else parcela.valor
+
                 parcela_atualizada = Titulo(
                     id=parcela.id,
                     escritorio_id=parcela.escritorio_id,
@@ -289,7 +293,7 @@ class EditarTituloUseCase:
                     descricao=nova_desc_parcela,
                     tipo=parcela.tipo,
                     status=parcela.status,
-                    valor=novo_valor,  # Propaga o novo valor
+                    valor=valor_parcela,
                     valor_pago=parcela.valor_pago,
                     data_emissao=parcela.data_emissao,
                     data_vencimento=parcela.data_vencimento,

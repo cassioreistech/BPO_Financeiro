@@ -93,7 +93,8 @@ DATABASE_PATH = DATA_DIR / "bpo.db"
 
 engine = create_engine(
     f"sqlite:///{DATABASE_PATH}",
-    connect_args={"check_same_thread": False},
+    connect_args={"check_same_thread": False, "timeout": 30},
+    pool_pre_ping=True,
 )
 
 

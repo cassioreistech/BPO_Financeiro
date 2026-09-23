@@ -335,7 +335,7 @@ class TestQuitarTituloUseCase:
         with pytest.raises(ValueError, match="maior que zero"):
             use_case.execute(dto)
 
-    def test_impede_valor_maior_que_titulo(
+    def test_permite_valor_maior_que_titulo_com_juros(
         self,
         use_case: QuitarTituloUseCase,
         titulo_repo: FakeTituloRepository,
@@ -353,8 +353,9 @@ class TestQuitarTituloUseCase:
             conta_bancaria_id=conta.id,
         )
 
-        with pytest.raises(ValueError, match="igual ao valor do titulo"):
-            use_case.execute(dto)
+        resultado = use_case.execute(dto)
+        assert resultado.status == "PAGO"
+        assert resultado.valor_pago == Decimal("200.00")
 
     def test_valida_conta_bancaria_ativa(
         self,

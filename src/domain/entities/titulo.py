@@ -119,9 +119,9 @@ class Titulo:
             raise ValueError("Título não esta em situacao para quitacao.")
         if valor_pago <= Decimal("0"):
             raise ValueError("Valor pago deve ser maior que zero.")
-        if valor_pago != self.valor:
+        if valor_pago < self.valor:
             raise ValueError(
-                "Quitação integral exige valor pago igual ao valor do titulo."
+                "Valor pago nao pode ser menor que o valor do titulo."
             )
         if conta_bancaria_id <= 0:
             raise ValueError("Conta bancaria deve ser informada.")

@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 from application.dto.titulo_dto import TituloResponseDTO
 from application.services.empresa_context_service import EmpresaContextService
 from domain.enums.forma_pagamento import FormaPagamento
+from ui.views.formatadores import aplicar_formatacao_campo, formatar_moeda
 
 
 class QuitacaoDialog(QDialog):
@@ -77,6 +78,11 @@ class QuitacaoDialog(QDialog):
 
         self._campo_valor_pago = QLineEdit()
         self._campo_valor_pago.setPlaceholderText("0,00")
+        self._campo_valor_pago.textChanged.connect(
+            lambda texto: aplicar_formatacao_campo(
+                self._campo_valor_pago, formatar_moeda, texto
+            )
+        )
         form.addRow("Valor Pago:*", self._campo_valor_pago)
 
         self._combo_conta_bancaria = QComboBox()
@@ -137,7 +143,7 @@ class QuitacaoDialog(QDialog):
 
     @staticmethod
     def _formatar_valor(valor: Decimal) -> str:
-        return f"{valor:.2f}".replace(".", ",")
+        return f"R$ {float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
     def obter_dados(self) -> tuple[date, Decimal, int, str, str | None]:
         """Retorna os dados informados pelo usuario."""
@@ -174,11 +180,11 @@ class QuitacaoDialog(QDialog):
         valor = Decimal(valor_texto)
         forma = self._combo_forma_pagamento.currentText()
 
-        if valor != self._titulo.valor:
+        if valor < self._titulo.valor:
             QMessageBox.warning(
                 self,
                 "Valor invalido",
-                "Quitação integral exige valor pago igual ao valor do titulo.",
+                "Valor pago nao pode ser menor que o valor do titulo.",
             )
             return
 

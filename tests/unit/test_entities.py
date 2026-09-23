@@ -251,7 +251,7 @@ class TestTitulo:
 
     def test_quitar_titulo_valor_incorreto(self) -> None:
         titulo = self._titulo_aberto()
-        with pytest.raises(ValueError, match="Quitação integral exige valor pago igual"):
+        with pytest.raises(ValueError, match="Valor pago nao pode ser menor"):
             titulo.quitar(
                 data_quitacao=date(2026, 1, 5),
                 valor_pago=Decimal("100.00"),

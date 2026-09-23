@@ -114,3 +114,38 @@ def aplicar_formatacao_campo(campo, funcao_formatar, texto: str) -> None:
         nova_pos = max(0, posicao - (len(texto_anterior) - len(formatado)))
     campo.setCursorPosition(min(nova_pos, len(formatado)))
     campo.blockSignals(False)
+
+
+def formatar_moeda(texto: str) -> str:
+    """Formata valor monetario em tempo real no padrao brasileiro.
+
+    Exemplos: 123456 -> 1.234,56 | 100 -> 1,00 | 1280 -> 12,80
+    Remove tudo que nao for digito, formata com separadores.
+    """
+    digitos = re.sub(r"\D", "", texto)
+    if not digitos:
+        return ""
+
+    # Limita a 12 digitos (ate 999.999.999,99)
+    if len(digitos) > 12:
+        digitos = digitos[:12]
+
+    # Garante pelo menos 3 digitos (para ter centavos)
+    while len(digitos) < 3:
+        digitos = "0" + digitos
+
+    inteiro = digitos[:-2]
+    centavos = digitos[-2:]
+
+    # Remove zeros a esquerda do inteiro (mas mantem pelo menos 1)
+    inteiro = inteiro.lstrip("0") or "0"
+
+    # Adiciona separador de milhar
+    partes = []
+    while len(inteiro) > 3:
+        partes.append(inteiro[-3:])
+        inteiro = inteiro[:-3]
+    partes.append(inteiro)
+    inteiro_formatado = ".".join(reversed(partes))
+
+    return f"{inteiro_formatado},{centavos}"

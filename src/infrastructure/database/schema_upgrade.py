@@ -43,8 +43,12 @@ def _indices() -> dict[str, str]:
 
 def _criar_indices(engine: Engine) -> None:
     """Cria os indices compostos caso ainda nao existam."""
+    inspector = inspect(engine)
     with engine.begin() as conn:
         for nome, colunas in _indices().items():
+            tabela = colunas.split("(")[0].strip()
+            if not inspector.has_table(tabela):
+                continue
             sql = (
                 f"CREATE INDEX IF NOT EXISTS {nome} ON {colunas}"
             )
